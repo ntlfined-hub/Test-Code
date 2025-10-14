@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>FIN-JOD · สรุปภาพรวม</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600&display=swap" rel="stylesheet">
-  <!-- ใช้ UMD build ของ Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    :root{ --bg:#1e1e1e; --panel:#242424; --line:#3a3a3a; --muted:#bfbfbf; --text:#f1f1f1;
-      --primary:#00c896; --danger:#ff4d4f; --blue:#6c8cff; --cyan:#2dd4bf; --warn:#ffb020; }
+    :root{
+      --bg:#1e1e1e; --panel:#242424; --line:#3a3a3a; --muted:#bfbfbf; --text:#f1f1f1;
+      --primary:#00c896; --danger:#ff4d4f; --blue:#6c8cff; --cyan:#2dd4bf; --warn:#ffb020;
+    }
     *{ box-sizing:border-box } html,body{ height:100% }
     body{ margin:0; padding:clamp(.75rem,2vw,1.25rem);
       padding-bottom:calc(clamp(.75rem,2vw,1.25rem) + env(safe-area-inset-bottom,0px));
@@ -60,6 +61,7 @@
     .skeleton::after{ content:""; position:absolute; inset:0; transform:translateX(-100%); background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent); animation:skeleton 1.2s infinite }
   </style>
 
+  <!-- LIFF SDK -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
@@ -182,7 +184,6 @@ let lastItems = [];
 /** ====== HELPERS ====== */
 const $ = s => document.querySelector(s);
 const fmt = n => Number(n||0).toLocaleString('th-TH',{minimumFractionDigits:2, maximumFractionDigits:2});
-const esc = s => String(s||'').replace(/[&<>"]/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
 const toast = (msg, ok=true)=>{ const el=$('#toast'); el.textContent=msg; el.style.background = ok ? '#00c896' : '#ff4d4f'; el.style.opacity='1'; setTimeout(()=> el.style.opacity='0', 2200); };
 const showOverlay = (on)=> $('#overlay').classList.toggle('hide', !on);
 function toYMD(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
@@ -214,9 +215,14 @@ async function ensureTokenViaLIFF(){
   let prof; try{ prof = await liff.getProfile(); }catch{ toast('อ่านโปรไฟล์ LINE ไม่ได้', false); return false; }
   const r = await api('liff/link_or_login', { line_user_id: prof.userId, display_name: prof.displayName||'' }, false);
   if (!r.ok){ toast(r.message || 'เกิดข้อผิดพลาด', false); return false; }
-  if (r.need_verification){ $('#who').textContent = prof.displayName || ''; toast('ยังไม่ผูกบัญชี เข้าหน้าอื่นเพื่อผูกบัญชีก่อน', false); return false; }
+  if (r.need_verification){
+    $('#who').textContent = prof.displayName || '';
+    toast('ยังไม่ผูกบัญชี เข้าหน้าอื่นเพื่อผูกบัญชีก่อน', false);
+    return false;
+  }
   token = r.token; displayName = r.display_name || prof.displayName || '';
-  localStorage.setItem('fin_token', token); localStorage.setItem('fin_name', displayName);
+  localStorage.setItem('fin_token', token);
+  localStorage.setItem('fin_name', displayName);
   $('#who').textContent = displayName;
   return true;
 }
@@ -224,10 +230,9 @@ async function ensureTokenViaLIFF(){
 /** ====== CATEGORIES ====== */
 function _isWithdrawIncomeName(name){ const s = String(name||''); return /ถอน.*ออม|ออม.*ถอน|ถอนออม|ถอนเงินออม|withdraw.*(save|saving)|saving.*withdraw/i.test(s); }
 async function loadCategoriesAll(){
-  for (const t of ['income','expense','saving']){
-    const r = await api('categories/list', { type:t }, true);
-    cats[t] = r.ok ? (r.items||[]) : [];
-  }
+  const types = ['income','expense','saving'];
+  const results = await Promise.all(types.map(t=> api('categories/list', { type:t }, true)));
+  types.forEach((t,i)=>{ cats[t] = results[i].ok ? (results[i].items||[]) : []; });
   withdrawIncomeIds = new Set((cats.income||[]).filter(c=> _isWithdrawIncomeName(c.name_th)).map(c=> c.category_id));
 }
 
@@ -253,11 +258,14 @@ async function saveMonthSettings(mk, budget, goal){
     api('budgets/upsert', { month: mk, category_id: BUD_CAT_OVERALL,   limit_amount:Number(budget||0) }, true, true),
     api('budgets/upsert', { month: mk, category_id: BUD_CAT_SAVE_GOAL, limit_amount:Number(goal||0)   }, true, true),
   ]);
-  if (r1.ok && r2.ok){ monthSettingsCache[mk] = { budget:Number(budget||0), goal:Number(goal||0) }; toast('บันทึกงบ/เป้าออมสำเร็จ'); return true; }
+  if (r1.ok && r2.ok){
+    monthSettingsCache[mk] = { budget:Number(budget||0), goal:Number(goal||0) };
+    toast('บันทึกงบ/เป้าออมสำเร็จ'); return true;
+  }
   toast('บันทึกงบ/เป้าออมไม่สำเร็จ', false); return false;
 }
 
-/** ====== RANGE SHORTCUTS ====== */
+/** ====== RANGE ====== */
 function setRange(from, to){ $('#fFrom').value = from; $('#fTo').value = to; updateRangeUI(); refreshDash(); }
 function setRangeDaysBack(days){
   const now=new Date(); const from=toYMD(new Date(now.getFullYear(), now.getMonth(), now.getDate()-days+1)); const to=toYMD(now);
@@ -265,22 +273,27 @@ function setRangeDaysBack(days){
 }
 function updateRangeUI(){
   const f=$('#fFrom').value, t=$('#fTo').value;
-  const today = todayISO(); const mb = monthBounds(new Date()); const y = new Date().getFullYear();
-  const flags = { today:(f===today && t===today),
-    d7:(f===toYMD(new Date(new Date().setDate(new Date().getDate()-6))) && t===today),
+  const today = todayISO();
+  const mb = monthBounds(new Date());
+  const y = new Date().getFullYear();
+  const flags = {
+    today: (f===today && t===today),
+    d7: (f===toYMD(new Date(new Date().setDate(new Date().getDate()-6))) && t===today),
     d30:(f===toYMD(new Date(new Date().setDate(new Date().getDate()-29))) && t===today),
-    month:(f===mb.start && t===mb.end),
-    year:(f===`${y}-01-01` && t===`${y}-12-31`) };
+    month: (f===mb.start && t===mb.end),
+    year: (f===`${y}-01-01` && t===`${y}-12-31`),
+  };
   document.querySelectorAll('.chip[data-range]').forEach(ch=>{
     const key = ch.dataset.range;
-    const on = (key==='today'&&flags.today)||(key==='7'&&flags.d7)||(key==='30'&&flags.d30)||(key==='month'&&flags.month)||(key==='year'&&flags.year);
+    const on = (key==='today' && flags.today) || (key==='7' && flags.d7) || (key==='30' && flags.d30) || (key==='month' && flags.month) || (key==='year' && flags.year);
     ch.classList.toggle('active', !!on);
   });
-  let txt='กำหนดเอง'; if(flags.today)txt='วันนี้'; else if(flags.d7)txt='7 วันล่าสุด'; else if(flags.d30)txt='30 วันล่าสุด'; else if(flags.month)txt='เดือนนี้'; else if(flags.year)txt='ปีนี้';
+  let txt='กำหนดเอง';
+  if (flags.today) txt='วันนี้'; else if (flags.d7) txt='7 วันล่าสุด'; else if (flags.d30) txt='30 วันล่าสุด'; else if (flags.month) txt='เดือนนี้'; else if (flags.year) txt='ปีนี้';
   $('#rangeBadge').textContent = txt;
 }
 
-/** ====== DASH LOGIC ====== */
+/** ====== DASH ====== */
 let chartExp=null, chartFlow=null, chartSavCum=null, chartDebtTS=null, chartPI=null;
 function setKpiLoading(on){
   ['sumIncome','sumExpense','sumSaving','sumNet','sumDebt'].forEach(id=>{
@@ -301,7 +314,7 @@ async function refreshDash(silent){
     api('transactions/list', { from, to, type:'all' }, true, true),
     api('debts/summary', {}, true, false)
   ]);
-  if (!rTx.ok){ setKpiLoading(false); toast('โหลดรายการไม่สำเร็จ', false); return; }
+  if (!rTx.ok){ setKpiLoading(false); if(!silent) toast('โหลดรายการไม่สำเร็จ', false); return; }
   lastItems = (rTx.items||[]).map(x=> ({...x, amount:+x.amount}));
 
   const inc = sum(lastItems, x=> x.type==='income'? x.amount:0);
@@ -325,27 +338,37 @@ async function refreshDash(silent){
   drawExpByCat(lastItems, mapCat);
   drawFlow(lastItems);
   drawSavingCum(lastItems);
-  await drawDebtNetTotalOverTime_NO_INTEREST(from, to);   // << เปลี่ยนเป็นคำนวณจากธุรกรรมจริง
+  await drawDebtNetTotalOverTime(from, to);   // ⬅️ เวอร์ชันใหม่: ตามธุรกรรมจริงเท่านั้น
   await drawPrincipalInterestMonthly(from, to);
 }
 
 async function updateBudgetUI(expenseTotal, savingNet, mk){
   const cache = monthSettingsCache[mk] || { budget:0, goal:0 };
   const b = Number(cache.budget||0), g = Number(cache.goal||0);
+
   const pct = (!b || b<=0) ? 0 : Math.round((expenseTotal/b)*100);
   $('#budgetUsedPct').textContent = b>0 ? `${pct}%` : '—';
   $('#budgetBar').style.width = (b>0 ? Math.min(pct,100) : 0) + '%';
+
   let bTxt = 'รายจ่ายเดือนนี้: —';
-  if (b>0){ bTxt = (expenseTotal > b) ? `รายจ่ายเดือนนี้: เกินมา ${fmt(expenseTotal - b)}` : `รายจ่ายเดือนนี้: เหลืองบ ${fmt(b - expenseTotal)}`; }
+  if (b>0){
+    if (expenseTotal > b) bTxt = `รายจ่ายเดือนนี้: เกินมา ${fmt(expenseTotal - b)}`;
+    else                  bTxt = `รายจ่ายเดือนนี้: เหลืองบ ${fmt(b - expenseTotal)}`;
+  }
   $('#budgetStatus').textContent = bTxt;
 
   const pctSave = (!g || g<=0) ? 0 : Math.round((savingNet/g)*100);
   $('#savingGoalPct').textContent = g>0 ? `${pctSave}%` : '—';
   $('#savingBar').style.width = (g>0 ? Math.min(pctSave,100) : 0) + '%';
-  $('#savingGoalStatus').textContent = (g>0) ? ((savingNet>=g)? `ถึงเป้าแล้ว (+${fmt(savingNet-g)})` : `ขาดอีก ${fmt(g - savingNet)}`) : '—';
+  let sTxt='—';
+  if (g>0){
+    if (savingNet>=g) sTxt = `ถึงเป้าแล้ว (+${fmt(savingNet-g)})`;
+    else              sTxt = `ขาดอีก ${fmt(g - savingNet)}`;
+  }
+  $('#savingGoalStatus').textContent = sTxt;
 }
 
-/** ====== Charts (รายจ่าย/กระแส/ออม) ====== */
+/** ====== Charts: รายจ่าย/กระแส/ออม ====== */
 function drawExpByCat(items, mapCat){
   const panelNo = $('#noDataExp'); if (chartExp) chartExp.destroy();
   const exps = items.filter(x=>x.type==='expense');
@@ -378,7 +401,8 @@ function drawFlow(items){
         { label:'รายรับ', data:income, borderColor:'#00c896', backgroundColor:'rgba(0,200,150,.15)', tension:.35, fill:false },
         { label:'รายจ่าย', data:expense, borderColor:'#ff4d4f', backgroundColor:'rgba(255,77,79,.15)', tension:.35, fill:false },
         { label:'คงเหลือสะสม', data:netCumulative, borderColor:'#6c8cff', backgroundColor:'rgba(108,140,255,.15)', tension:.35, fill:false }
-      ]},
+      ]
+    },
     options:{ responsive:true, maintainAspectRatio:false, animation:false, interaction:{ mode:'index', intersect:false }, scales:{ y:{ beginAtZero:true } } }
   });
 }
@@ -402,80 +426,40 @@ function drawSavingCum(items){
   });
 }
 
-/** ====== Debt chart: No-interest reconstruction ====== */
-function addDays(d, n){ const x = new Date(d); x.setDate(x.getDate()+n); return x; }
-function diffDays(a,b){ return Math.round((new Date(b)-new Date(a))/(24*3600*1000)); }
-function monthEndStr(dateStr){ const d=new Date(dateStr); const end=new Date(d.getFullYear(), d.getMonth()+1, 0); return toYMD(end); }
-function monthStartStr(dateStr){ const d=new Date(dateStr); const start=new Date(d.getFullYear(), d.getMonth(), 1); return toYMD(start); }
-
-async function drawDebtNetTotalOverTime_NO_INTEREST(from, to){
+/** ====== Debt charts ====== */
+/* NEW: แสดงเฉพาะวันที่มีธุรกรรมจริง (กู้/จ่าย) รวมทุกเจ้าหนี้ ไม่คิดดอก ไม่เติมช่องว่าง */
+async function drawDebtNetTotalOverTime(from, to){
   const panelNo = $('#noDataDebtTS'); if (chartDebtTS) chartDebtTS.destroy();
-  if (!from || !to){ panelNo.classList.remove('hide'); chartDebtTS=null; return; }
 
-  // 1) ดึงธุรกรรมหนี้ทั้งหมดจนถึงวันสิ้นสุดช่วงเดียว
-  const rTx = await api('debts/tx/list', { to }, true, false);
-  const txs = (rTx.ok ? (rTx.items||[]) : []).map(t=>({
+  // ดึงธุรกรรมหนี้ตามช่วง
+  const r = await api('debts/tx/list', { from, to }, true, false);
+  if (!r.ok){ panelNo.classList.remove('hide'); chartDebtTS=null; return; }
+  const txs = (r.items||[]).map(t=>({
     date:String(t.date||'').slice(0,10),
     type:String(t.type||''),
-    amt:+(t.amount||0),
-    prin:+(t.principal_paid||0)
-  })).sort((a,b)=> a.date.localeCompare(b.date));
+    amount:+(t.amount||0),
+    principal_paid:+(t.principal_paid||0)   // ใช้จ่าย “ต้น” เท่านั้น
+  }));
 
-  if (!txs.length){ panelNo.classList.remove('hide'); chartDebtTS=null; return; }
-  panelNo.classList.add('hide');
-
-  // 2) เลือกความละเอียด: ≤120วัน = รายวัน, >120วัน = รายเดือน (ปลายเดือน)
-  const daysSpan = diffDays(from, to);
-  const monthly = daysSpan > 120;
-
-  // 3) ยอดเปิด ณ ต้นช่วง (คำนวณจากธุรกรรมก่อน from)
-  let balance = 0;
-  for (const t of txs){ if (t.date < from){ if (t.type==='borrow') balance += t.amt; else if (t.type==='repay') balance -= t.prin; } }
-
-  const labels = [];
-  const series = [];
-
-  if (!monthly){
-    // --- รายวัน ---
-    let i = 0;
-    const txByDate = groupBy(txs.filter(t=> t.date>=from && t.date<=to), x=> x.date);
-    for (let d=new Date(from); d<=new Date(to); d=addDays(d,1)){
-      const ds = toYMD(d);
-      const list = txByDate[ds] || [];
-      for (const t of list){
-        if (t.type==='borrow') balance += t.amt;
-        else if (t.type==='repay') balance -= t.prin;
-      }
-      if (balance < 0) balance = 0;
-      labels.push(ds); series.push(balance);
-      i++;
-    }
-  }else{
-    // --- รายเดือน (ปลายเดือน) ---
-    // เริ่มที่ปลายเดือนของเดือนเริ่มต้น แล้ววนถึงปลายเดือนของเดือนสิ้นสุด
-    let cur = monthEndStr(from);
-    const last = monthEndStr(to);
-    while (new Date(cur) <= new Date(last)){
-      const startThisMonth = monthStartStr(cur);
-      const endThisMonth   = monthEndStr(cur);
-      // ธุรกรรมในเดือนนี้ (แต่ภายในช่วง from..to)
-      const list = txs.filter(t=> t.date>=from && t.date<=to && t.date>=startThisMonth && t.date<=endThisMonth);
-      for (const t of list){
-        if (t.type==='borrow') balance += t.amt;
-        else if (t.type==='repay') balance -= t.prin;
-      }
-      if (balance < 0) balance = 0;
-      labels.push(cur.slice(0,7)); // YYYY-MM
-      series.push(balance);
-      // ไปเดือนถัดไป
-      const d = new Date(cur); d.setDate(1); d.setMonth(d.getMonth()+1); cur = monthEndStr(toYMD(d));
-    }
+  // รวมต่อวัน โดย: borrow = +amount, repay = −principal_paid
+  const dayDelta = {};
+  for (const t of txs){
+    if (!t.date) continue;
+    const delta = (t.type==='borrow') ? t.amount
+               : (t.type==='repay')  ? -t.principal_paid
+               : 0;
+    dayDelta[t.date] = (dayDelta[t.date]||0) + delta;
   }
+  const days = Object.keys(dayDelta).sort();
+  if (!days.length){ panelNo.classList.remove('hide'); chartDebtTS=null; return; }
 
-  // 4) วาดกราฟ
+  // สร้าง series แบบ cumulative เฉพาะจุดที่มีข้อมูลจริง
+  const deltas = days.map(d=> dayDelta[d]);
+  const totals = runningSum(deltas);
+  panelNo.classList.add('hide');
   chartDebtTS = new Chart($('#chartDebtTS'), {
     type:'line',
-    data:{ labels, datasets:[{ label:'ยอดหนี้คงเหลือรวมสุทธิ (ไม่คิดดอก)', data:series, borderColor:'#6c8cff', backgroundColor:'rgba(108,140,255,.15)', tension:.35, fill:false }] },
+    data:{ labels: days, datasets:[{ label:'ยอดหนี้คงเหลือรวมสุทธิ (ไม่คิดดอก)', data: totals, borderColor:'#6c8cff', backgroundColor:'rgba(108,140,255,.15)', tension:.35, fill:false }] },
     options:{ responsive:true, maintainAspectRatio:false, animation:false, scales:{ y:{ beginAtZero:true } } }
   });
 }
