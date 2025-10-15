@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>FIN-JOD · สรุปภาพรวม (Fast)</title>
+  <title>FIN-JOD · สรุปภาพรวม (Fast + Fixed)</title>
 
-  <!-- performance hints -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <!-- โหลด Chart.js แบบปกติให้แน่ใจว่าใช้ได้ก่อนสคริปต์เรา -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     *{ box-sizing:border-box }
@@ -192,6 +192,13 @@ const sum = (arr, pick) => arr.reduce((s,x)=> s+(pick(x)||0), 0);
 const groupBy = (arr, key) => arr.reduce((a,x)=> ((a[key(x)] = a[key(x)]||[]).push(x),a),{});
 const runningSum = arr => { let s=0; return arr.map(v => (s+=v, s)); };
 
+/** ====== WAIT CHART.JS READY ====== */
+async function ensureChartsReady(){
+  let tries=0;
+  while (!window.Chart && tries<80){ await new Promise(r=>setTimeout(r,50)); tries++; }
+  if (!window.Chart){ toast('โหลดกราฟไม่สำเร็จ', false); }
+}
+
 /** ====== LIGHT STORAGE (SWR + TTL) ====== */
 const TTL = { cats: 24*3600e3, month: 6*3600e3, tx: 10*60e3, debt: 10*60e3 }; // ms
 function _k(...p){ return ['finjod','dash',...p].join(':'); }
@@ -221,9 +228,8 @@ async function api(path, payload={}, useToken=true, cancellable=false){
   return await fetchJSON(API_URL, { method:'POST', body: JSON.stringify(body), signal: inflightCtl?.signal });
 }
 
-/** ====== LIFF LOGIN (re-use token first) ====== */
+/** ====== LIFF LOGIN ====== */
 async function ensureToken(){
-  // ถ้ามี token ใช้ยิงก่อนเลย เพื่อให้ SWR ทำงานเร็ว
   if (token && displayName){ $('#who').textContent = displayName; return true; }
   try{
     await liff.init({ liffId: LIFF_ID });
@@ -239,7 +245,7 @@ async function ensureToken(){
   }catch{ return false; }
 }
 
-/** ====== CATEGORIES (with cache) ====== */
+/** ====== CATEGORIES ====== */
 function _isWithdrawIncomeName(name){ const s=String(name||''); return /ถอน.*ออม|ออม.*ถอน|ถอนออม|ถอนเงินออม|withdraw.*(save|saving)|saving.*withdraw/i.test(s); }
 async function loadCategoriesAll(){
   const ck = _k('cats');
@@ -260,7 +266,7 @@ async function loadCategoriesAll(){
   setCache(ck, cats, TTL.cats);
 }
 
-/** ====== BUDGET/GOAL (cache per month) ====== */
+/** ====== BUDGET/GOAL ====== */
 function monthKeyFromRange(){ const f=$('#fFrom').value; return (f?f:todayISO()).slice(0,7); }
 async function loadMonthSettings(mk){
   const ck = _k('month', mk);
@@ -328,19 +334,21 @@ function updateRangeUI(){
   $('#rangeBadge').textContent = txt;
 }
 
-/** ====== Dash core (SWR + downsample + cancel) ====== */
+/** ====== Downsample helper: ลดทุกเส้นพร้อมกัน ====== */
+function downsampleSeries(xs, datasets, maxPts=180){
+  if (xs.length<=maxPts) return { xs, datasets };
+  const step = Math.ceil(xs.length/maxPts);
+  const idxs=[]; for (let i=0;i<xs.length;i+=step) idxs.push(i);
+  const xs2 = idxs.map(i=> xs[i]);
+  const ds2 = datasets.map(arr => idxs.map(i=> arr[i]));
+  return { xs: xs2, datasets: ds2 };
+}
+
+/** ====== Dash core (SWR + cancel) ====== */
 let chartExp=null, chartFlow=null, chartSavCum=null, chartDebtTS=null, chartPI=null;
 function setKpiLoading(on){ ['sumIncome','sumExpense','sumSaving','sumNet','sumDebt'].forEach(id=>{ const el=$('#'+id); if (on){ el.classList.add('skeleton'); el.textContent=''; } else el.classList.remove('skeleton'); }); }
 function colorizeNetCard(netVal){ $('#netCard').style.border = netVal>=0 ? '1px solid rgba(0,200,150,.35)' : '1px solid rgba(255,77,79,.35)'; }
 function _rangeKey(){ return _k('tx', $('#fFrom').value, $('#fTo').value); }
-
-function downsample(xs, ys, maxPts=180){
-  if (xs.length<=maxPts) return { xs, ys };
-  const step = Math.ceil(xs.length/maxPts);
-  const xs2=[], ys2=[];
-  for (let i=0;i<xs.length;i+=step){ xs2.push(xs[i]); ys2.push(ys[i]); }
-  return { xs: xs2, ys: ys2 };
-}
 
 function showFromItems(items, rDebtTotal=0){
   lastItems = items.map(x=> ({...x, amount:+x.amount}));
@@ -357,7 +365,7 @@ function showFromItems(items, rDebtTotal=0){
   $('#sumDebt').textContent    = fmt(rDebtTotal);
   colorizeNetCard(net);
   updateBudgetUI(exp, savNet, monthKeyFromRange());
-  // redraw charts quickly
+
   const mapCat = Object.fromEntries((cats.expense.concat(cats.income).concat(cats.saving)).map(c=> [c.category_id, c.name_th]));
   drawExpByCat(lastItems, mapCat);
   drawFlow(lastItems);
@@ -367,17 +375,15 @@ function showFromItems(items, rDebtTotal=0){
 async function refreshDash(isCancellable){
   setKpiLoading(true);
 
-  // 1) SWR: ใช้ snapshot ถ้ามี
+  // SWR
   const ck = _rangeKey();
   const snap = getCache(ck);
   const debtC = getCache(_k('debtTotal'));
   if (snap){ showFromItems(snap.items||[], Number(debtC||0)); setKpiLoading(false); }
 
-  // ensure deps fresh (async แต่ไม่บล็อก)
   if (!cats.expense.length && !cats.income.length && !cats.saving.length){ loadCategoriesAll(); }
   loadMonthSettings(monthKeyFromRange());
 
-  // 2) ดึงข้อมูลจริง (ยกเลิกได้เมื่อเปลี่ยนช่วง)
   const from = $('#fFrom').value, to = $('#fTo').value;
   const [rTx, rDebtSum] = await Promise.all([
     api('transactions/list', { from, to, type:'all' }, true, !!isCancellable),
@@ -388,16 +394,13 @@ async function refreshDash(isCancellable){
   const items = (rTx.items||[]);
   const debtTotal = rDebtSum.ok ? Number(rDebtSum.totals?.total||0) : 0;
   rDebtTotalCached = debtTotal;
-
-  // เก็บ snapshot ใหม่
   setCache(ck, { items }, TTL.tx);
   setCache(_k('debtTotal'), debtTotal, TTL.debt);
 
-  // แสดงผลจริง (ทับ snapshot)
   showFromItems(items, debtTotal);
   setKpiLoading(false);
 
-  // กราฟหนี้ (ยิงหลังสุด)
+  // กราฟหนี้
   drawDebtNetTotalOverTime(from,to);
   drawPrincipalInterestMonthly(from,to);
 }
@@ -419,23 +422,28 @@ async function updateBudgetUI(expenseTotal, savingNet, mk){
   $('#savingGoalStatus').textContent = sTxt;
 }
 
-/** ====== Charts (with downsample) ====== */
+/** ====== Charts (safe + downsample ทุกเส้น) ====== */
+function safeChart(ctx, cfg){
+  try{ return new Chart(ctx, cfg); }catch(e){ console.error('Chart error', e); toast('วาดกราฟไม่สำเร็จ', false); return null; }
+}
 function drawExpByCat(items, mapCat){
+  if (!window.Chart) return;
   if (chartExp) chartExp.destroy();
   const exps = items.filter(x=>x.type==='expense'); const panelNo=$('#noDataExp');
-  if (!exps.length){ panelNo.classList.remove('hide'); return; } panelNo.classList.add('hide');
+  if (!exps.length){ panelNo.classList.remove('hide'); chartExp=null; return; } panelNo.classList.add('hide');
   const groupExp = groupBy(exps, x=> mapCat[x.category_id] || 'อื่น ๆ');
   const labels = Object.keys(groupExp);
   const data = labels.map(k=> sum(groupExp[k], x=> x.amount));
-  chartExp = new Chart($('#chartExp'), {
+  chartExp = safeChart($('#chartExp'), {
     type:'bar',
     data:{ labels, datasets:[{ label:'จำนวน (บาท)', data, backgroundColor:'rgba(233,30,99,0.65)', borderColor:'rgba(233,30,99,1)', borderWidth:1 }] },
     options:{ responsive:true, maintainAspectRatio:false, animation:false, scales:{ y:{ beginAtZero:true }}, plugins:{ legend:{ display:false } } }
   });
 }
 function drawFlow(items){
+  if (!window.Chart) return;
   if (chartFlow) chartFlow.destroy(); const panelNo=$('#noDataFlow');
-  if (!items.length){ panelNo.classList.remove('hide'); return; } panelNo.classList.add('hide');
+  if (!items.length){ panelNo.classList.remove('hide'); chartFlow=null; return; } panelNo.classList.add('hide');
   const g = groupBy(items, x=> x.date);
   const ds = Object.keys(g).sort();
   const income  = ds.map(d=> sum(g[d], x=> x.type==='income'?  x.amount:0));
@@ -443,64 +451,74 @@ function drawFlow(items){
   const savingD = ds.map(d=> sum(g[d], x=> x.type==='saving'?  x.amount:0));
   const netDaily = ds.map((_,i)=> income[i] - expense[i] - savingD[i]);
   const netCumulative = runningSum(netDaily);
-  let { xs, ys } = downsample(ds, netCumulative);
-  chartFlow = new Chart($('#chartFlow'), {
+
+  const reduced = downsampleSeries(ds, [income, expense, netCumulative]);
+
+  chartFlow = safeChart($('#chartFlow'), {
     type:'line',
-    data:{ labels: xs,
+    data:{ labels: reduced.xs,
       datasets:[
-        { label:'คงเหลือสะสม', data: ys, borderColor:'#6c8cff', backgroundColor:'rgba(108,140,255,.15)', tension:.35, fill:false },
+        { label:'รายรับ',        data: reduced.datasets[0], borderColor:'#00c896', backgroundColor:'rgba(0,200,150,.15)', tension:.35, fill:false, pointRadius:0 },
+        { label:'รายจ่าย',       data: reduced.datasets[1], borderColor:'#ff4d4f', backgroundColor:'rgba(255,77,79,.15)', tension:.35, fill:false, pointRadius:0 },
+        { label:'คงเหลือสะสม',   data: reduced.datasets[2], borderColor:'#6c8cff', backgroundColor:'rgba(108,140,255,.15)', tension:.35, fill:false, pointRadius:0 }
       ]},
-    options:{ responsive:true, maintainAspectRatio:false, animation:false, elements:{ point:{ radius:0 }}, parsing:false, normalized:true, scales:{ y:{ beginAtZero:true } } }
+    options:{ responsive:true, maintainAspectRatio:false, animation:false, interaction:{ mode:'index', intersect:false }, parsing:false, normalized:true, scales:{ y:{ beginAtZero:true } } }
   });
 }
 function drawSavingCum(items){
+  if (!window.Chart) return;
   if (chartSavCum) chartSavCum.destroy(); const panelNo=$('#noDataSav');
   const byDateDep = groupBy(items.filter(x=>x.type==='saving'), x=> x.date);
   const byDateWdr = groupBy(items.filter(x=> x.type==='income' && withdrawIncomeIds.has(x.category_id)), x=> x.date);
   const dates = Array.from(new Set([...Object.keys(byDateDep), ...Object.keys(byDateWdr)])).sort();
-  if (!dates.length){ panelNo.classList.remove('hide'); return; } panelNo.classList.add('hide');
+  if (!dates.length){ panelNo.classList.remove('hide'); chartSavCum=null; return; } panelNo.classList.add('hide');
   const netPerDay = dates.map(d=> (sum(byDateDep[d]||[], x=> x.amount) - sum(byDateWdr[d]||[], x=> x.amount)));
   const cum = runningSum(netPerDay);
-  const ds = downsample(dates, cum);
-  chartSavCum = new Chart($('#chartSavCum'), { type:'line',
-    data:{ labels: ds.xs, datasets:[{ label:'ออมสุทธิสะสม', data:ds.ys, borderColor:'#2dd4bf', backgroundColor:'rgba(45,212,191,.15)', tension:.35, fill:false }] },
-    options:{ responsive:true, maintainAspectRatio:false, animation:false, elements:{ point:{ radius:0 }}, parsing:false, normalized:true, scales:{ y:{ beginAtZero:true }}}
+  const reduced = downsampleSeries(dates, [cum]);
+
+  chartSavCum = safeChart($('#chartSavCum'), { type:'line',
+    data:{ labels: reduced.xs, datasets:[{ label:'ออมสุทธิสะสม', data:reduced.datasets[0], borderColor:'#2dd4bf', backgroundColor:'rgba(45,212,191,.15)', tension:.35, fill:false, pointRadius:0 }] },
+    options:{ responsive:true, maintainAspectRatio:false, animation:false, parsing:false, normalized:true, scales:{ y:{ beginAtZero:true }}}
   });
 }
 async function drawDebtNetTotalOverTime(from, to){
+  if (!window.Chart) return;
   if (chartDebtTS) chartDebtTS.destroy();
   const rActive = await api('debts/list', { include_closed:false }, true);
   const activeIds = new Set((rActive.ok ? (rActive.items||[]) : []).map(d => String(d.debt_id)));
-  const panelNo=$('#noDataDebtTS'); if (!activeIds.size){ panelNo.classList.remove('hide'); return; }
+  const panelNo=$('#noDataDebtTS'); if (!activeIds.size){ panelNo.classList.remove('hide'); chartDebtTS=null; return; }
   const r = await api('debts/tx/list', { from, to }, true);
-  if (!r.ok){ panelNo.classList.remove('hide'); return; }
+  if (!r.ok){ panelNo.classList.remove('hide'); chartDebtTS=null; return; }
   const txs = (r.items||[]).filter(t=> activeIds.has(String(t.debt_id||'')))
               .map(t=>({ date:String(t.date||'').slice(0,10), type:String(t.type||''), amount:+(t.amount||0), principal_paid:+(t.principal_paid||0) }));
   const dayDelta = {};
   for (const t of txs){ if (!t.date) continue; const d = (t.type==='borrow')? t.amount : (t.type==='repay')? -t.principal_paid : 0; dayDelta[t.date]=(dayDelta[t.date]||0)+d; }
-  const days = Object.keys(dayDelta).sort(); if (!days.length){ panelNo.classList.remove('hide'); return; }
+  const days = Object.keys(dayDelta).sort(); if (!days.length){ panelNo.classList.remove('hide'); chartDebtTS=null; return; }
   let acc=0; const totals = days.map(d => (acc += dayDelta[d], acc));
-  const ds = downsample(days, totals);
+  const reduced = downsampleSeries(days, [totals]);
+
   panelNo.classList.add('hide');
-  chartDebtTS = new Chart($('#chartDebtTS'), { type:'line',
-    data:{ labels: ds.xs, datasets:[{ label:'ยอดหนี้คงเหลือรวม (ไม่คิดดอก)', data: ds.ys, borderColor:'#6c8cff', backgroundColor:'rgba(108,140,255,.15)', tension:.35, fill:false }] },
-    options:{ responsive:true, maintainAspectRatio:false, animation:false, elements:{ point:{ radius:0 }}, parsing:false, normalized:true, scales:{ y:{ beginAtZero:true } } }
+  chartDebtTS = safeChart($('#chartDebtTS'), { type:'line',
+    data:{ labels: reduced.xs, datasets:[{ label:'ยอดหนี้คงเหลือรวม (ไม่คิดดอก)', data: reduced.datasets[0], borderColor:'#6c8cff', backgroundColor:'rgba(108,140,255,.15)', tension:.35, fill:false, pointRadius:0 }] },
+    options:{ responsive:true, maintainAspectRatio:false, animation:false, parsing:false, normalized:true, scales:{ y:{ beginAtZero:true } } }
   });
 }
 async function drawPrincipalInterestMonthly(from, to){
+  if (!window.Chart) return;
   if (chartPI) chartPI.destroy();
   const r = await api('debts/tx/list', { from, to }, true);
-  const panelNo=$('#noDataPI'); if (!r.ok || !(r.items||[]).length){ panelNo.classList.remove('hide'); return; }
+  const panelNo=$('#noDataPI'); if (!r.ok || !(r.items||[]).length){ panelNo.classList.remove('hide'); chartPI=null; return; }
   panelNo.classList.add('hide');
   const g = {};
   for (const x of r.items){ if (String(x.type)!=='repay') continue; const ym=String(x.date||'').slice(0,7); (g[ym] ||= { prin:0, intr:0 }); g[ym].prin += Number(x.principal_paid||0); g[ym].intr += Number(x.interest_paid||0); }
   const labels = Object.keys(g).sort(); const prin = labels.map(m=> g[m].prin); const intr = labels.map(m=> g[m].intr);
-  chartPI = new Chart($('#chartPI'), { type:'line',
+
+  chartPI = safeChart($('#chartPI'), { type:'line',
     data:{ labels, datasets:[
-      { label:'จ่ายต้น (บาท)', data:prin, borderColor:'#00c896', backgroundColor:'rgba(0,200,150,.15)', tension:.35, fill:false },
-      { label:'จ่ายดอก (บาท)', data:intr, borderColor:'#ffb020', backgroundColor:'rgba(255,176,32,.15)', tension:.35, fill:false },
+      { label:'จ่ายต้น (บาท)', data:prin, borderColor:'#00c896', backgroundColor:'rgba(0,200,150,.15)', tension:.35, fill:false, pointRadius:0 },
+      { label:'จ่ายดอก (บาท)', data:intr, borderColor:'#ffb020', backgroundColor:'rgba(255,176,32,.15)', tension:.35, fill:false, pointRadius:0 },
     ]},
-    options:{ responsive:true, maintainAspectRatio:false, animation:false, elements:{ point:{ radius:0 }}, parsing:false, normalized:true, scales:{ y:{ beginAtZero:true } } }
+    options:{ responsive:true, maintainAspectRatio:false, animation:false, parsing:false, normalized:true, scales:{ y:{ beginAtZero:true } } }
   });
 }
 
@@ -514,22 +532,19 @@ $('#btnSaveBudget').addEventListener('click', async ()=>{ const mk=monthKeyFromR
   const mb = monthBounds(new Date()); $('#fFrom').value = mb.start; $('#fTo').value = mb.end; updateRangeUI();
   bindRangeButtons();
 
-  // ใส่ชื่อจากแคชก่อน
   if (displayName) $('#who').textContent = displayName;
 
-  // โหลด cats/budget จากแคชก่อนเพื่อให้ KPI/กราฟคำนวณได้
   const ckCats = getCache(_k('cats')); if (ckCats){ cats=ckCats; withdrawIncomeIds = new Set((cats.income||[]).filter(c=>_isWithdrawIncomeName(c.name_th)).map(c=>c.category_id)); }
   const mk = monthKeyFromRange(); const ckMonth=getCache(_k('month',mk)); if (ckMonth){ monthSettingsCache[mk]=ckMonth; $('#budgetThisMonth').value=ckMonth.budget||''; $('#savingGoalThisMonth').value=ckMonth.goal||''; }
 
-  // แสดงหน้าเร็วๆ ด้วย snapshot
-  refreshDash(true);
+  await ensureChartsReady();   // ✅ รอให้ Chart.js พร้อมก่อนใช้งาน
+  refreshDash(true);          // SWR แสดงก่อน
 
-  // แล้วค่อย ensure token + refresh ทับ
   const ok = await ensureToken();
   if (ok){
     await loadCategoriesAll();
     await loadMonthSettings(mk);
-    refreshDash(true);
+    refreshDash(true);        // ทับด้วยข้อมูลจริง
   }
 })();
 </script>
