@@ -3,9 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>FIN-JOD · สรุปภาพรวม</title>
+  <title>FIN-JOD · สรุปภาพรวม (Fast)</title>
+
+  <!-- performance hints -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+
   <style>
     *{ box-sizing:border-box }
     :root{
@@ -18,23 +23,17 @@
       padding-bottom:calc(clamp(.75rem,2vw,2rem) + env(safe-area-inset-bottom,0px));
       font-family:'Kanit',sans-serif; background:var(--bg); color:var(--text);
     }
-
-    /* shell */
     .container{ width:min(1140px,100%); margin:auto; background:var(--panel); border:1px solid var(--line);
       border-radius:24px; padding:clamp(.9rem,2.5vw,2rem); box-shadow:0 12px 30px rgba(0,0,0,.5) }
     h1{ margin:.25rem 0 1rem; font-size:clamp(1.25rem,4.5vw,2rem); color:var(--primary); text-align:center }
     .head{ display:flex; align-items:center; gap:.75rem; margin-bottom:.5rem }
     .head .you{ margin-left:auto; color:#9fe9d4; font-weight:600 }
 
-    /* inputs / layout */
     .row{ display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1rem; align-items:flex-start }
     .col{ flex:1 1 46%; min-width:230px; display:flex; flex-direction:column; gap:.4rem }
     label{ color:var(--muted) }
-    input,select,button{
-      border-radius:12px; border:1px solid #555; background:#1e1e1e; color:#fff; min-height:44px; padding:1rem 1.1rem; font-size:16px
-    }
-    input[type=number]{ text-align:right; -moz-appearance:textfield }
-    input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+    input,button{ border-radius:12px; border:1px solid #555; background:#1e1e1e; color:#fff; min-height:44px; padding:1rem 1.1rem; font-size:16px }
+    input[type=number]{ text-align:right }
     button{ background:var(--primary); border:none; font-weight:700; cursor:pointer; transition:background .2s }
     @media (hover:hover) and (pointer:fine){ button:hover{ background:var(--primary-2) } }
     button:disabled{ opacity:.6; cursor:not-allowed }
@@ -44,17 +43,14 @@
     .muted{ color:var(--muted) }
     .right{ text-align:right }
 
-    /* segmented range buttons + badge */
     .segbtn{ padding:.8rem 1.1rem; border-radius:12px; border:1px solid #444; background:#1f1f1f; color:#ddd; cursor:pointer; min-height:44px }
     .segbtn.active{ background:var(--primary); border-color:var(--primary); color:#fff; font-weight:700 }
     .badge{ padding:.25rem .5rem; border-radius:999px; font-size:.85rem }
     .badge-debt{ background:rgba(108,140,255,.16); color:#c8d2ff; border:1px solid rgba(108,140,255,.35) }
 
-    /* KPI */
     .kpi{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin-bottom:1rem }
     .kpi .card{ display:flex; flex-direction:column; gap:.35rem; min-height:92px }
 
-    /* bars + inline status */
     .inline-status{ display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; margin:.25rem 0 .5rem }
     .inline-status .sep{ opacity:.55 }
     .bar-track{ height:10px; background:#3a3a3a; border-radius:999px; overflow:hidden }
@@ -62,20 +58,13 @@
     #budgetBar{ background:linear-gradient(90deg,#6c8cff,#ffb020,#ff4d4f) }
     #savingBar{ background:linear-gradient(90deg,#2dd4bf,#00c896) }
 
-    /* charts */
     .grid2{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:1rem }
     .chart-wrap{ height:260px; width:100% } .chart-wrap canvas{ width:100% !important; height:100% !important; display:block }
     @media(max-width:980px){ .chart-wrap{ height:220px } }
     @media(max-width:768px){ .chart-wrap{ height:200px } .col{ flex:1 1 100% } }
 
-    /* toast + overlay + skeleton */
     #toast{ position:fixed; left:50%; bottom:calc(22px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%);
       background:#333; color:#fff; padding:.75rem 1.2rem; border-radius:12px; opacity:0; transition:.35s; pointer-events:none; z-index:100 }
-    .hide{ display:none }
-    #overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.45); backdrop-filter:blur(2px); z-index:99; transition:.2s }
-    #overlay.hide{ opacity:0; pointer-events:none }
-    .spinner{ width:58px; height:58px; border-radius:50%; border:6px solid rgba(255,255,255,.35); border-top-color:#fff; animation:spin 1s linear infinite }
-    @keyframes spin{ to{ transform:rotate(360deg) } }
     .skeleton{ position:relative; overflow:hidden; background:#2b2b2b; border-radius:8px; min-height:20px }
     .skeleton::after{ content:""; position:absolute; inset:0; transform:translateX(-100%); background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent); animation:skeleton 1.2s infinite }
   </style>
@@ -90,7 +79,6 @@
       <div class="you" id="who"></div>
     </div>
 
-    <!-- ช่วงวันที่ + ปุ่มลัดแบบ segmented -->
     <div class="card" style="margin-bottom:1rem">
       <div class="row">
         <div class="col"><label for="fFrom">จาก</label><input id="fFrom" type="date"></div>
@@ -110,7 +98,6 @@
       </div>
     </div>
 
-    <!-- งบเดือนนี้ & เป้าออม -->
     <div class="card" style="margin-bottom:1rem">
       <div class="row">
         <div class="col">
@@ -125,20 +112,16 @@
           <button id="btnSaveBudget" class="btn-blue">บันทึกงบ/เป้าออม</button>
         </div>
       </div>
-
-      <!-- inline status + bars -->
       <div class="inline-status muted">
         <span>ใช้ไป: <b id="budgetUsedPct">—</b></span><span class="sep">|</span><span id="budgetStatus">รายจ่ายเดือนนี้: —</span>
       </div>
       <div class="bar-track"><div id="budgetBar" class="bar-fill"></div></div>
-
       <div class="inline-status muted" style="margin-top:.6rem">
         <span>ออมแล้ว: <b id="savingGoalPct">—</b></span><span class="sep">|</span><span>สถานะออมเดือนนี้: <b id="savingGoalStatus">—</b></span>
       </div>
       <div class="bar-track"><div id="savingBar" class="bar-fill"></div></div>
     </div>
 
-    <!-- KPI -->
     <div class="kpi" style="margin-bottom:1rem">
       <div class="card"><div class="muted">รายรับรวม (บาท)</div><div id="sumIncome"  style="font-size:1.6rem;font-weight:700" class="skeleton"></div></div>
       <div class="card"><div class="muted">รายจ่ายรวม (บาท)</div><div id="sumExpense" style="font-size:1.6rem;font-weight:700" class="skeleton"></div></div>
@@ -147,7 +130,6 @@
       <div class="card"><div class="muted">ยอดหนี้คงเหลือรวม (บาท)</div><div id="sumDebt"    style="font-size:1.6rem;font-weight:700" class="skeleton"></div></div>
     </div>
 
-    <!-- Charts -->
     <div class="grid2" style="margin-bottom:1rem">
       <div class="card">
         <div class="muted" style="margin-bottom:.5rem">รายจ่ายตามหมวด</div>
@@ -182,7 +164,6 @@
   </div>
 
   <div id="toast">แจ้งเตือน</div>
-  <div id="overlay" class="hide" aria-live="polite" aria-busy="true"><div class="spinner"></div></div>
 
 <script>
 /** ====== CONFIG ====== */
@@ -198,13 +179,12 @@ let cats = { income:[], expense:[], saving:[] };
 let withdrawIncomeIds = new Set();
 const monthSettingsCache = {};
 let lastItems = [];
+let rDebtTotalCached = 0;
 
 /** ====== HELPERS ====== */
 const $ = s => document.querySelector(s);
 const fmt = n => Number(n||0).toLocaleString('th-TH',{minimumFractionDigits:2, maximumFractionDigits:2});
-const esc = s => String(s||'').replace(/[&<>"]/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
-const toast = (msg, ok=true)=>{ const el=$('#toast'); el.textContent=msg; el.style.background = ok ? '#00c896' : '#ff4d4f'; el.style.opacity='1'; setTimeout(()=> el.style.opacity='0', 2400); };
-const showOverlay = (on)=> $('#overlay').classList.toggle('hide', !on);
+const toast = (m, ok=true)=>{ const el=$('#toast'); el.textContent=m; el.style.background=ok?'#00c896':'#ff4d4f'; el.style.opacity='1'; setTimeout(()=> el.style.opacity='0',1600); };
 function toYMD(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function todayISO(){ return toYMD(new Date()); }
 function monthBounds(d){ return { start: toYMD(new Date(d.getFullYear(), d.getMonth(), 1)), end: toYMD(new Date(d.getFullYear(), d.getMonth()+1, 0)) }; }
@@ -212,56 +192,84 @@ const sum = (arr, pick) => arr.reduce((s,x)=> s+(pick(x)||0), 0);
 const groupBy = (arr, key) => arr.reduce((a,x)=> ((a[key(x)] = a[key(x)]||[]).push(x),a),{});
 const runningSum = arr => { let s=0; return arr.map(v => (s+=v, s)); };
 
-/** ====== FETCH/API (เพิ่ม timeout) ====== */
+/** ====== LIGHT STORAGE (SWR + TTL) ====== */
+const TTL = { cats: 24*3600e3, month: 6*3600e3, tx: 10*60e3, debt: 10*60e3 }; // ms
+function _k(...p){ return ['finjod','dash',...p].join(':'); }
+function setCache(key, val, ttlMs){ localStorage.setItem(key, JSON.stringify({ t: Date.now(), ttl: ttlMs, v: val })); }
+function getCache(key){
+  try{ const j=JSON.parse(localStorage.getItem(key)||''); if(!j) return null;
+       if (Date.now() - j.t > (j.ttl||0)) return null; return j.v; }catch{ return null; }
+}
+
+/** ====== FETCH/API (timeout + cancel previous) ====== */
+let inflightCtl = null;
 async function fetchJSON(url, options={}, timeoutMs=20000){
   const controller = new AbortController();
   const id = setTimeout(()=> controller.abort(), timeoutMs);
   try{
     const res = await fetch(url, { ...options, signal: controller.signal, headers:{'Content-Type':'text/plain;charset=utf-8', ...(options.headers||{})} });
-    const text = await res.text();
-    try { return JSON.parse(text); } catch{ return { ok:false, error:'NON_JSON', raw:text }; }
-  }catch(e){ return { ok:false, error:'NETWORK', message:String(e&&e.message||e) }; }
+    const text = await res.text(); try{ return JSON.parse(text); }catch{ return { ok:false, error:'NON_JSON', raw:text }; }
+  }catch(e){ return { ok:false, error:'NETWORK', message:String(e?.message||e) }; }
   finally{ clearTimeout(id); }
 }
-async function api(path, payload={}, useToken=true, withOverlay=false){
+async function api(path, payload={}, useToken=true, cancellable=false){
+  if (cancellable){
+    try{ inflightCtl?.abort(); }catch{}
+    inflightCtl = new AbortController();
+  }
   const body = { path, payload }; if (useToken && token) body.token = token;
-  if (withOverlay) showOverlay(true);
-  try{ return await fetchJSON(API_URL, { method:'POST', body: JSON.stringify(body) }); }
-  finally{ if (withOverlay) showOverlay(false); }
+  return await fetchJSON(API_URL, { method:'POST', body: JSON.stringify(body), signal: inflightCtl?.signal });
 }
 
-/** ====== LIFF LOGIN ====== */
-async function ensureTokenViaLIFF(){
-  await liff.init({ liffId: LIFF_ID });
-  if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return false; }
-  let prof; try{ prof = await liff.getProfile(); }catch{ toast('อ่านโปรไฟล์ LINE ไม่ได้', false); return false; }
-  const r = await api('liff/link_or_login', { line_user_id: prof.userId, display_name: prof.displayName||'' }, false);
-  if (!r.ok){
-    $('#who').textContent = prof.displayName || '';
-    if (r.need_verification) toast('ยังไม่ผูกบัญชี เข้าหน้าอื่นเพื่อผูกบัญชีก่อน', false);
-    else toast(r.message || 'เกิดข้อผิดพลาด', false);
-    return false;
-  }
-  token = r.token; displayName = r.display_name || prof.displayName || '';
-  localStorage.setItem('fin_token', token);
-  localStorage.setItem('fin_name', displayName);
-  $('#who').textContent = displayName;
-  return true;
+/** ====== LIFF LOGIN (re-use token first) ====== */
+async function ensureToken(){
+  // ถ้ามี token ใช้ยิงก่อนเลย เพื่อให้ SWR ทำงานเร็ว
+  if (token && displayName){ $('#who').textContent = displayName; return true; }
+  try{
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return false; }
+    const prof = await liff.getProfile();
+    const r = await api('liff/link_or_login', { line_user_id: prof.userId, display_name: prof.displayName||'' }, false);
+    if (!r.ok) return false;
+    token = r.token; displayName = r.display_name || prof.displayName || '';
+    localStorage.setItem('fin_token', token);
+    localStorage.setItem('fin_name', displayName);
+    $('#who').textContent = displayName;
+    return true;
+  }catch{ return false; }
 }
 
-/** ====== CATEGORIES ====== */
-function _isWithdrawIncomeName(name){ const s = String(name||''); return /ถอน.*ออม|ออม.*ถอน|ถอนออม|ถอนเงินออม|withdraw.*(save|saving)|saving.*withdraw/i.test(s); }
+/** ====== CATEGORIES (with cache) ====== */
+function _isWithdrawIncomeName(name){ const s=String(name||''); return /ถอน.*ออม|ออม.*ถอน|ถอนออม|ถอนเงินออม|withdraw.*(save|saving)|saving.*withdraw/i.test(s); }
 async function loadCategoriesAll(){
-  for (const t of ['income','expense','saving']){
-    const r = await api('categories/list', { type:t }, true);
-    cats[t] = r.ok ? (r.items||[]) : [];
-  }
-  withdrawIncomeIds = new Set((cats.income||[]).filter(c=> _isWithdrawIncomeName(c.name_th)).map(c=> c.category_id));
+  const ck = _k('cats');
+  const cached = getCache(ck);
+  if (cached){ cats = cached; withdrawIncomeIds = new Set((cats.income||[]).filter(c=>_isWithdrawIncomeName(c.name_th)).map(c=>c.category_id)); }
+  const [ri,re,rs] = await Promise.all([
+    api('categories/list', {type:'income'},  true),
+    api('categories/list', {type:'expense'}, true),
+    api('categories/list', {type:'saving'},  true)
+  ]);
+  const fresh = {
+    income: ri.ok ? (ri.items||[]) : (cats.income||[]),
+    expense:re.ok ? (re.items||[]) : (cats.expense||[]),
+    saving: rs.ok ? (rs.items||[]) : (cats.saving||[])
+  };
+  cats = fresh;
+  withdrawIncomeIds = new Set((cats.income||[]).filter(c=>_isWithdrawIncomeName(c.name_th)).map(c=>c.category_id));
+  setCache(ck, cats, TTL.cats);
 }
 
-/** ====== BUDGET/GOAL SETTINGS ====== */
-function monthKeyFromRange(){ const f=$('#fFrom').value; if(!f) return todayISO().slice(0,7); return f.slice(0,7); }
+/** ====== BUDGET/GOAL (cache per month) ====== */
+function monthKeyFromRange(){ const f=$('#fFrom').value; return (f?f:todayISO()).slice(0,7); }
 async function loadMonthSettings(mk){
+  const ck = _k('month', mk);
+  const cached = getCache(ck);
+  if (cached){
+    monthSettingsCache[mk] = cached;
+    $('#budgetThisMonth').value = cached.budget || '';
+    $('#savingGoalThisMonth').value = cached.goal || '';
+  }
   const r = await api('budgets/list', { month: mk }, true);
   let budget=0, goal=0;
   if (r.ok){
@@ -271,26 +279,24 @@ async function loadMonthSettings(mk){
       if (cid === BUD_CAT_SAVE_GOAL) goal   = Number(it.limit_amount||0);
     }
   }
-  monthSettingsCache[mk] = { budget, goal };
+  const fresh = { budget, goal };
+  monthSettingsCache[mk] = fresh;
   $('#budgetThisMonth').value = budget ? String(budget) : '';
   $('#savingGoalThisMonth').value = goal ? String(goal) : '';
-  return { budget, goal };
+  setCache(ck, fresh, TTL.month);
 }
 async function saveMonthSettings(mk, budget, goal){
   const [r1, r2] = await Promise.all([
-    api('budgets/upsert', { month: mk, category_id: BUD_CAT_OVERALL,   limit_amount:Number(budget||0) }, true, true),
-    api('budgets/upsert', { month: mk, category_id: BUD_CAT_SAVE_GOAL, limit_amount:Number(goal||0)   }, true, true),
+    api('budgets/upsert', { month: mk, category_id: BUD_CAT_OVERALL,   limit_amount:Number(budget||0) }, true),
+    api('budgets/upsert', { month: mk, category_id: BUD_CAT_SAVE_GOAL, limit_amount:Number(goal||0)   }, true),
   ]);
-  if (r1.ok && r2.ok){ monthSettingsCache[mk] = { budget:Number(budget||0), goal:Number(goal||0) }; toast('บันทึกงบ/เป้าออมสำเร็จ'); return true; }
+  if (r1.ok && r2.ok){ const v={ budget:Number(budget||0), goal:Number(goal||0) }; monthSettingsCache[mk]=v; setCache(_k('month', mk), v, TTL.month); toast('บันทึกงบ/เป้าออมสำเร็จ'); return true; }
   toast('บันทึกงบ/เป้าออมไม่สำเร็จ', false); return false;
 }
 
 /** ====== RANGE SHORTCUTS ====== */
-function setRange(from, to){ $('#fFrom').value = from; $('#fTo').value = to; updateRangeUI(); refreshDash(); }
-function setRangeDaysBack(days){
-  const now=new Date(); const from=toYMD(new Date(now.getFullYear(), now.getMonth(), now.getDate()-days+1)); const to=toYMD(now);
-  setRange(from, to);
-}
+function setRange(from, to){ $('#fFrom').value = from; $('#fTo').value = to; updateRangeUI(); refreshDash(true); }
+function setRangeDaysBack(days){ const now=new Date(); const from=toYMD(new Date(now.getFullYear(),now.getMonth(),now.getDate()-days+1)); setRange(from, toYMD(now)); }
 function bindRangeButtons(){
   const mb = monthBounds(new Date());
   $('#btnToday')?.addEventListener('click', ()=>{ const d=todayISO(); setRange(d,d); });
@@ -298,7 +304,7 @@ function bindRangeButtons(){
   $('#btn30')?.addEventListener('click', ()=> setRangeDaysBack(30));
   $('#btnMonth')?.addEventListener('click', ()=> setRange(mb.start, mb.end));
   $('#btnYear')?.addEventListener('click', ()=>{ const y=new Date().getFullYear(); setRange(`${y}-01-01`, `${y}-12-31`); });
-  $('#btnRefresh')?.addEventListener('click', ()=> refreshDash());
+  $('#btnRefresh')?.addEventListener('click', ()=> refreshDash(true));
 }
 function updateRangeUI(){
   const f=$('#fFrom').value, t=$('#fTo').value;
@@ -312,168 +318,112 @@ function updateRangeUI(){
     month: (f===mb.start && t===mb.end),
     year: (f===`${y}-01-01` && t===`${y}-12-31`),
   };
-  // toggle segmented buttons
   $('#btnToday')?.classList.toggle('active', flags.today);
   $('#btn7')?.classList.toggle('active', flags.d7);
   $('#btn30')?.classList.toggle('active', flags.d30);
   $('#btnMonth')?.classList.toggle('active', flags.month);
   $('#btnYear')?.classList.toggle('active', flags.year);
 
-  let txt='กำหนดเอง';
-  if (flags.today) txt='วันนี้'; else if (flags.d7) txt='7 วันล่าสุด'; else if (flags.d30) txt='30 วันล่าสุด'; else if (flags.month) txt='เดือนนี้'; else if (flags.year) txt='ปีนี้';
+  let txt='กำหนดเอง'; if (flags.today) txt='วันนี้'; else if (flags.d7) txt='7 วันล่าสุด'; else if (flags.d30) txt='30 วันล่าสุด'; else if (flags.month) txt='เดือนนี้'; else if (flags.year) txt='ปีนี้';
   $('#rangeBadge').textContent = txt;
 }
 
-/** ====== DASH LOGIC (เพิ่ม lazy charts + guard) ====== */
+/** ====== Dash core (SWR + downsample + cancel) ====== */
 let chartExp=null, chartFlow=null, chartSavCum=null, chartDebtTS=null, chartPI=null;
-const commonLineOpts = {
-  responsive:true, maintainAspectRatio:false, animation:false,
-  elements:{ point:{ radius:0 } }, parsing:false, normalized:true,
-  scales:{ y:{ beginAtZero:true } }
-};
-function setKpiLoading(on){
-  ['sumIncome','sumExpense','sumSaving','sumNet','sumDebt'].forEach(id=>{
-    const el=$('#'+id); if (on){ el.classList.add('skeleton'); el.textContent=''; } else { el.classList.remove('skeleton'); }
-  });
-}
+function setKpiLoading(on){ ['sumIncome','sumExpense','sumSaving','sumNet','sumDebt'].forEach(id=>{ const el=$('#'+id); if (on){ el.classList.add('skeleton'); el.textContent=''; } else el.classList.remove('skeleton'); }); }
 function colorizeNetCard(netVal){ $('#netCard').style.border = netVal>=0 ? '1px solid rgba(0,200,150,.35)' : '1px solid rgba(255,77,79,.35)'; }
+function _rangeKey(){ return _k('tx', $('#fFrom').value, $('#fTo').value); }
 
-let _dashInflight = false; // guard กันโหลดซ้ำ
-let _needDraw = new Set(); // เก็บ id canvas ที่รอวาด
-const _drawers = {
-  chartExp:   ()=> { const mapCat = _mapCat(); drawExpByCat(lastItems, mapCat); },
-  chartFlow:  ()=> drawFlow(lastItems),
-  chartSavCum:()=> drawSavingCum(lastItems),
-  chartDebtTS:()=> { const {from,to}=_currRange(); drawDebtNetTotalOverTime(from,to); },
-  chartPI:    ()=> { const {from,to}=_currRange(); drawPrincipalInterestMonthly(from,to); },
-};
-function _mapCat(){
-  return Object.fromEntries((cats.expense.concat(cats.income).concat(cats.saving)).map(c=> [c.category_id, c.name_th]));
-}
-function _currRange(){ return { from: $('#fFrom').value, to: $('#fTo').value }; }
-
-// Lazy render: IntersectionObserver
-let _io;
-function setupLazyObserver(){
-  if (_io) return;
-  _io = new IntersectionObserver((entries)=>{
-    entries.forEach(e=>{
-      const id = e.target.id;
-      if (e.isIntersecting && _needDraw.has(id)){
-        _needDraw.delete(id);
-        // คิววาดชาร์ตใน idle เพื่อไม่บล็อก UI
-        const go = ()=> _drawers[id]?.();
-        if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 800 });
-        else setTimeout(go, 0);
-      }
-    });
-  },{ root:null, threshold:.15 });
-
-  ['chartExp','chartFlow','chartSavCum','chartDebtTS','chartPI'].forEach(id=>{
-    const el = document.getElementById(id);
-    if (el){ _io.observe(el); }
-  });
+function downsample(xs, ys, maxPts=180){
+  if (xs.length<=maxPts) return { xs, ys };
+  const step = Math.ceil(xs.length/maxPts);
+  const xs2=[], ys2=[];
+  for (let i=0;i<xs.length;i+=step){ xs2.push(xs[i]); ys2.push(ys[i]); }
+  return { xs: xs2, ys: ys2 };
 }
 
-async function refreshDash(silent){
-  if (_dashInflight) return;
-  if (!token){ if(!silent) toast('ยังไม่ได้รับสิทธิ์เข้าใช้งาน', false); return; }
-
-  _dashInflight = true;
-  setKpiLoading(true);
-
-  if (!cats.expense.length && !cats.income.length && !cats.saving.length){ await loadCategoriesAll(); }
-
-  const mk = monthKeyFromRange(); await loadMonthSettings(mk).catch(()=>{});
-  const { from, to } = _currRange();
-
-  // ดึงข้อมูลหลัก (ไม่ใช้ overlay เพื่อลดความหน่วง)
-  const [rTx, rDebtSum] = await Promise.all([
-    api('transactions/list', { from, to, type:'all' }, true, false),
-    api('debts/summary', {}, true, false)
-  ]);
-
-  if (!rTx.ok){
-    setKpiLoading(false);
-    if(!silent) toast('โหลดรายการไม่สำเร็จ', false);
-    _dashInflight = false;
-    return;
-  }
-
-  lastItems = (rTx.items||[]).map(x=> ({...x, amount:+x.amount}));
-
-  // 1) คำนวณ KPI ให้แสดงทันที
+function showFromItems(items, rDebtTotal=0){
+  lastItems = items.map(x=> ({...x, amount:+x.amount}));
   const inc = sum(lastItems, x=> x.type==='income'? x.amount:0);
   const exp = sum(lastItems, x=> x.type==='expense'? x.amount:0);
   const savDep = sum(lastItems, x=> x.type==='saving'? x.amount:0);
   const savWd  = sum(lastItems, x=> x.type==='income' && withdrawIncomeIds.has(x.category_id) ? x.amount : 0);
   const savNet = Math.max(0, savDep - savWd);
   const net    = inc - exp - savDep;
-
   $('#sumIncome').textContent = fmt(inc);
   $('#sumExpense').textContent = fmt(exp);
   $('#sumSaving').textContent  = fmt(savNet);
   $('#sumNet').textContent     = fmt(net);
-  $('#sumDebt').textContent    = rDebtSum.ok ? fmt(Number(rDebtSum.totals?.total||0)) : '—';
+  $('#sumDebt').textContent    = fmt(rDebtTotal);
   colorizeNetCard(net);
-  setKpiLoading(false);
-
-  // 2) อัปเดตงบ/เป้าออม
-  await updateBudgetUI(exp, savNet, mk);
-
-  // 3) เตรียมคิววาดกราฟ (lazy + idle)
-  _needDraw = new Set(['chartExp','chartFlow','chartSavCum','chartDebtTS','chartPI']);
-  setupLazyObserver();
-
-  // ถ้าบาง canvas มองเห็นอยู่แล้ว ให้ trigger วาดเลย
-  ['chartExp','chartFlow','chartSavCum','chartDebtTS','chartPI'].forEach(id=>{
-    const el = document.getElementById(id);
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const vh = (window.innerHeight||0);
-    if (rect.top < vh && rect.bottom > 0){
-      // ใน viewport แล้ว
-      _needDraw.add(id); // ให้แน่ใจว่าอยู่ในชุด
-      _io && _io.observe(el); // ensure observe
-    }
-  });
-
-  _dashInflight = false;
+  updateBudgetUI(exp, savNet, monthKeyFromRange());
+  // redraw charts quickly
+  const mapCat = Object.fromEntries((cats.expense.concat(cats.income).concat(cats.saving)).map(c=> [c.category_id, c.name_th]));
+  drawExpByCat(lastItems, mapCat);
+  drawFlow(lastItems);
+  drawSavingCum(lastItems);
 }
 
+async function refreshDash(isCancellable){
+  setKpiLoading(true);
+
+  // 1) SWR: ใช้ snapshot ถ้ามี
+  const ck = _rangeKey();
+  const snap = getCache(ck);
+  const debtC = getCache(_k('debtTotal'));
+  if (snap){ showFromItems(snap.items||[], Number(debtC||0)); setKpiLoading(false); }
+
+  // ensure deps fresh (async แต่ไม่บล็อก)
+  if (!cats.expense.length && !cats.income.length && !cats.saving.length){ loadCategoriesAll(); }
+  loadMonthSettings(monthKeyFromRange());
+
+  // 2) ดึงข้อมูลจริง (ยกเลิกได้เมื่อเปลี่ยนช่วง)
+  const from = $('#fFrom').value, to = $('#fTo').value;
+  const [rTx, rDebtSum] = await Promise.all([
+    api('transactions/list', { from, to, type:'all' }, true, !!isCancellable),
+    api('debts/summary', {}, true, !!isCancellable)
+  ]);
+  if (!rTx.ok){ if (!snap) setKpiLoading(false); return; }
+
+  const items = (rTx.items||[]);
+  const debtTotal = rDebtSum.ok ? Number(rDebtSum.totals?.total||0) : 0;
+  rDebtTotalCached = debtTotal;
+
+  // เก็บ snapshot ใหม่
+  setCache(ck, { items }, TTL.tx);
+  setCache(_k('debtTotal'), debtTotal, TTL.debt);
+
+  // แสดงผลจริง (ทับ snapshot)
+  showFromItems(items, debtTotal);
+  setKpiLoading(false);
+
+  // กราฟหนี้ (ยิงหลังสุด)
+  drawDebtNetTotalOverTime(from,to);
+  drawPrincipalInterestMonthly(from,to);
+}
+
+/** ====== Budget UI ====== */
 async function updateBudgetUI(expenseTotal, savingNet, mk){
   const cache = monthSettingsCache[mk] || { budget:0, goal:0 };
   const b = Number(cache.budget||0), g = Number(cache.goal||0);
-
   const pct = (!b || b<=0) ? 0 : Math.round((expenseTotal/b)*100);
   $('#budgetUsedPct').textContent = b>0 ? `${pct}%` : '—';
   $('#budgetBar').style.width = (b>0 ? Math.min(pct,100) : 0) + '%';
   $('#budgetBar').style.filter = (pct>=100)? 'saturate(1.5)' : (pct>=80? 'saturate(1.2)' : 'none');
-
-  let bTxt = 'รายจ่ายเดือนนี้: —';
-  if (b>0){
-    if (expenseTotal > b) bTxt = `รายจ่ายเดือนนี้: เกินมา ${fmt(expenseTotal - b)}`;
-    else                  bTxt = `รายจ่ายเดือนนี้: เหลืองบ ${fmt(b - expenseTotal)}`;
-  }
-  $('#budgetStatus').textContent = bTxt;
+  $('#budgetStatus').textContent = b>0 ? (expenseTotal>b?`รายจ่ายเดือนนี้: เกินมา ${fmt(expenseTotal-b)}`:`รายจ่ายเดือนนี้: เหลืองบ ${fmt(b-expenseTotal)}`) : 'รายจ่ายเดือนนี้: —';
 
   const pctSave = (!g || g<=0) ? 0 : Math.round((savingNet/g)*100);
   $('#savingGoalPct').textContent = g>0 ? `${pctSave}%` : '—';
   $('#savingBar').style.width = (g>0 ? Math.min(pctSave,100) : 0) + '%';
-  let sTxt='—';
-  if (g>0){
-    if (savingNet>=g) sTxt = `ถึงเป้าแล้ว (+${fmt(savingNet-g)})`;
-    else              sTxt = `ขาดอีก ${fmt(g - savingNet)}`;
-  }
+  let sTxt='—'; if (g>0){ sTxt = savingNet>=g ? `ถึงเป้าแล้ว (+${fmt(savingNet-g)})` : `ขาดอีก ${fmt(g-savingNet)}`; }
   $('#savingGoalStatus').textContent = sTxt;
 }
 
-/** ====== Charts ====== */
+/** ====== Charts (with downsample) ====== */
 function drawExpByCat(items, mapCat){
-  const panelNo = $('#noDataExp'); if (chartExp) chartExp.destroy();
-  const exps = items.filter(x=>x.type==='expense');
-  if (!exps.length){ panelNo.classList.remove('hide'); chartExp=null; return; }
-  panelNo.classList.add('hide');
+  if (chartExp) chartExp.destroy();
+  const exps = items.filter(x=>x.type==='expense'); const panelNo=$('#noDataExp');
+  if (!exps.length){ panelNo.classList.remove('hide'); return; } panelNo.classList.add('hide');
   const groupExp = groupBy(exps, x=> mapCat[x.category_id] || 'อื่น ๆ');
   const labels = Object.keys(groupExp);
   const data = labels.map(k=> sum(groupExp[k], x=> x.amount));
@@ -484,9 +434,8 @@ function drawExpByCat(items, mapCat){
   });
 }
 function drawFlow(items){
-  const panelNo = $('#noDataFlow'); if (chartFlow) chartFlow.destroy();
-  if (!items.length){ panelNo.classList.remove('hide'); chartFlow=null; return; }
-  panelNo.classList.add('hide');
+  if (chartFlow) chartFlow.destroy(); const panelNo=$('#noDataFlow');
+  if (!items.length){ panelNo.classList.remove('hide'); return; } panelNo.classList.add('hide');
   const g = groupBy(items, x=> x.date);
   const ds = Object.keys(g).sort();
   const income  = ds.map(d=> sum(g[d], x=> x.type==='income'?  x.amount:0));
@@ -494,120 +443,94 @@ function drawFlow(items){
   const savingD = ds.map(d=> sum(g[d], x=> x.type==='saving'?  x.amount:0));
   const netDaily = ds.map((_,i)=> income[i] - expense[i] - savingD[i]);
   const netCumulative = runningSum(netDaily);
+  let { xs, ys } = downsample(ds, netCumulative);
   chartFlow = new Chart($('#chartFlow'), {
     type:'line',
-    data:{ labels: ds,
+    data:{ labels: xs,
       datasets:[
-        { label:'รายรับ', data:income, borderColor:'#00c896', backgroundColor:'rgba(0,200,150,.15)', tension:.35, fill:false },
-        { label:'รายจ่าย', data:expense, borderColor:'#ff4d4f', backgroundColor:'rgba(255,77,79,.15)', tension:.35, fill:false },
-        { label:'คงเหลือสะสม', data:netCumulative, borderColor:'#6c8cff', backgroundColor:'rgba(108,140,255,.15)', tension:.35, fill:false }
-      ]
-    },
-    options: commonLineOpts
+        { label:'คงเหลือสะสม', data: ys, borderColor:'#6c8cff', backgroundColor:'rgba(108,140,255,.15)', tension:.35, fill:false },
+      ]},
+    options:{ responsive:true, maintainAspectRatio:false, animation:false, elements:{ point:{ radius:0 }}, parsing:false, normalized:true, scales:{ y:{ beginAtZero:true } } }
   });
 }
 function drawSavingCum(items){
-  const panelNo = $('#noDataSav'); if (chartSavCum) chartSavCum.destroy();
+  if (chartSavCum) chartSavCum.destroy(); const panelNo=$('#noDataSav');
   const byDateDep = groupBy(items.filter(x=>x.type==='saving'), x=> x.date);
   const byDateWdr = groupBy(items.filter(x=> x.type==='income' && withdrawIncomeIds.has(x.category_id)), x=> x.date);
   const dates = Array.from(new Set([...Object.keys(byDateDep), ...Object.keys(byDateWdr)])).sort();
-  if (!dates.length){ panelNo.classList.remove('hide'); chartSavCum=null; return; }
-  panelNo.classList.add('hide');
-  const netPerDay = dates.map(d=>{
-    const dep = sum(byDateDep[d]||[], x=> x.amount);
-    const wdr = sum(byDateWdr[d]||[], x=> x.amount);
-    return dep - wdr;
-  });
+  if (!dates.length){ panelNo.classList.remove('hide'); return; } panelNo.classList.add('hide');
+  const netPerDay = dates.map(d=> (sum(byDateDep[d]||[], x=> x.amount) - sum(byDateWdr[d]||[], x=> x.amount)));
   const cum = runningSum(netPerDay);
-  chartSavCum = new Chart($('#chartSavCum'), {
-    type:'line',
-    data:{ labels: dates, datasets:[{ label:'ออมสุทธิสะสม', data:cum, borderColor:'#2dd4bf', backgroundColor:'rgba(45,212,191,.15)', tension:.35, fill:false }] },
-    options: commonLineOpts
+  const ds = downsample(dates, cum);
+  chartSavCum = new Chart($('#chartSavCum'), { type:'line',
+    data:{ labels: ds.xs, datasets:[{ label:'ออมสุทธิสะสม', data:ds.ys, borderColor:'#2dd4bf', backgroundColor:'rgba(45,212,191,.15)', tension:.35, fill:false }] },
+    options:{ responsive:true, maintainAspectRatio:false, animation:false, elements:{ point:{ radius:0 }}, parsing:false, normalized:true, scales:{ y:{ beginAtZero:true }}}
   });
 }
-
-/** ====== Debt charts (ตามธุรกรรมจริง) ====== */
 async function drawDebtNetTotalOverTime(from, to){
-  const panelNo = $('#noDataDebtTS'); if (chartDebtTS) chartDebtTS.destroy();
-
-  const rActive = await api('debts/list', { include_closed:false }, true, false);
+  if (chartDebtTS) chartDebtTS.destroy();
+  const rActive = await api('debts/list', { include_closed:false }, true);
   const activeIds = new Set((rActive.ok ? (rActive.items||[]) : []).map(d => String(d.debt_id)));
-  if (!activeIds.size){ panelNo.classList.remove('hide'); chartDebtTS=null; return; }
-
-  const r = await api('debts/tx/list', { from, to }, true, false);
-  if (!r.ok){ panelNo.classList.remove('hide'); chartDebtTS=null; return; }
-  const txs = (r.items||[])
-    .filter(t => activeIds.has(String(t.debt_id||'')))
-    .map(t=>({ date:String(t.date||'').slice(0,10), type:String(t.type||''), amount:+(t.amount||0), principal_paid:+(t.principal_paid||0) }));
-
+  const panelNo=$('#noDataDebtTS'); if (!activeIds.size){ panelNo.classList.remove('hide'); return; }
+  const r = await api('debts/tx/list', { from, to }, true);
+  if (!r.ok){ panelNo.classList.remove('hide'); return; }
+  const txs = (r.items||[]).filter(t=> activeIds.has(String(t.debt_id||'')))
+              .map(t=>({ date:String(t.date||'').slice(0,10), type:String(t.type||''), amount:+(t.amount||0), principal_paid:+(t.principal_paid||0) }));
   const dayDelta = {};
-  for (const t of txs){
-    if (!t.date) continue;
-    const delta = (t.type==='borrow') ? t.amount : (t.type==='repay') ? -t.principal_paid : 0;
-    dayDelta[t.date] = (dayDelta[t.date]||0) + delta;
-  }
-  const days = Object.keys(dayDelta).sort();
-  if (!days.length){ panelNo.classList.remove('hide'); chartDebtTS=null; return; }
-
-  let acc = 0;
-  const totals = days.map(d => (acc += dayDelta[d], acc));
-
+  for (const t of txs){ if (!t.date) continue; const d = (t.type==='borrow')? t.amount : (t.type==='repay')? -t.principal_paid : 0; dayDelta[t.date]=(dayDelta[t.date]||0)+d; }
+  const days = Object.keys(dayDelta).sort(); if (!days.length){ panelNo.classList.remove('hide'); return; }
+  let acc=0; const totals = days.map(d => (acc += dayDelta[d], acc));
+  const ds = downsample(days, totals);
   panelNo.classList.add('hide');
-  chartDebtTS = new Chart($('#chartDebtTS'), {
-    type:'line',
-    data:{ labels: days, datasets:[{ label:'ยอดหนี้คงเหลือรวมสุทธิ (ไม่คิดดอก, ตามธุรกรรมจริง)', data: totals, borderColor:'#6c8cff', backgroundColor:'rgba(108,140,255,.15)', tension:.35, fill:false }]},
-    options: commonLineOpts
+  chartDebtTS = new Chart($('#chartDebtTS'), { type:'line',
+    data:{ labels: ds.xs, datasets:[{ label:'ยอดหนี้คงเหลือรวม (ไม่คิดดอก)', data: ds.ys, borderColor:'#6c8cff', backgroundColor:'rgba(108,140,255,.15)', tension:.35, fill:false }] },
+    options:{ responsive:true, maintainAspectRatio:false, animation:false, elements:{ point:{ radius:0 }}, parsing:false, normalized:true, scales:{ y:{ beginAtZero:true } } }
   });
 }
-
 async function drawPrincipalInterestMonthly(from, to){
-  const panelNo = $('#noDataPI'); if (chartPI) chartPI.destroy();
-  const r = await api('debts/tx/list', { from, to }, true, false);
-  if (!r.ok || !(r.items||[]).length){ panelNo.classList.remove('hide'); chartPI=null; return; }
+  if (chartPI) chartPI.destroy();
+  const r = await api('debts/tx/list', { from, to }, true);
+  const panelNo=$('#noDataPI'); if (!r.ok || !(r.items||[]).length){ panelNo.classList.remove('hide'); return; }
   panelNo.classList.add('hide');
   const g = {};
-  for (const x of r.items){
-    if (String(x.type)!=='repay') continue;
-    const ym = String(x.date||'').slice(0,7);
-    (g[ym] ||= { prin:0, intr:0 });
-    g[ym].prin += Number(x.principal_paid||0);
-    g[ym].intr += Number(x.interest_paid||0);
-  }
-  const labels = Object.keys(g).sort(); if (!labels.length){ panelNo.classList.remove('hide'); chartPI=null; return; }
-  const prin = labels.map(m=> g[m].prin);
-  const intr = labels.map(m=> g[m].intr);
+  for (const x of r.items){ if (String(x.type)!=='repay') continue; const ym=String(x.date||'').slice(0,7); (g[ym] ||= { prin:0, intr:0 }); g[ym].prin += Number(x.principal_paid||0); g[ym].intr += Number(x.interest_paid||0); }
+  const labels = Object.keys(g).sort(); const prin = labels.map(m=> g[m].prin); const intr = labels.map(m=> g[m].intr);
   chartPI = new Chart($('#chartPI'), { type:'line',
     data:{ labels, datasets:[
       { label:'จ่ายต้น (บาท)', data:prin, borderColor:'#00c896', backgroundColor:'rgba(0,200,150,.15)', tension:.35, fill:false },
       { label:'จ่ายดอก (บาท)', data:intr, borderColor:'#ffb020', backgroundColor:'rgba(255,176,32,.15)', tension:.35, fill:false },
     ]},
-    options: commonLineOpts
+    options:{ responsive:true, maintainAspectRatio:false, animation:false, elements:{ point:{ radius:0 }}, parsing:false, normalized:true, scales:{ y:{ beginAtZero:true } } }
   });
 }
 
 /** ====== EVENTS ====== */
-$('#fFrom').addEventListener('change', ()=>{ updateRangeUI(); refreshDash(); });
-$('#fTo').addEventListener('change', ()=>{ updateRangeUI(); refreshDash(); });
-$('#btnSaveBudget').addEventListener('click', async ()=>{
-  const mk = monthKeyFromRange();
-  const ok = await saveMonthSettings(mk, $('#budgetThisMonth').value, $('#savingGoalThisMonth').value);
-  if (ok) refreshDash(true);
-});
+$('#fFrom').addEventListener('change', ()=>{ updateRangeUI(); refreshDash(true); });
+$('#fTo').addEventListener('change', ()=>{ updateRangeUI(); refreshDash(true); });
+$('#btnSaveBudget').addEventListener('click', async ()=>{ const mk=monthKeyFromRange(); if (await saveMonthSettings(mk, $('#budgetThisMonth').value, $('#savingGoalThisMonth').value)) refreshDash(true); });
 
 /** ====== INIT ====== */
 (async function init(){
-  // default range = เดือนนี้
   const mb = monthBounds(new Date()); $('#fFrom').value = mb.start; $('#fTo').value = mb.end; updateRangeUI();
   bindRangeButtons();
 
-  showOverlay(true);
-  let ok = false;
-  try{ ok = await ensureTokenViaLIFF(); }catch(e){ console.error(e); toast('เริ่มต้นผ่าน LIFF ไม่สำเร็จ', false); }
+  // ใส่ชื่อจากแคชก่อน
+  if (displayName) $('#who').textContent = displayName;
+
+  // โหลด cats/budget จากแคชก่อนเพื่อให้ KPI/กราฟคำนวณได้
+  const ckCats = getCache(_k('cats')); if (ckCats){ cats=ckCats; withdrawIncomeIds = new Set((cats.income||[]).filter(c=>_isWithdrawIncomeName(c.name_th)).map(c=>c.category_id)); }
+  const mk = monthKeyFromRange(); const ckMonth=getCache(_k('month',mk)); if (ckMonth){ monthSettingsCache[mk]=ckMonth; $('#budgetThisMonth').value=ckMonth.budget||''; $('#savingGoalThisMonth').value=ckMonth.goal||''; }
+
+  // แสดงหน้าเร็วๆ ด้วย snapshot
+  refreshDash(true);
+
+  // แล้วค่อย ensure token + refresh ทับ
+  const ok = await ensureToken();
   if (ok){
     await loadCategoriesAll();
-    await refreshDash(true);
+    await loadMonthSettings(mk);
+    refreshDash(true);
   }
-  showOverlay(false);
 })();
 </script>
 </body>
