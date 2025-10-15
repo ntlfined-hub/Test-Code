@@ -7,58 +7,76 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
+    *{ box-sizing:border-box }
     :root{
-      --bg:#1e1e1e; --panel:#242424; --line:#3a3a3a; --muted:#bfbfbf; --text:#f1f1f1;
-      --primary:#00c896; --danger:#ff4d4f; --blue:#6c8cff; --cyan:#2dd4bf; --warn:#ffb020;
+      --bg:#1e1e1e; --bg2:#242424; --panel:#2a2a2a; --line:#3a3a3a; --muted:#bfbfbf; --text:#f1f1f1;
+      --primary:#ff2e80; --primary-2:#e91e63; --blue:#6c8cff; --green:#00c896; --danger:#ff4d4f; --warning:#ffb020; --cyan:#2dd4bf;
     }
-    *{ box-sizing:border-box } html,body{ height:100% }
-    body{ margin:0; padding:clamp(.75rem,2vw,1.25rem);
-      padding-bottom:calc(clamp(.75rem,2vw,1.25rem) + env(safe-area-inset-bottom,0px));
-      font-family:'Kanit',sans-serif; background:var(--bg); color:var(--text) }
-    .wrap{ width:min(1140px,100%); margin:auto; background:var(--panel); border:1px solid var(--line);
-      border-radius:20px; padding:clamp(1rem,2.2vw,1.5rem) }
-    h1{ margin:.25rem 0 1rem; font-size:clamp(1.25rem,4.5vw,1.8rem); color:var(--primary); text-align:center }
-    .head{ display:flex; align-items:center; gap:.75rem; margin-bottom:.75rem }
+    html,body{ height:100% }
+    body{
+      margin:0; padding:clamp(.75rem,2vw,2rem);
+      padding-bottom:calc(clamp(.75rem,2vw,2rem) + env(safe-area-inset-bottom,0px));
+      font-family:'Kanit',sans-serif; background:var(--bg); color:var(--text);
+    }
+
+    /* shell */
+    .container{ width:min(1140px,100%); margin:auto; background:var(--panel); border:1px solid var(--line);
+      border-radius:24px; padding:clamp(.9rem,2.5vw,2rem); box-shadow:0 12px 30px rgba(0,0,0,.5) }
+    h1{ margin:.25rem 0 1rem; font-size:clamp(1.25rem,4.5vw,2rem); color:var(--primary); text-align:center }
+    .head{ display:flex; align-items:center; gap:.75rem; margin-bottom:.5rem }
     .head .you{ margin-left:auto; color:#9fe9d4; font-weight:600 }
 
-    .row{ display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1rem }
-    .col{ flex:1 1 46%; min-width:230px; display:flex; flex-direction:column; gap:.35rem }
+    /* inputs / layout */
+    .row{ display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1rem; align-items:flex-start }
+    .col{ flex:1 1 46%; min-width:230px; display:flex; flex-direction:column; gap:.4rem }
     label{ color:var(--muted) }
-    input,select,button{ border-radius:12px; border:1px solid var(--line); background:#1d1d1d; color:#fff; min-height:44px; padding:.9rem 1rem; font-size:16px }
-    button{ background:var(--primary); border:none; font-weight:700; cursor:pointer }
+    input,select,button{
+      border-radius:12px; border:1px solid #555; background:#1e1e1e; color:#fff; min-height:44px; padding:1rem 1.1rem; font-size:16px
+    }
+    input[type=number]{ text-align:right; -moz-appearance:textfield }
+    input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+    button{ background:var(--primary); border:none; font-weight:700; cursor:pointer; transition:background .2s }
+    @media (hover:hover) and (pointer:fine){ button:hover{ background:var(--primary-2) } }
     button:disabled{ opacity:.6; cursor:not-allowed }
-    .btn-ghost{ background:#333 } .btn-blue{ background:var(--blue) } .btn-warn{ background:var(--warn); color:#222 }
+    .btn-blue{ background:var(--blue) }
 
-    .card{ background:#1f1f1f; border:1px solid var(--line); border-radius:16px; padding:1rem }
+    .card{ background:var(--bg2); border:1px solid var(--line); border-radius:18px; padding:1.25rem }
     .muted{ color:var(--muted) }
-    .hide{ display:none }
-
-    .chips{ display:flex; gap:.5rem; flex-wrap:wrap }
-    .chip{ padding:.5rem .8rem; border-radius:999px; background:#2a2a2a; border:1px solid var(--line); cursor:pointer; user-select:none }
-    .chip.active{ background:var(--blue) }
-
-    .kpi{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem }
-    .kpi .card{ display:flex; flex-direction:column; gap:.35rem; min-height:92px }
     .right{ text-align:right }
 
+    /* segmented range buttons + badge */
+    .segbtn{ padding:.8rem 1.1rem; border-radius:12px; border:1px solid #444; background:#1f1f1f; color:#ddd; cursor:pointer; min-height:44px }
+    .segbtn.active{ background:var(--primary); border-color:var(--primary); color:#fff; font-weight:700 }
+    .badge{ padding:.25rem .5rem; border-radius:999px; font-size:.85rem }
+    .badge-debt{ background:rgba(108,140,255,.16); color:#c8d2ff; border:1px solid rgba(108,140,255,.35) }
+
+    /* KPI */
+    .kpi{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin-bottom:1rem }
+    .kpi .card{ display:flex; flex-direction:column; gap:.35rem; min-height:92px }
+
+    /* bars + inline status */
+    .inline-status{ display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; margin:.25rem 0 .5rem }
+    .inline-status .sep{ opacity:.55 }
     .bar-track{ height:10px; background:#3a3a3a; border-radius:999px; overflow:hidden }
     .bar-fill{ height:100%; width:0% }
     #budgetBar{ background:linear-gradient(90deg,#6c8cff,#ffb020,#ff4d4f) }
     #savingBar{ background:linear-gradient(90deg,#2dd4bf,#00c896) }
 
+    /* charts */
     .grid2{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:1rem }
     .chart-wrap{ height:260px; width:100% } .chart-wrap canvas{ width:100% !important; height:100% !important; display:block }
+    @media(max-width:980px){ .chart-wrap{ height:220px } }
+    @media(max-width:768px){ .chart-wrap{ height:200px } .col{ flex:1 1 100% } }
 
-    #toast{ position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%);
-      background:#333; color:#fff; padding:.6rem .9rem; border-radius:10px; opacity:0; transition:.3s; pointer-events:none; z-index:60 }
-
-    /* Overlay + spinner */
-    #overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.35); backdrop-filter:blur(2px); z-index:99; transition:.2s }
+    /* toast + overlay + skeleton */
+    #toast{ position:fixed; left:50%; bottom:calc(22px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%);
+      background:#333; color:#fff; padding:.75rem 1.2rem; border-radius:12px; opacity:0; transition:.35s; pointer-events:none; z-index:100 }
+    .hide{ display:none }
+    #overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.45); backdrop-filter:blur(2px); z-index:99; transition:.2s }
     #overlay.hide{ opacity:0; pointer-events:none }
-    .spinner{ width:48px; height:48px; border-radius:50%; border:5px solid #3a3a3a; border-top-color:#fff; animation:spin 1s linear infinite }
+    .spinner{ width:58px; height:58px; border-radius:50%; border:6px solid rgba(255,255,255,.35); border-top-color:#fff; animation:spin 1s linear infinite }
     @keyframes spin{ to{ transform:rotate(360deg) } }
-
-    .skeleton{ position:relative; overflow:hidden; background:#2b2b2b; border-radius:8px; min-height:28px }
+    .skeleton{ position:relative; overflow:hidden; background:#2b2b2b; border-radius:8px; min-height:20px }
     .skeleton::after{ content:""; position:absolute; inset:0; transform:translateX(-100%); background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent); animation:skeleton 1.2s infinite }
   </style>
 
@@ -66,28 +84,28 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
-  <div class="wrap">
+  <div class="container">
     <div class="head">
-      <h1 style="margin:0">สรุปภาพรวม</h1>
+      <h1 style="margin:0">FIN-JOD · สรุปภาพรวม</h1>
       <div class="you" id="who"></div>
     </div>
 
-    <!-- ช่วงวันที่ + ปุ่มลัด -->
+    <!-- ช่วงวันที่ + ปุ่มลัดแบบ segmented -->
     <div class="card" style="margin-bottom:1rem">
       <div class="row">
         <div class="col"><label for="fFrom">จาก</label><input id="fFrom" type="date"></div>
         <div class="col"><label for="fTo">ถึง</label><input id="fTo" type="date"></div>
         <div class="col">
           <label>&nbsp;</label>
-          <div class="chips">
-            <div class="chip" data-range="today">วันนี้</div>
-            <div class="chip" data-range="7">7 วัน</div>
-            <div class="chip" data-range="30">30 วัน</div>
-            <div class="chip" data-range="month">เดือนนี้</div>
-            <div class="chip" data-range="year">ปีนี้</div>
+          <div class="row" style="gap:.5rem; margin:0">
+            <button class="segbtn" id="btnToday">วันนี้</button>
+            <button class="segbtn" id="btn7">7 วันล่าสุด</button>
+            <button class="segbtn" id="btn30">30 วันล่าสุด</button>
+            <button class="segbtn" id="btnMonth">เดือนนี้</button>
+            <button class="segbtn" id="btnYear">ปีนี้</button>
             <button id="btnRefresh" class="btn-blue" style="margin-left:auto">รีเฟรช</button>
           </div>
-          <div class="muted" style="margin-top:.4rem">กำลังดู: <b id="rangeBadge">กำหนดเอง</b></div>
+          <div style="margin-top:.5rem"><span class="badge badge-debt">กำลังดู: <span id="rangeBadge">กำหนดเอง</span></span></div>
         </div>
       </div>
     </div>
@@ -104,41 +122,40 @@
           <input id="savingGoalThisMonth" type="number" step="0.01" placeholder="เช่น 1500">
         </div>
         <div class="col" style="align-self:flex-end">
-          <button id="btnSaveBudget" class="btn-warn">บันทึกงบ/เป้าออม</button>
+          <button id="btnSaveBudget" class="btn-blue">บันทึกงบ/เป้าออม</button>
         </div>
       </div>
-      <div class="row" style="margin-top:.25rem">
-        <div class="col" style="min-width:260px">
-          <div class="muted">ใช้ไป: <b id="budgetUsedPct">—</b></div>
-          <div class="bar-track"><div id="budgetBar" class="bar-fill"></div></div>
-          <div class="muted" id="budgetStatus" style="margin-top:.25rem">รายจ่ายเดือนนี้: —</div>
-        </div>
-        <div class="col" style="min-width:260px">
-          <div class="muted">ออมแล้ว: <b id="savingGoalPct">—</b></div>
-          <div class="bar-track"><div id="savingBar" class="bar-fill"></div></div>
-          <div class="muted" style="margin-top:.25rem">สถานะออมเดือนนี้: <b id="savingGoalStatus">—</b></div>
-        </div>
+
+      <!-- inline status + bars -->
+      <div class="inline-status muted">
+        <span>ใช้ไป: <b id="budgetUsedPct">—</b></span><span class="sep">|</span><span id="budgetStatus">รายจ่ายเดือนนี้: —</span>
       </div>
+      <div class="bar-track"><div id="budgetBar" class="bar-fill"></div></div>
+
+      <div class="inline-status muted" style="margin-top:.6rem">
+        <span>ออมแล้ว: <b id="savingGoalPct">—</b></span><span class="sep">|</span><span>สถานะออมเดือนนี้: <b id="savingGoalStatus">—</b></span>
+      </div>
+      <div class="bar-track"><div id="savingBar" class="bar-fill"></div></div>
     </div>
 
     <!-- KPI -->
     <div class="kpi" style="margin-bottom:1rem">
-      <div class="card"><div class="muted">รายรับรวม</div><div id="sumIncome"  style="font-size:1.6rem;font-weight:700" class="skeleton"></div></div>
-      <div class="card"><div class="muted">รายจ่ายรวม</div><div id="sumExpense" style="font-size:1.6rem;font-weight:700" class="skeleton"></div></div>
-      <div class="card"><div class="muted">ออมสุทธิ</div><div id="sumSaving" style="font-size:1.6rem;font-weight:700" class="skeleton"></div></div>
-      <div class="card" id="netCard"><div class="muted">คงเหลือ</div><div id="sumNet"     style="font-size:1.6rem;font-weight:700" class="skeleton"></div></div>
-      <div class="card"><div class="muted">หนี้คงเหลือรวม</div><div id="sumDebt"    style="font-size:1.6rem;font-weight:700" class="skeleton"></div></div>
+      <div class="card"><div class="muted">รายรับรวม (บาท)</div><div id="sumIncome"  style="font-size:1.6rem;font-weight:700" class="skeleton"></div></div>
+      <div class="card"><div class="muted">รายจ่ายรวม (บาท)</div><div id="sumExpense" style="font-size:1.6rem;font-weight:700" class="skeleton"></div></div>
+      <div class="card"><div class="muted">ออมเงินสุทธิ (บาท)</div><div id="sumSaving" style="font-size:1.6rem;font-weight:700" class="skeleton"></div></div>
+      <div class="card" id="netCard"><div class="muted">คงเหลือ (บาท)</div><div id="sumNet"     style="font-size:1.6rem;font-weight:700" class="skeleton"></div></div>
+      <div class="card"><div class="muted">ยอดหนี้คงเหลือรวม (บาท)</div><div id="sumDebt"    style="font-size:1.6rem;font-weight:700" class="skeleton"></div></div>
     </div>
 
     <!-- Charts -->
     <div class="grid2" style="margin-bottom:1rem">
       <div class="card">
-        <div class="muted" style="margin-bottom:.4rem">รายจ่ายตามหมวด</div>
+        <div class="muted" style="margin-bottom:.5rem">รายจ่ายตามหมวด</div>
         <div id="noDataExp" class="muted hide">ยังไม่มีข้อมูลในช่วงนี้</div>
         <div class="chart-wrap"><canvas id="chartExp"></canvas></div>
       </div>
       <div class="card">
-        <div class="muted" style="margin-bottom:.4rem">กระแสเงินสด (รายวัน & สะสม)</div>
+        <div class="muted" style="margin-bottom:.5rem">กระแสเงินสด (รายวัน & สะสม)</div>
         <div id="noDataFlow" class="muted hide">ยังไม่มีข้อมูลในช่วงนี้</div>
         <div class="chart-wrap"><canvas id="chartFlow"></canvas></div>
       </div>
@@ -146,19 +163,19 @@
 
     <div class="grid2" style="margin-bottom:1rem">
       <div class="card">
-        <div class="muted" style="margin-bottom:.4rem">หนี้คงเหลือรวม (ตามธุรกรรมจริง)</div>
+        <div class="muted" style="margin-bottom:.5rem">หนี้คงเหลือรวม (ตามธุรกรรมจริง)</div>
         <div id="noDataDebtTS" class="muted hide">ยังไม่มีข้อมูลหนี้ในช่วงนี้</div>
         <div class="chart-wrap"><canvas id="chartDebtTS"></canvas></div>
       </div>
       <div class="card">
-        <div class="muted" style="margin-bottom:.4rem">จ่ายต้น vs จ่ายดอก (รายเดือน)</div>
+        <div class="muted" style="margin-bottom:.5rem">จ่ายต้น vs จ่ายดอก (รายเดือน)</div>
         <div id="noDataPI" class="muted hide">ยังไม่มีธุรกรรมหนี้ในช่วงนี้</div>
         <div class="chart-wrap"><canvas id="chartPI"></canvas></div>
       </div>
     </div>
 
     <div class="card">
-      <div class="muted" style="margin-bottom:.4rem">ออมเงินสะสม (ฝาก − ถอน)</div>
+      <div class="muted" style="margin-bottom:.5rem">ออมเงินสะสม (ฝาก − ถอน)</div>
       <div id="noDataSav" class="muted hide">ยังไม่มีข้อมูลในช่วงนี้</div>
       <div class="chart-wrap"><canvas id="chartSavCum"></canvas></div>
     </div>
@@ -186,7 +203,7 @@ let lastItems = [];
 const $ = s => document.querySelector(s);
 const fmt = n => Number(n||0).toLocaleString('th-TH',{minimumFractionDigits:2, maximumFractionDigits:2});
 const esc = s => String(s||'').replace(/[&<>"]/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
-const toast = (msg, ok=true)=>{ const el=$('#toast'); el.textContent=msg; el.style.background = ok ? '#00c896' : '#ff4d4f'; el.style.opacity='1'; setTimeout(()=> el.style.opacity='0', 2200); };
+const toast = (msg, ok=true)=>{ const el=$('#toast'); el.textContent=msg; el.style.background = ok ? '#00c896' : '#ff4d4f'; el.style.opacity='1'; setTimeout(()=> el.style.opacity='0', 2400); };
 const showOverlay = (on)=> $('#overlay').classList.toggle('hide', !on);
 function toYMD(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function todayISO(){ return toYMD(new Date()); }
@@ -195,13 +212,16 @@ const sum = (arr, pick) => arr.reduce((s,x)=> s+(pick(x)||0), 0);
 const groupBy = (arr, key) => arr.reduce((a,x)=> ((a[key(x)] = a[key(x)]||[]).push(x),a),{});
 const runningSum = arr => { let s=0; return arr.map(v => (s+=v, s)); };
 
-/** ====== FETCH/API ====== */
-async function fetchJSON(url, options={}){
+/** ====== FETCH/API (เพิ่ม timeout) ====== */
+async function fetchJSON(url, options={}, timeoutMs=20000){
+  const controller = new AbortController();
+  const id = setTimeout(()=> controller.abort(), timeoutMs);
   try{
-    const res = await fetch(url, { ...options, headers:{'Content-Type':'text/plain;charset=utf-8', ...(options.headers||{})} });
+    const res = await fetch(url, { ...options, signal: controller.signal, headers:{'Content-Type':'text/plain;charset=utf-8', ...(options.headers||{})} });
     const text = await res.text();
     try { return JSON.parse(text); } catch{ return { ok:false, error:'NON_JSON', raw:text }; }
   }catch(e){ return { ok:false, error:'NETWORK', message:String(e&&e.message||e) }; }
+  finally{ clearTimeout(id); }
 }
 async function api(path, payload={}, useToken=true, withOverlay=false){
   const body = { path, payload }; if (useToken && token) body.token = token;
@@ -210,21 +230,18 @@ async function api(path, payload={}, useToken=true, withOverlay=false){
   finally{ if (withOverlay) showOverlay(false); }
 }
 
-/** ====== LIFF LOGIN (auto) ====== */
+/** ====== LIFF LOGIN ====== */
 async function ensureTokenViaLIFF(){
   await liff.init({ liffId: LIFF_ID });
   if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return false; }
-
   let prof; try{ prof = await liff.getProfile(); }catch{ toast('อ่านโปรไฟล์ LINE ไม่ได้', false); return false; }
   const r = await api('liff/link_or_login', { line_user_id: prof.userId, display_name: prof.displayName||'' }, false);
-  if (!r.ok){ toast(r.message || 'เกิดข้อผิดพลาด', false); return false; }
-
-  if (r.need_verification){
+  if (!r.ok){
     $('#who').textContent = prof.displayName || '';
-    toast('ยังไม่ผูกบัญชี เข้าหน้าอื่นเพื่อผูกบัญชีก่อน', false);
+    if (r.need_verification) toast('ยังไม่ผูกบัญชี เข้าหน้าอื่นเพื่อผูกบัญชีก่อน', false);
+    else toast(r.message || 'เกิดข้อผิดพลาด', false);
     return false;
   }
-
   token = r.token; displayName = r.display_name || prof.displayName || '';
   localStorage.setItem('fin_token', token);
   localStorage.setItem('fin_name', displayName);
@@ -264,10 +281,7 @@ async function saveMonthSettings(mk, budget, goal){
     api('budgets/upsert', { month: mk, category_id: BUD_CAT_OVERALL,   limit_amount:Number(budget||0) }, true, true),
     api('budgets/upsert', { month: mk, category_id: BUD_CAT_SAVE_GOAL, limit_amount:Number(goal||0)   }, true, true),
   ]);
-  if (r1.ok && r2.ok){
-    monthSettingsCache[mk] = { budget:Number(budget||0), goal:Number(goal||0) };
-    toast('บันทึกงบ/เป้าออมสำเร็จ'); return true;
-  }
+  if (r1.ok && r2.ok){ monthSettingsCache[mk] = { budget:Number(budget||0), goal:Number(goal||0) }; toast('บันทึกงบ/เป้าออมสำเร็จ'); return true; }
   toast('บันทึกงบ/เป้าออมไม่สำเร็จ', false); return false;
 }
 
@@ -276,6 +290,15 @@ function setRange(from, to){ $('#fFrom').value = from; $('#fTo').value = to; upd
 function setRangeDaysBack(days){
   const now=new Date(); const from=toYMD(new Date(now.getFullYear(), now.getMonth(), now.getDate()-days+1)); const to=toYMD(now);
   setRange(from, to);
+}
+function bindRangeButtons(){
+  const mb = monthBounds(new Date());
+  $('#btnToday')?.addEventListener('click', ()=>{ const d=todayISO(); setRange(d,d); });
+  $('#btn7')?.addEventListener('click', ()=> setRangeDaysBack(7));
+  $('#btn30')?.addEventListener('click', ()=> setRangeDaysBack(30));
+  $('#btnMonth')?.addEventListener('click', ()=> setRange(mb.start, mb.end));
+  $('#btnYear')?.addEventListener('click', ()=>{ const y=new Date().getFullYear(); setRange(`${y}-01-01`, `${y}-12-31`); });
+  $('#btnRefresh')?.addEventListener('click', ()=> refreshDash());
 }
 function updateRangeUI(){
   const f=$('#fFrom').value, t=$('#fTo').value;
@@ -289,18 +312,25 @@ function updateRangeUI(){
     month: (f===mb.start && t===mb.end),
     year: (f===`${y}-01-01` && t===`${y}-12-31`),
   };
-  document.querySelectorAll('.chip[data-range]').forEach(ch=>{
-    const key = ch.dataset.range;
-    const on = (key==='today' && flags.today) || (key==='7' && flags.d7) || (key==='30' && flags.d30) || (key==='month' && flags.month) || (key==='year' && flags.year);
-    ch.classList.toggle('active', !!on);
-  });
+  // toggle segmented buttons
+  $('#btnToday')?.classList.toggle('active', flags.today);
+  $('#btn7')?.classList.toggle('active', flags.d7);
+  $('#btn30')?.classList.toggle('active', flags.d30);
+  $('#btnMonth')?.classList.toggle('active', flags.month);
+  $('#btnYear')?.classList.toggle('active', flags.year);
+
   let txt='กำหนดเอง';
   if (flags.today) txt='วันนี้'; else if (flags.d7) txt='7 วันล่าสุด'; else if (flags.d30) txt='30 วันล่าสุด'; else if (flags.month) txt='เดือนนี้'; else if (flags.year) txt='ปีนี้';
   $('#rangeBadge').textContent = txt;
 }
 
-/** ====== DASH LOGIC ====== */
+/** ====== DASH LOGIC (เพิ่ม lazy charts + guard) ====== */
 let chartExp=null, chartFlow=null, chartSavCum=null, chartDebtTS=null, chartPI=null;
+const commonLineOpts = {
+  responsive:true, maintainAspectRatio:false, animation:false,
+  elements:{ point:{ radius:0 } }, parsing:false, normalized:true,
+  scales:{ y:{ beginAtZero:true } }
+};
 function setKpiLoading(on){
   ['sumIncome','sumExpense','sumSaving','sumNet','sumDebt'].forEach(id=>{
     const el=$('#'+id); if (on){ el.classList.add('skeleton'); el.textContent=''; } else { el.classList.remove('skeleton'); }
@@ -308,21 +338,71 @@ function setKpiLoading(on){
 }
 function colorizeNetCard(netVal){ $('#netCard').style.border = netVal>=0 ? '1px solid rgba(0,200,150,.35)' : '1px solid rgba(255,77,79,.35)'; }
 
+let _dashInflight = false; // guard กันโหลดซ้ำ
+let _needDraw = new Set(); // เก็บ id canvas ที่รอวาด
+const _drawers = {
+  chartExp:   ()=> { const mapCat = _mapCat(); drawExpByCat(lastItems, mapCat); },
+  chartFlow:  ()=> drawFlow(lastItems),
+  chartSavCum:()=> drawSavingCum(lastItems),
+  chartDebtTS:()=> { const {from,to}=_currRange(); drawDebtNetTotalOverTime(from,to); },
+  chartPI:    ()=> { const {from,to}=_currRange(); drawPrincipalInterestMonthly(from,to); },
+};
+function _mapCat(){
+  return Object.fromEntries((cats.expense.concat(cats.income).concat(cats.saving)).map(c=> [c.category_id, c.name_th]));
+}
+function _currRange(){ return { from: $('#fFrom').value, to: $('#fTo').value }; }
+
+// Lazy render: IntersectionObserver
+let _io;
+function setupLazyObserver(){
+  if (_io) return;
+  _io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      const id = e.target.id;
+      if (e.isIntersecting && _needDraw.has(id)){
+        _needDraw.delete(id);
+        // คิววาดชาร์ตใน idle เพื่อไม่บล็อก UI
+        const go = ()=> _drawers[id]?.();
+        if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 800 });
+        else setTimeout(go, 0);
+      }
+    });
+  },{ root:null, threshold:.15 });
+
+  ['chartExp','chartFlow','chartSavCum','chartDebtTS','chartPI'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el){ _io.observe(el); }
+  });
+}
+
 async function refreshDash(silent){
+  if (_dashInflight) return;
   if (!token){ if(!silent) toast('ยังไม่ได้รับสิทธิ์เข้าใช้งาน', false); return; }
+
+  _dashInflight = true;
   setKpiLoading(true);
+
   if (!cats.expense.length && !cats.income.length && !cats.saving.length){ await loadCategoriesAll(); }
 
   const mk = monthKeyFromRange(); await loadMonthSettings(mk).catch(()=>{});
-  const from = $('#fFrom').value, to = $('#fTo').value;
+  const { from, to } = _currRange();
 
+  // ดึงข้อมูลหลัก (ไม่ใช้ overlay เพื่อลดความหน่วง)
   const [rTx, rDebtSum] = await Promise.all([
-    api('transactions/list', { from, to, type:'all' }, true, true),
+    api('transactions/list', { from, to, type:'all' }, true, false),
     api('debts/summary', {}, true, false)
   ]);
-  if (!rTx.ok){ setKpiLoading(false); if(!silent) toast('โหลดรายการไม่สำเร็จ', false); return; }
+
+  if (!rTx.ok){
+    setKpiLoading(false);
+    if(!silent) toast('โหลดรายการไม่สำเร็จ', false);
+    _dashInflight = false;
+    return;
+  }
+
   lastItems = (rTx.items||[]).map(x=> ({...x, amount:+x.amount}));
 
+  // 1) คำนวณ KPI ให้แสดงทันที
   const inc = sum(lastItems, x=> x.type==='income'? x.amount:0);
   const exp = sum(lastItems, x=> x.type==='expense'? x.amount:0);
   const savDep = sum(lastItems, x=> x.type==='saving'? x.amount:0);
@@ -338,14 +418,27 @@ async function refreshDash(silent){
   colorizeNetCard(net);
   setKpiLoading(false);
 
+  // 2) อัปเดตงบ/เป้าออม
   await updateBudgetUI(exp, savNet, mk);
 
-  const mapCat = Object.fromEntries((cats.expense.concat(cats.income).concat(cats.saving)).map(c=> [c.category_id, c.name_th]));
-  drawExpByCat(lastItems, mapCat);
-  drawFlow(lastItems);
-  drawSavingCum(lastItems);
-  await drawDebtNetTotalOverTime(from, to);   // ⬅️ ใช้เวอร์ชันใหม่
-  await drawPrincipalInterestMonthly(from, to);
+  // 3) เตรียมคิววาดกราฟ (lazy + idle)
+  _needDraw = new Set(['chartExp','chartFlow','chartSavCum','chartDebtTS','chartPI']);
+  setupLazyObserver();
+
+  // ถ้าบาง canvas มองเห็นอยู่แล้ว ให้ trigger วาดเลย
+  ['chartExp','chartFlow','chartSavCum','chartDebtTS','chartPI'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const vh = (window.innerHeight||0);
+    if (rect.top < vh && rect.bottom > 0){
+      // ใน viewport แล้ว
+      _needDraw.add(id); // ให้แน่ใจว่าอยู่ในชุด
+      _io && _io.observe(el); // ensure observe
+    }
+  });
+
+  _dashInflight = false;
 }
 
 async function updateBudgetUI(expenseTotal, savingNet, mk){
@@ -355,6 +448,7 @@ async function updateBudgetUI(expenseTotal, savingNet, mk){
   const pct = (!b || b<=0) ? 0 : Math.round((expenseTotal/b)*100);
   $('#budgetUsedPct').textContent = b>0 ? `${pct}%` : '—';
   $('#budgetBar').style.width = (b>0 ? Math.min(pct,100) : 0) + '%';
+  $('#budgetBar').style.filter = (pct>=100)? 'saturate(1.5)' : (pct>=80? 'saturate(1.2)' : 'none');
 
   let bTxt = 'รายจ่ายเดือนนี้: —';
   if (b>0){
@@ -374,7 +468,7 @@ async function updateBudgetUI(expenseTotal, savingNet, mk){
   $('#savingGoalStatus').textContent = sTxt;
 }
 
-/** ====== Charts (รายจ่าย/กระแส/ออม) ====== */
+/** ====== Charts ====== */
 function drawExpByCat(items, mapCat){
   const panelNo = $('#noDataExp'); if (chartExp) chartExp.destroy();
   const exps = items.filter(x=>x.type==='expense');
@@ -409,7 +503,7 @@ function drawFlow(items){
         { label:'คงเหลือสะสม', data:netCumulative, borderColor:'#6c8cff', backgroundColor:'rgba(108,140,255,.15)', tension:.35, fill:false }
       ]
     },
-    options:{ responsive:true, maintainAspectRatio:false, animation:false, interaction:{ mode:'index', intersect:false }, scales:{ y:{ beginAtZero:true } } }
+    options: commonLineOpts
   });
 }
 function drawSavingCum(items){
@@ -428,57 +522,41 @@ function drawSavingCum(items){
   chartSavCum = new Chart($('#chartSavCum'), {
     type:'line',
     data:{ labels: dates, datasets:[{ label:'ออมสุทธิสะสม', data:cum, borderColor:'#2dd4bf', backgroundColor:'rgba(45,212,191,.15)', tension:.35, fill:false }] },
-    options:{ responsive:true, maintainAspectRatio:false, animation:false, scales:{ y:{ beginAtZero:true }}}
+    options: commonLineOpts
   });
 }
 
-/** ====== Debt charts (เวอร์ชันใหม่: ไม่คิดดอก, ไม่เติมวันที่ว่าง, เฉพาะหนี้ active) ====== */
+/** ====== Debt charts (ตามธุรกรรมจริง) ====== */
 async function drawDebtNetTotalOverTime(from, to){
   const panelNo = $('#noDataDebtTS'); if (chartDebtTS) chartDebtTS.destroy();
 
-  // 1) ดึงรายชื่อหนี้ที่ยัง active
   const rActive = await api('debts/list', { include_closed:false }, true, false);
   const activeIds = new Set((rActive.ok ? (rActive.items||[]) : []).map(d => String(d.debt_id)));
-
-  // ไม่มีหนี้ active เลย → ซ่อนกราฟ
   if (!activeIds.size){ panelNo.classList.remove('hide'); chartDebtTS=null; return; }
 
-  // 2) ดึงธุรกรรมหนี้ในช่วง แล้วกรองเฉพาะหนี้ active
   const r = await api('debts/tx/list', { from, to }, true, false);
   if (!r.ok){ panelNo.classList.remove('hide'); chartDebtTS=null; return; }
   const txs = (r.items||[])
     .filter(t => activeIds.has(String(t.debt_id||'')))
-    .map(t=>({
-      date:String(t.date||'').slice(0,10),
-      type:String(t.type||''),
-      amount:+(t.amount||0),
-      principal_paid:+(t.principal_paid||0)
-    }));
+    .map(t=>({ date:String(t.date||'').slice(0,10), type:String(t.type||''), amount:+(t.amount||0), principal_paid:+(t.principal_paid||0) }));
 
-  // 3) รวมต่อวันเฉพาะ "วันที่มีธุรกรรมจริง"
   const dayDelta = {};
   for (const t of txs){
     if (!t.date) continue;
-    const delta = (t.type==='borrow') ? t.amount
-               : (t.type==='repay')  ? -t.principal_paid
-               : 0;
+    const delta = (t.type==='borrow') ? t.amount : (t.type==='repay') ? -t.principal_paid : 0;
     dayDelta[t.date] = (dayDelta[t.date]||0) + delta;
   }
   const days = Object.keys(dayDelta).sort();
   if (!days.length){ panelNo.classList.remove('hide'); chartDebtTS=null; return; }
 
-  // 4) สร้างค่าคงเหลือสะสมตามวันที่มีรายการเท่านั้น
   let acc = 0;
   const totals = days.map(d => (acc += dayDelta[d], acc));
 
   panelNo.classList.add('hide');
   chartDebtTS = new Chart($('#chartDebtTS'), {
     type:'line',
-    data:{ labels: days, datasets:[{
-      label:'ยอดหนี้คงเหลือรวมสุทธิ (ไม่คิดดอก, ตามธุรกรรมจริง)',
-      data: totals, borderColor:'#6c8cff', backgroundColor:'rgba(108,140,255,.15)', tension:.35, fill:false
-    }]},
-    options:{ responsive:true, maintainAspectRatio:false, animation:false, scales:{ y:{ beginAtZero:true } } }
+    data:{ labels: days, datasets:[{ label:'ยอดหนี้คงเหลือรวมสุทธิ (ไม่คิดดอก, ตามธุรกรรมจริง)', data: totals, borderColor:'#6c8cff', backgroundColor:'rgba(108,140,255,.15)', tension:.35, fill:false }]},
+    options: commonLineOpts
   });
 }
 
@@ -503,24 +581,13 @@ async function drawPrincipalInterestMonthly(from, to){
       { label:'จ่ายต้น (บาท)', data:prin, borderColor:'#00c896', backgroundColor:'rgba(0,200,150,.15)', tension:.35, fill:false },
       { label:'จ่ายดอก (บาท)', data:intr, borderColor:'#ffb020', backgroundColor:'rgba(255,176,32,.15)', tension:.35, fill:false },
     ]},
-    options:{ responsive:true, maintainAspectRatio:false, animation:false, scales:{ y:{ beginAtZero:true } } }
+    options: commonLineOpts
   });
 }
 
 /** ====== EVENTS ====== */
-document.querySelectorAll('.chip[data-range]').forEach(ch=>{
-  ch.addEventListener('click', ()=>{
-    const k = ch.dataset.range;
-    if (k==='today'){ const d=todayISO(); setRange(d,d); }
-    if (k==='7') setRangeDaysBack(7);
-    if (k==='30') setRangeDaysBack(30);
-    if (k==='month'){ const mb=monthBounds(new Date()); setRange(mb.start, mb.end); }
-    if (k==='year'){ const y=new Date().getFullYear(); setRange(`${y}-01-01`, `${y}-12-31`); }
-  });
-});
 $('#fFrom').addEventListener('change', ()=>{ updateRangeUI(); refreshDash(); });
 $('#fTo').addEventListener('change', ()=>{ updateRangeUI(); refreshDash(); });
-$('#btnRefresh').addEventListener('click', ()=> refreshDash());
 $('#btnSaveBudget').addEventListener('click', async ()=>{
   const mk = monthKeyFromRange();
   const ok = await saveMonthSettings(mk, $('#budgetThisMonth').value, $('#savingGoalThisMonth').value);
@@ -529,7 +596,9 @@ $('#btnSaveBudget').addEventListener('click', async ()=>{
 
 /** ====== INIT ====== */
 (async function init(){
+  // default range = เดือนนี้
   const mb = monthBounds(new Date()); $('#fFrom').value = mb.start; $('#fTo').value = mb.end; updateRangeUI();
+  bindRangeButtons();
 
   showOverlay(true);
   let ok = false;
