@@ -55,7 +55,7 @@
     button{ background:var(--primary); border:none; font-weight:700; cursor:pointer; position:relative }
     button:disabled{ opacity:.65; cursor:not-allowed }
 
-    /* ปุ่มสถานะกำลังโหลด — วงกลมเล็กด้านขวาปุ่ม */
+    /* ปุ่มสถานะกำลังโหลด */
     button[aria-busy="true"]{ pointer-events:none }
     button[aria-busy="true"]::after{
       content:""; position:absolute; right:10px; top:50%; transform:translateY(-50%);
@@ -327,7 +327,7 @@ const loaded = { create:false, list:false };
 const THB = new Intl.NumberFormat('th-TH',{minimumFractionDigits:2, maximumFractionDigits:2});
 let recentItems = []; // ล่าสุด 5 รายการ
 const cacheTTL = { cats: 24*60*60*1000, debts: 10*60*1000 };
-let listDirty = false; // ✅ บันทึกสำเร็จในแท็บบันทึก -> ให้แท็บรายการรีเฟรชอัตโนมัติ
+let listDirty = false; // เมื่อบันทึกสำเร็จ -> ให้แท็บรายการรีเฟรชอัตโนมัติ
 
 /** ====== HELPERS ====== */
 const $  = s => document.querySelector(s);
@@ -384,7 +384,7 @@ async function ensureTokenViaLIFF(){
   try{ await liff.init({ liffId: LIFF_ID }); }catch{ toast('เริ่ม LIFF ไม่สำเร็จ', false); return false; }
   if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return false; }
 
-  let prof; try{ prof = await liff.getProfile(); }catch{ toast('อ่านโปรไฟล์ LINE ไม่ได้', false); return false; }
+  let prof; try{ prof = await liff.getProfile(); }catch{ toast('อ่านโปรไฟล์ LINE ไม่ได้', false); return; }
   const r = await api('liff/link_or_login', { line_user_id: prof.userId, display_name: prof.displayName||'' }, false);
   if (!r.ok){ toast(r.message || 'เกิดข้อผิดพลาด', false); return false; }
 
@@ -414,7 +414,13 @@ $('#btnLink')?.addEventListener('click', async (e)=>{
 /** ====== Categories / Debts (แคช + เร็วขึ้น) ====== */
 async function loadCategoriesAll(){
   const cache = cacheGet('fin_cats_v1');
-  if (cache){ cats = cache; populateCatSelect(); return; }
+  if (cache){
+    cats = cache;
+    // 🔧 FIX: ปลด disable ถ้าขึ้นจากแคช
+    $('#txCat').disabled = false;
+    populateCatSelect();
+    return;
+  }
   $('#txCat').disabled = true; $('#txCat').innerHTML = '<option>กำลังโหลด…</option>';
   const types=['income','expense','saving'];
   const [ri,re,rs]=await Promise.all(types.map(t=> api('categories/list',{type:t},true)));
@@ -464,6 +470,16 @@ function normalizeTypeBadge(x){
   if (x.type==='saving') return { cls:'badge-sav', text:'ออมเงิน' };
   return { cls:'badge-exp', text:'รายจ่าย' };
 }
+// 🔧 ฟังก์ชันแท็กธุรกรรมจาก API ให้รู้ว่าเป็นกู้/จ่ายหนี้ เพื่อให้ประเภทตรงกับแท็บรายการ
+function annotateForRecent(it){
+  const isDebt = !!(it.debt_tx_id || it.type==='debt' || (it.category_name||'').includes('หนี้'));
+  let _kind = null;
+  if (isDebt){
+    const flagRepay = String(it.sub_type||it.debt_type||'').includes('repay') || /จ่ายหนี้|ชำระหนี้/i.test(it.note||'');
+    _kind = flagRepay ? 'debt_repay' : 'debt_borrow';
+  }
+  return { ...it, _kind };
+}
 function renderRecent(){
   const tb = $('#recentBody'); tb.innerHTML='';
   if (!recentItems.length){ tb.innerHTML='<tr><td colspan="5" class="muted">ยังไม่มีรายการ</td></tr>'; return; }
@@ -488,7 +504,7 @@ async function loadRecentFromAPI(){
   const from=toYMD(d);
   const r = await api('transactions/list', { from, to, type:'all' }, true);
   if (!r.ok){ renderRecent(); return; }
-  const arr = (r.items||[]).map(it=>({ ...it, amount:+it.amount }));
+  const arr = (r.items||[]).map(it=>({ ...annotateForRecent(it), amount:+it.amount }));
   arr.sort((a,b)=> (String(b.date||'')+String(b.time||'')).localeCompare(String(a.date||'')+String(a.time||'')));
   recentItems = arr.slice(0,5);
   renderRecent();
@@ -523,7 +539,7 @@ async function saveTx(ev){
           toast('บันทึกจ่ายหนี้สำเร็จ');
           recentItems.unshift({ _kind:'debt_repay', date, amount, note, lender_name:(debtsCache.find(d=>String(d.debt_id)===String(debt_id))?.lender_name)||'' });
           recentItems = recentItems.slice(0,5); renderRecent();
-          listDirty = true; // ✅ แจ้งให้แท็บรายการรู้ว่ามีข้อมูลใหม่
+          listDirty = true;
           clearFormKeepDate(); $('#txAmount').focus();
         } else toast(r.message||'บันทึกไม่สำเร็จ', false);
         return;
@@ -535,7 +551,7 @@ async function saveTx(ev){
           toast('บันทึกกู้หนี้สำเร็จ');
           recentItems.unshift({ _kind:'debt_borrow', date, amount, note, lender_name:(debtsCache.find(d=>String(d.debt_id)===String(debt_id))?.lender_name)||'' });
           recentItems = recentItems.slice(0,5); renderRecent();
-          listDirty = true; // ✅
+          listDirty = true;
           clearFormKeepDate(); $('#txAmount').focus();
         } else toast(r.message||'บันทึกไม่สำเร็จ', false);
         return;
@@ -555,7 +571,7 @@ async function saveTx(ev){
       const catName = (cats[type]||[]).find(c=>String(c.category_id)===String(category_id))?.name_th || '';
       recentItems.unshift({ date, type, amount, note, cat_name:catName, category_id });
       recentItems = recentItems.slice(0,5); renderRecent();
-      listDirty = true; // ✅
+      listDirty = true;
       clearFormKeepDate(); $('#txAmount').focus();
     } else toast('บันทึกไม่สำเร็จ', false);
   }, 'กำลังบันทึก…');
@@ -607,15 +623,15 @@ async function refreshList(btn){
   renderTable(lastItems);
 }
 
-// ✅ ใส่ busy ที่ปุ่มแก้ไข ขณะยังโหลดข้อมูลก่อนเปิด modal
+// ปุ่มแก้ไข: แสดง busy ระหว่างโหลด modal
 document.addEventListener('click', (e)=>{
   const btn = e.target.closest('#tblBody button[data-act]');
   if (!btn) return;
   const id = btn.getAttribute('data-id');
   const act = btn.getAttribute('data-act');
   if (act==='edit'){
-    setBusy(btn, true, 'กำลังเปิด…');          // แสดงสัญลักษณ์กำลังโหลดบนปุ่มทันที
-    openEditById(id).finally(()=> setBusy(btn,false)); // เคลียร์เมื่อเสร็จ/ผิดพลาด
+    setBusy(btn, true, 'กำลังเปิด…');
+    openEditById(id).finally(()=> setBusy(btn,false));
   }
   if (act==='del')  confirmDelete(id, btn);
 });
@@ -789,7 +805,6 @@ function activateTab(tab){
       $('#fFrom').value = mb.start; $('#fTo').value = mb.end; updateRangeUI();
       refreshList().then(()=> loaded.list = true);
     } else if (listDirty){
-      // ✅ ถ้ามีบันทึกรายการใหม่ในแท็บบันทึก ให้รีเฟรชอัตโนมัติเมื่อสลับมาที่แท็บรายการ
       refreshList().finally(()=> { listDirty = false; });
     }
   }
