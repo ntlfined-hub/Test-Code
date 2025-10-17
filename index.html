@@ -46,7 +46,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c1.657 0 3-1.567 3-3.5S13.657 4 12 4 9 5.567 9 7.5 10.343 11 12 11zM19 21a7 7 0 00-14 0h14z"/>
           </svg>
         </div>
-        <h2 class="text-xl font-semibold">ใส่รหัสเพื่อเข้าใช้งาน V.2</h2>
+        <h2 class="text-xl font-semibold">ใส่รหัสเพื่อเข้าใช้งาน</h2>
         <p class="text-white/70 text-sm mt-1">ระบบจะปลดล็อกเมื่อกรอกรหัสถูกต้อง</p>
       </div>
       <label class="block text-sm font-medium mb-2">รหัสผ่าน</label>
@@ -87,7 +87,7 @@
       </div>
     </div>
 
-    <!-- ===== TAB 1: ฟอร์ม (คงเดิม) ===== -->
+    <!-- TAB 1 -->
     <section id="panel-1" class="tab-panel active">
       <div class="glass card p-6 mb-8">
         <form id="checkinForm" class="space-y-6">
@@ -374,7 +374,7 @@
           '<div>' +
             '<div class="font-medium">'+loc+' '+partSpan+'</div>' +
             '<div class="text-xs text-white/70">เพื่อน ('+(it.count||0)+'): '+names+'</div>' +
-          '</div>' +
+          </div>' +
           '<div class="flex gap-2">' +
             '<button type="button" class="mini-btn text-xs px-2 py-1" data-action="sugg" data-mode="both" data-loc="'+escapeHTML(loc)+'">ทั้งวัน</button>' +
             '<button type="button" class="mini-btn text-xs px-2 py-1" data-action="sugg" data-mode="am" data-loc="'+escapeHTML(loc)+'">AM</button>' +
@@ -525,7 +525,7 @@
       return ''+
         '<div class="row-card p-4">'+
           '<div class="flex items-center">'+
-            <div class="flex-1 min-w-0">'+
+            '<div class="flex-1 min-w-0">'+
               '<div class="font-semibold">'+formatThai(e.date)+'</div>'+detail+
             '</div>'+
             '<button type="button" class="ml-4 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 edit-btn" data-rowid="'+e.rowId+'" data-split="'+(e.split?'1':'0')+'" data-date="'+e.date+'" data-am="'+escapeHTML(e.am||'')+'" data-pm="'+escapeHTML(e.pm||'')+'" data-loc="'+escapeHTML(e.location||'')+'">แก้ไข</button>'+
@@ -555,7 +555,7 @@
       setTimeout(function(){ setBtnLoading(viewBtn,false,'ดูตาราง'); }, 400);
     });
 
-    // delegation: edit / delete / save (+ TOGGLE)  <-- BUGFIX: เพิ่ม toggle selectors
+    // delegation: edit / delete / save (+ toggle)
     var scheduleList = byId('scheduleList');
     if(scheduleList){
       scheduleList.addEventListener('click', function(ev){
