@@ -55,7 +55,6 @@
     button{ background:var(--primary); border:none; font-weight:700; cursor:pointer; position:relative }
     button:disabled{ opacity:.65; cursor:not-allowed }
 
-    /* ปุ่มสถานะกำลังโหลด */
     button[aria-busy="true"]{ pointer-events:none }
     button[aria-busy="true"]::after{
       content:""; position:absolute; right:10px; top:50%; transform:translateY(-50%);
@@ -325,9 +324,9 @@ let cats = { income:[], expense:[], saving:[] };
 let debtsCache = [];
 const loaded = { create:false, list:false };
 const THB = new Intl.NumberFormat('th-TH',{minimumFractionDigits:2, maximumFractionDigits:2});
-let recentItems = []; // ล่าสุด 5 รายการ
+let recentItems = [];
 const cacheTTL = { cats: 24*60*60*1000, debts: 10*60*1000 };
-let listDirty = false; // เมื่อบันทึกสำเร็จ -> ให้แท็บรายการรีเฟรชอัตโนมัติ
+let listDirty = false;
 
 /** ====== HELPERS ====== */
 const $  = s => document.querySelector(s);
@@ -416,7 +415,6 @@ async function loadCategoriesAll(){
   const cache = cacheGet('fin_cats_v1');
   if (cache){
     cats = cache;
-    // 🔧 FIX: ปลด disable ถ้าขึ้นจากแคช
     $('#txCat').disabled = false;
     populateCatSelect();
     return;
@@ -462,35 +460,36 @@ function setType(type){
   if (!debtMode) populateCatSelect();
 }
 
+/** ====== Unified display helper (ใช้ทั้ง 2 ตาราง) ====== */
+function getDisplayMeta(x){
+  // ตรรกะเดียวกับแท็บ "รายการ"
+  const isDebtTx = (x.debt_tx_id || x.type==='debt' || (x.category_name||'').includes('หนี้'));
+  const isRepay  = isDebtTx && (String(x.sub_type || 'repay').includes('repay') || (x.note||'').includes('จ่ายหนี้'));
+  let badge='badge-exp', text='รายจ่าย';
+  if (isDebtTx){ badge='badge-debt'; text= isRepay?'จ่ายหนี้':'กู้หนี้'; }
+  else if (x.type==='income'){ badge='badge-inc'; text='รายรับ'; }
+  else if (x.type==='saving'){ badge='badge-sav'; text='ออมเงิน'; }
+
+  // ชื่อหมวด/เจ้าหนี้
+  const catMap = {};
+  [...(cats.expense||[]), ...(cats.income||[]), ...(cats.saving||[])]
+    .forEach(c=> catMap[c.category_id]=c.name_th);
+  const catName = isDebtTx ? (x.lender_name || x.category_name || 'เจ้าหนี้')
+                            : (catMap[x.category_id] || x.category_name || x.cat_name || x.category_id || '');
+  return { badge, text, catName };
+}
+
 /** ====== ล่าสุด 5 รายการ ====== */
-function normalizeTypeBadge(x){
-  const isDebt = (x._kind==='debt_repay' || x._kind==='debt_borrow');
-  if (isDebt) return { cls:'badge-debt', text:(x._kind==='debt_repay'?'จ่ายหนี้':'กู้หนี้') };
-  if (x.type==='income') return { cls:'badge-inc', text:'รายรับ' };
-  if (x.type==='saving') return { cls:'badge-sav', text:'ออมเงิน' };
-  return { cls:'badge-exp', text:'รายจ่าย' };
-}
-// 🔧 ฟังก์ชันแท็กธุรกรรมจาก API ให้รู้ว่าเป็นกู้/จ่ายหนี้ เพื่อให้ประเภทตรงกับแท็บรายการ
-function annotateForRecent(it){
-  const isDebt = !!(it.debt_tx_id || it.type==='debt' || (it.category_name||'').includes('หนี้'));
-  let _kind = null;
-  if (isDebt){
-    const flagRepay = String(it.sub_type||it.debt_type||'').includes('repay') || /จ่ายหนี้|ชำระหนี้/i.test(it.note||'');
-    _kind = flagRepay ? 'debt_repay' : 'debt_borrow';
-  }
-  return { ...it, _kind };
-}
 function renderRecent(){
   const tb = $('#recentBody'); tb.innerHTML='';
   if (!recentItems.length){ tb.innerHTML='<tr><td colspan="5" class="muted">ยังไม่มีรายการ</td></tr>'; return; }
   const frag=document.createDocumentFragment();
   for (const x of recentItems.slice(0,5)){
-    const { cls, text } = normalizeTypeBadge(x);
-    const catName = x._kind?.startsWith('debt') ? (x.lender_name||x.category_name||'เจ้าหนี้') : (x.category_name||x.cat_name||x.category_id||'');
+    const { badge, text, catName } = getDisplayMeta(x);
     const tr=document.createElement('tr');
     tr.innerHTML=`
       <td>${esc((x.date||'').slice(0,10))}</td>
-      <td><span class="badge ${cls}">${text}</span></td>
+      <td><span class="badge ${badge}">${text}</span></td>
       <td>${esc(catName)}</td>
       <td class="right">${fmt(+x.amount||0)}</td>
       <td>${esc(x.note||'')}</td>`;
@@ -504,7 +503,7 @@ async function loadRecentFromAPI(){
   const from=toYMD(d);
   const r = await api('transactions/list', { from, to, type:'all' }, true);
   if (!r.ok){ renderRecent(); return; }
-  const arr = (r.items||[]).map(it=>({ ...annotateForRecent(it), amount:+it.amount }));
+  const arr = (r.items||[]).map(it=>({ ...it, amount:+it.amount }));
   arr.sort((a,b)=> (String(b.date||'')+String(b.time||'')).localeCompare(String(a.date||'')+String(a.time||'')));
   recentItems = arr.slice(0,5);
   renderRecent();
@@ -516,6 +515,8 @@ function clearFormKeepDate(){
   $('#txAmount').value=''; $('#txNote').value='';
   $('#txInt').value=''; $('#txPrin').value='';
 }
+$('#btnSave').addEventListener('click', saveTx);
+
 async function saveTx(ev){
   const btn = ev.currentTarget;
   const type = $('#txType').value;
@@ -537,7 +538,9 @@ async function saveTx(ev){
         const r = await api('debts/repay', { debt_id, date, amount, interest_paid:interest, principal_paid:principal, note }, true);
         if (r.ok){
           toast('บันทึกจ่ายหนี้สำเร็จ');
-          recentItems.unshift({ _kind:'debt_repay', date, amount, note, lender_name:(debtsCache.find(d=>String(d.debt_id)===String(debt_id))?.lender_name)||'' });
+          const lender = debtsCache.find(d=>String(d.debt_id)===String(debt_id))?.lender_name || '';
+          // ใส่ sub_type เพื่อให้ logic เดียวกับแท็บรายการทำงานเหมือนกัน
+          recentItems.unshift({ debt_tx_id:'new', sub_type:'repay', date, amount, note, lender_name:lender, type:'debt' });
           recentItems = recentItems.slice(0,5); renderRecent();
           listDirty = true;
           clearFormKeepDate(); $('#txAmount').focus();
@@ -549,7 +552,8 @@ async function saveTx(ev){
         const r = await api('debts/borrow', { debt_id, date, amount, note }, true);
         if (r.ok){
           toast('บันทึกกู้หนี้สำเร็จ');
-          recentItems.unshift({ _kind:'debt_borrow', date, amount, note, lender_name:(debtsCache.find(d=>String(d.debt_id)===String(debt_id))?.lender_name)||'' });
+          const lender = debtsCache.find(d=>String(d.debt_id)===String(debt_id))?.lender_name || '';
+          recentItems.unshift({ debt_tx_id:'new', sub_type:'borrow', date, amount, note, lender_name:lender, type:'debt' });
           recentItems = recentItems.slice(0,5); renderRecent();
           listDirty = true;
           clearFormKeepDate(); $('#txAmount').focus();
@@ -576,7 +580,6 @@ async function saveTx(ev){
     } else toast('บันทึกไม่สำเร็จ', false);
   }, 'กำลังบันทึก…');
 }
-$('#btnSave').addEventListener('click', saveTx);
 
 /** ====== รายการย้อนหลัง (แท็บรายการ) ====== */
 function safeKey(x){ return `${(x.date||'').slice(0,10)}T${(x.time||'00:00:00').slice(0,8)}`; }
@@ -584,21 +587,14 @@ function renderTable(items){
   const tb = $('#tblBody'); tb.innerHTML='';
   const sorted = items.slice().sort((a,b)=> safeKey(b).localeCompare(safeKey(a)));
   $('#emptyList').style.display = sorted.length? 'none':'block';
-  const catMap = {}; [...(cats.expense||[]), ...(cats.income||[]), ...(cats.saving||[])]
-    .forEach(c=> catMap[c.category_id]=c.name_th);
 
   const frag = document.createDocumentFragment();
   for (const x of sorted){
-    const isDebtTx = (x.debt_tx_id || x.type==='debt' || (x.category_name||'').includes('หนี้'));
-    const isRepay = isDebtTx && (String(x.sub_type||'repay').includes('repay') || (x.note||'').includes('จ่ายหนี้'));
-    const badge = isDebtTx ? 'badge-debt' : (x.type==='income' ? 'badge-inc' : (x.type==='saving'?'badge-sav':'badge-exp'));
-    const typeTxt = isDebtTx ? (isRepay?'จ่ายหนี้':'กู้หนี้') : (x.type==='income'?'รายรับ':(x.type==='saving'?'ออมเงิน':'รายจ่าย'));
-    const catName = isDebtTx ? (x.lender_name || x.category_name || 'เจ้าหนี้') : (catMap[x.category_id] || x.category_name || x.category_id || '');
-
+    const { badge, text, catName } = getDisplayMeta(x);
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td title="${esc((x.date||'').slice(0,10))}">${esc((x.date||'').slice(0,10))}</td>
-      <td><span class="badge ${badge}">${typeTxt}</span></td>
+      <td><span class="badge ${badge}">${text}</span></td>
       <td>${esc(catName)}</td>
       <td class="right">${fmt(+x.amount||0)}</td>
       <td>${esc(x.note||'')}</td>
