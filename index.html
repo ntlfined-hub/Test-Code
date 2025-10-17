@@ -43,7 +43,7 @@
     .card{ background:#1f1f1f; border:1px solid var(--line); border-radius:16px; padding:1rem; margin-bottom:1rem }
     .row{ display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1rem }
     .col{ flex:1 1 46%; min-width:230px; display:flex; flex-direction:column; gap:.35rem }
-    label{ color:var(--muted) }
+    label{ color:var(--muted); display:flex; align-items:center; gap:.5rem }
 
     input,select,button{
       border-radius:12px; border:1px solid var(--line);
@@ -55,6 +55,7 @@
     button{ background:var(--primary); border:none; font-weight:700; cursor:pointer; position:relative }
     button:disabled{ opacity:.65; cursor:not-allowed }
 
+    /* Busy spinner on buttons */
     button[aria-busy="true"]{ pointer-events:none }
     button[aria-busy="true"]::after{
       content:""; position:absolute; right:10px; top:50%; transform:translateY(-50%);
@@ -64,6 +65,7 @@
 
     .btn-ghost{ background:#333 } .btn-blue{ background:var(--blue) } .btn-warn{ background:var(--warn); color:#222 }
     .btn-danger{ background:var(--danger) } .btn-cyan{ background:var(--cyan); color:#052a27 } .btn-green{ background:var(--primary) }
+    .btn-mini{ min-height:auto; padding:.25rem .5rem; font-size:.85rem; border-radius:8px }
 
     .seg{ display:flex; gap:.5rem; flex-wrap:wrap }
     .seg button{ background:#333 }
@@ -160,9 +162,12 @@
             </div>
 
             <div class="col" id="colCat">
-              <label for="txCat">หมวดหมู่</label>
+              <label for="txCat">
+                หมวดหมู่
+                <button id="btnAddCatOpen" class="btn-mini btn-cyan" title="เพิ่มหมวดใหม่">เพิ่มหมวด</button>
+              </label>
               <select id="txCat" disabled><option>กำลังโหลด…</option></select>
-              <div class="help">* เพิ่มหมวดในหน้าหลักของคุณได้ตามเดิม</div>
+              <div class="help">* เพิ่มหมวดได้จากปุ่ม “เพิ่มหมวด” หรือหน้าหลักของคุณ</div>
             </div>
             <div class="col" id="colAmount">
               <label for="txAmount">จำนวนเงิน (บาท)</label>
@@ -198,7 +203,7 @@
           </div>
         </div>
 
-        <!-- ล่าสุด 5 รายการ (เพิ่มปุ่มแก้ไข/ลบ) -->
+        <!-- ล่าสุด 5 รายการ -->
         <div class="card" role="region" aria-label="ล่าสุด 5 รายการ">
           <div class="muted" style="margin-bottom:.5rem">ล่าสุด 5 รายการ</div>
           <div class="table-viewport" id="recentBox">
@@ -309,6 +314,31 @@
     </div>
   </div>
 
+  <!-- โมดัลเพิ่มหมวด -->
+  <div id="addCatBackdrop" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addCatTitle">
+      <div id="addCatTitle" class="title">เพิ่มหมวดใหม่</div>
+      <div class="row">
+        <div class="col">
+          <label for="addCatType">ประเภท</label>
+          <select id="addCatType">
+            <option value="expense">รายจ่าย</option>
+            <option value="income">รายรับ</option>
+            <option value="saving">ออมเงิน</option>
+          </select>
+        </div>
+        <div class="col" style="flex:1 1 100%">
+          <label for="addCatName">ชื่อหมวด</label>
+          <input id="addCatName" maxlength="100" placeholder="เช่น อาหาร, โบนัส, ฝากบัญชี"/>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="btnAddCatCancel" class="btn-ghost">ยกเลิก</button>
+        <button id="btnAddCatSave" class="btn-warn">บันทึกหมวด</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast">แจ้งเตือน</div>
   <div id="overlay" class="hide" aria-live="polite" aria-busy="true"><div class="spinner"></div></div>
 
@@ -333,7 +363,7 @@ let listDirty = false;
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const fmt = n => THB.format(Number(n||0));
-const esc = s => String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]));
+const esc = s => String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const toast = (msg, ok=true)=>{ const el=$('#toast'); el.textContent=msg; el.style.background= ok?'#00c896':'#ff4d4f'; el.style.opacity='1'; setTimeout(()=> el.style.opacity='0', 2200); };
 const toYMD = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const todayISO = ()=> toYMD(new Date());
@@ -459,6 +489,7 @@ function setType(type){
   $('#colAmount').classList.toggle('hide', isRepay && debtMode);
   $('#colDebt').classList.toggle('hide', !debtMode);
   $('#colDebtRepayFields').classList.toggle('hide', !isRepay);
+  $('#btnAddCatOpen').classList.toggle('hide', debtMode); // ไม่ให้เพิ่มหมวดในโหมดหนี้
   if (!debtMode) populateCatSelect();
 }
 
@@ -515,6 +546,45 @@ async function loadRecentFromAPI(){
   renderRecent();
 }
 
+/** ====== เพิ่มหมวด (Modal) ====== */
+function openAddCat(){
+  // default ให้ตรงกับประเภทที่กำลังเลือก (ถ้าไม่ใช่โหมดหนี้)
+  const t = $('#txType').value;
+  $('#addCatType').value = (t==='debt_repay' || t==='debt_borrow') ? 'expense' : t;
+  $('#addCatName').value = '';
+  $('#addCatBackdrop').classList.add('show');
+  $('#addCatBackdrop').setAttribute('aria-hidden','false');
+  setTimeout(()=> $('#addCatName').focus(), 10);
+}
+function closeAddCat(){
+  $('#addCatBackdrop').classList.remove('show');
+  $('#addCatBackdrop').setAttribute('aria-hidden','true');
+}
+async function saveAddCat(ev){
+  const btn = ev.currentTarget;
+  const type = $('#addCatType').value;
+  const name = $('#addCatName').value.trim();
+  if (!name){ toast('กรุณากรอกชื่อหมวด', false); return; }
+  await withBusy(btn, async ()=>{
+    const r = await api('categories/create', { type, name_th:name }, true);
+    if (!r.ok){ toast(r.message||'เพิ่มหมวดไม่สำเร็จ', false); return; }
+    // อัปเดต state + cache
+    const newObj = { category_id: r.category_id, name_th: name, type };
+    cats[type] = [ ...(cats[type]||[]), newObj ];
+    cacheSet('fin_cats_v1', cats, cacheTTL.cats); // เขียนทับแคช
+    // สลับประเภทฟอร์มให้ตรงกับที่เพิ่งเพิ่ม และเลือกหมวดใหม่ให้เลย
+    setType(type);
+    populateCatSelect();
+    $('#txCat').value = newObj.category_id;
+    closeAddCat();
+    toast('เพิ่มหมวดสำเร็จ');
+  }, 'กำลังบันทึก…');
+}
+$('#btnAddCatOpen').addEventListener('click', openAddCat);
+$('#btnAddCatCancel').addEventListener('click', closeAddCat);
+$('#btnAddCatSave').addEventListener('click', saveAddCat);
+$('#addCatName').addEventListener('keydown', (e)=>{ if (e.key==='Enter') $('#btnAddCatSave').click(); });
+
 /** ====== Save Transaction ====== */
 function normalizeAmount(v){ const n=Number(v); return (isFinite(n) && n>0) ? Math.round(n*100)/100 : NaN; }
 function clearFormKeepDate(){
@@ -544,7 +614,7 @@ async function saveTx(ev){
         const r = await api('debts/repay', { debt_id, date, amount, interest_paid:interest, principal_paid:principal, note }, true);
         if (r.ok){
           toast('บันทึกจ่ายหนี้สำเร็จ');
-          await loadRecentFromAPI();  // ดึงจากเซิร์ฟเวอร์เพื่อให้มี tx_id ใช้งานปุ่มได้
+          await loadRecentFromAPI();
           listDirty = true;
           clearFormKeepDate(); $('#txAmount').focus();
         } else toast(r.message||'บันทึกไม่สำเร็จ', false);
@@ -618,7 +688,7 @@ async function refreshList(btn){
   renderTable(lastItems);
 }
 
-// ปุ่มแก้ไขของแท็บรายการ: แสดง busy ระหว่างโหลด modal
+// ปุ่มแก้ไขของ 2 ตาราง: แสดง busy ระหว่างโหลด modal
 document.addEventListener('click', (e)=>{
   const btn1 = e.target.closest('#tblBody button[data-act]');
   const btn2 = e.target.closest('#recentBody button[data-recent-act]');
@@ -642,7 +712,6 @@ async function openEditById(txId, dateHint){
   if (!txId){ toast('ไม่พบรหัสรายการ', false); return; }
   let it = lastItems.find(x=> String(x.tx_id)===String(txId));
   if (!it){
-    // ถ้ายังไม่เคยเปิดแท็บรายการ ให้ใช้ช่วงอิง dateHint เพื่อดึงจากเซิร์ฟเวอร์
     if (!loaded.list && dateHint){
       const from = addDays(dateHint, -20);
       const to   = addDays(dateHint, 1);
