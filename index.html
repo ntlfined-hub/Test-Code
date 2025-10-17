@@ -87,7 +87,7 @@
       </div>
     </div>
 
-    <!-- ===== TAB 1: ฟอร์ม ===== -->
+    <!-- ===== TAB 1: ฟอร์ม (คงเดิม) ===== -->
     <section id="panel-1" class="tab-panel active">
       <div class="glass card p-6 mb-8">
         <form id="checkinForm" class="space-y-6">
@@ -278,9 +278,7 @@
       var err = byId('authError');
       if(err) err.classList.remove('hidden');
       if(!card) return;
-      card.classList.remove('shake');
-      void card.offsetWidth;
-      card.classList.add('shake');
+      card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
     }
     function tryAuth(){
       var input = byId('authInput');
@@ -293,7 +291,6 @@
       }
     }
 
-    // bind early events
     var btnLogin = byId('authBtn'); if(btnLogin){ btnLogin.addEventListener('click', tryAuth); }
     var inputPwd = byId('authInput');
     if(inputPwd){
@@ -311,42 +308,33 @@
       });
     }
     try{
-      if(sessionStorage.getItem(AUTH_KEY) === '1'){ unlockApp(true); }
+      if(sessionStorage.getItem('auth_ok') === '1'){ unlockApp(true); }
       else{ setTimeout(function(){ var el = byId('authInput'); if(el) el.focus(); }, 30); }
     }catch(e){}
 
     /* ===== POPUP ===== */
-    function openPopup(msg){ text(byId('popupMsg'), msg || ''); var p = byId('popup'); if(!p) return; p.classList.remove('hidden'); p.classList.add('flex'); }
-    function closePopup(){ var p = byId('popup'); if(!p) return; p.classList.add('hidden'); p.classList.remove('flex'); }
+    function openPopup(msg){
+      text(byId('popupMsg'), msg || '');
+      var p = byId('popup'); if(!p) return;
+      p.classList.remove('hidden'); p.classList.add('flex');
+    }
+    function closePopup(){
+      var p = byId('popup'); if(!p) return;
+      p.classList.add('hidden'); p.classList.remove('flex');
+    }
     var popupOk = byId('popupOk'); if(popupOk){ popupOk.addEventListener('click', closePopup); }
 
     /* ===== CONFIG & UTILS ===== */
     var APP_SCRIPT_WEBAPP_URL='https://script.google.com/macros/s/AKfycbxKmlulJgGnv8pUqbbOYlK5mRn6jZ_DdQQCKoJ3dExHWl62mDOPhDR5usWbSpC38gzH/exec';
     function toLocalISO(d){ var y=d.getFullYear(), m=('0'+(d.getMonth()+1)).slice(-2), da=('0'+d.getDate()).slice(-2); return y+'-'+m+'-'+da; }
-    function getWeekRange(offset){ offset = offset||0; var now=new Date(); now.setHours(0,0,0,0);
-      var diffToMon=(now.getDay()===0?-6:1-now.getDay())+offset*7; var mon=new Date(now); mon.setDate(now.getDate()+diffToMon);
-      var fri=new Date(mon); fri.setDate(mon.getDate()+4); return {start:toLocalISO(mon), end:toLocalISO(fri)}; }
-    function toast(msg,type){ type = type||'info'; var el=byId('status'); if(!el) return;
-      el.className='mt-6 p-4 rounded-2xl '+(type==='error'?'bg-red-500/20 border border-red-500/40':'bg-white/10 border border-white/20');
-      el.textContent=msg||''; el.classList.remove('hidden'); setTimeout(function(){ el.classList.add('hidden'); },4500); }
-    function setBtnLoading(btn,loading,done,label){ if(!btn) return; done = done||'เสร็จ'; label = label||'กำลังทำงาน...';
-      if(loading){ btn.disabled=true; btn.setAttribute('data-prev', btn.innerHTML);
-        btn.innerHTML='<span class="inline-flex items-center gap-2"><svg class="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>'+label+'</span>';
-      } else { btn.disabled=false; btn.innerHTML=btn.getAttribute('data-prev')||done; } }
+    function getWeekRange(offset){ offset = offset||0; var now=new Date(); now.setHours(0,0,0,0); var diffToMon=(now.getDay()===0?-6:1-now.getDay())+offset*7; var mon=new Date(now); mon.setDate(now.getDate()+diffToMon); var fri=new Date(mon); fri.setDate(mon.getDate()+4); return {start:toLocalISO(mon), end:toLocalISO(fri)}; }
+    function toast(msg,type){ type = type||'info'; var el=byId('status'); if(!el) return; el.className='mt-6 p-4 rounded-2xl '+(type==='error'?'bg-red-500/20 border border-red-500/40':'bg-white/10 border border-white/20'); el.textContent=msg||''; el.classList.remove('hidden'); setTimeout(function(){ el.classList.add('hidden'); },4500); }
+    function setBtnLoading(btn,loading,done,label){ if(!btn) return; done = done||'เสร็จ'; label = label||'กำลังทำงาน...'; if(loading){ btn.disabled=true; btn.setAttribute('data-prev', btn.innerHTML); btn.innerHTML='<span class="inline-flex items-center gap-2"><svg class="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>'+label+'</span>'; } else { btn.disabled=false; btn.innerHTML=btn.getAttribute('data-prev')||done; } }
 
     /* ===== Tabs ===== */
     var tabs=[{btn:'tab-1',panel:'panel-1'},{btn:'tab-2',panel:'panel-2'},{btn:'tab-3',panel:'panel-3'}];
-    function activateTab(i){
-      for(var k=0;k<tabs.length;k++){
-        var t=tabs[k]; var b=byId(t.btn), p=byId(t.panel);
-        if(b) b.setAttribute('aria-selected', i===k?'true':'false');
-        if(p){ if(i===k) p.classList.add('active'); else p.classList.remove('active'); }
-      }
-      try{ localStorage.setItem('activeTab', String(i)); }catch(e){}
-    }
-    for(var iTab=0;iTab<tabs.length;iTab++){
-      (function(idx){ var b=byId(tabs[idx].btn); if(b) b.addEventListener('click', function(){ activateTab(idx); }); })(iTab);
-    }
+    function activateTab(i){ for(var k=0;k<tabs.length;k++){ var t=tabs[k]; var b=byId(t.btn), p=byId(t.panel); if(b) b.setAttribute('aria-selected', i===k?'true':'false'); if(p){ if(i===k) addClass(p,'active'); else removeClass(p,'active'); } } try{ localStorage.setItem('activeTab', String(i)); }catch(e){} }
+    for(var iTab=0;iTab<tabs.length;iTab++){ (function(idx){ var b=byId(tabs[idx].btn); if(b) b.addEventListener('click', function(){ activateTab(idx); }); })(iTab); }
     try{ var savedTab = Number(localStorage.getItem('activeTab')); if(!isNaN(savedTab)) activateTab(savedTab); }catch(e){}
 
     /* ===== UI init ===== */
@@ -355,16 +343,17 @@
     var rs=byId('rangeStart'), re=byId('rangeEnd'); if(rs){ rs.min=today; } if(re){ re.min=today; }
     var sendDateInput = byId('sendDateInput'); if(sendDateInput){ sendDateInput.min=today; sendDateInput.value=today; }
 
-    /* ===== Toggle AM/PM (Tab 1) ===== */
+    /* ===== Toggle AM/PM ===== */
     var splitMode=false;
     var fullBtn=byId('fullBtn'), splitBtn=byId('splitBtn');
     var fullBox=byId('fullBox'),  splitBox=byId('splitBox');
-    if(fullBtn) fullBtn.addEventListener('click', function(){ splitMode=false; if(fullBtn) fullBtn.classList.add('bg-white/20'); if(splitBtn) splitBtn.classList.remove('bg-white/20'); show(fullBox); hide(splitBox); });
-    if(splitBtn) splitBtn.addEventListener('click', function(){ splitMode=true;  if(splitBtn) splitBtn.classList.add('bg-white/20'); if(fullBtn) fullBtn.classList.remove('bg-white/20'); show(splitBox); hide(fullBox); });
+    if(fullBtn) fullBtn.addEventListener('click', function(){ splitMode=false; if(fullBtn) addClass(fullBtn,'bg-white/20'); if(splitBtn) removeClass(splitBtn,'bg-white/20'); show(fullBox); hide(splitBox); });
+    if(splitBtn) splitBtn.addEventListener('click', function(){ splitMode=true; if(splitBtn) addClass(splitBtn,'bg-white/20'); if(fullBtn) removeClass(fullBtn,'bg-white/20'); show(splitBox); hide(fullBox); });
 
     /* ===== API helper ===== */
     function callAPI(action,payload,cb){
-      var fd=new FormData(); fd.append('action', action);
+      var fd=new FormData();
+      fd.append('action', action);
       try{ fd.append('payload', JSON.stringify(payload||{})); }catch(e){ fd.append('payload','{}'); }
       fetch(APP_SCRIPT_WEBAPP_URL,{method:'POST',body:fd})
         .then(function(res){ return res.text(); })
@@ -372,7 +361,7 @@
         .catch(function(){ cb({ok:false,error:'NETWORK'}); });
     }
 
-    /* ===== Suggestions (Tab 1) ===== */
+    /* ===== Suggestions ===== */
     var suggestWrap=byId('suggestWrap'), suggestEmpty=byId('suggestEmpty'), suggestLoading=byId('suggestLoading');
     function parsePart(s){ s=s||''; var m=/(.*)\s+\((AM|PM)\)$/i.exec(s); return m ? [m[1].replace(/\s+$/,''), '('+m[2].toUpperCase()+')'] : [s,'']; }
     function escapeHTML(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
@@ -390,8 +379,8 @@
             '<button type="button" class="mini-btn text-xs px-2 py-1" data-action="sugg" data-mode="both" data-loc="'+escapeHTML(loc)+'">ทั้งวัน</button>' +
             '<button type="button" class="mini-btn text-xs px-2 py-1" data-action="sugg" data-mode="am" data-loc="'+escapeHTML(loc)+'">AM</button>' +
             '<button type="button" class="mini-btn text-xs px-2 py-1" data-action="sugg" data-mode="pm" data-loc="'+escapeHTML(loc)+'">PM</button>' +
-          </div>' +
-        '</div>' +
+          '</div>' +
+        </div>' +
       '</div>';
     }
     function refreshSuggestions(){
@@ -403,9 +392,15 @@
       if(suggestLoading) removeClass(suggestLoading,'hidden');
       callAPI('suggest', {date:date, excludeName:name||''}, function(res){
         if(suggestLoading) addClass(suggestLoading,'hidden');
-        if(!res.ok){ if(suggestWrap) suggestWrap.innerHTML='<div class="text-red-300 text-sm">'+(res.error||'โหลดคำแนะนำไม่สำเร็จ')+'</div>'; return; }
+        if(!res.ok){
+          if(suggestWrap) suggestWrap.innerHTML='<div class="text-red-300 text-sm">'+(res.error||'โหลดคำแนะนำไม่สำเร็จ')+'</div>';
+          return;
+        }
         var items = res.items||[];
-        if(!items.length){ if(suggestEmpty) removeClass(suggestEmpty,'hidden'); return; }
+        if(!items.length){
+          if(suggestEmpty) removeClass(suggestEmpty,'hidden');
+          return;
+        }
         var html=''; for(var i=0;i<items.length;i++){ html+=renderSuggestItem(items[i]); }
         if(suggestWrap) suggestWrap.innerHTML=html;
       });
@@ -413,7 +408,6 @@
     if(byId('dateInput')) byId('dateInput').addEventListener('change', refreshSuggestions);
     if(byId('nameSelect')) byId('nameSelect').addEventListener('change', refreshSuggestions);
     refreshSuggestions();
-
     if(suggestWrap){
       suggestWrap.addEventListener('click', function(ev){
         var btn = ev.target.closest ? ev.target.closest('[data-action="sugg"]') : null;
@@ -432,7 +426,7 @@
       });
     }
 
-    /* ===== Submit single day (Tab 1) ===== */
+    /* ===== Submit single day ===== */
     var checkinBtn = byId('checkinBtn');
     if(byId('checkinForm')) byId('checkinForm').addEventListener('submit', function(e){
       e.preventDefault();
@@ -462,7 +456,7 @@
       });
     });
 
-    /* ===== Bulk (Tab 1) ===== */
+    /* ===== Bulk ===== */
     function commonBulk(){
       var name=(byId('nameSelect').value||'').replace(/^\s+|\s+$/g,'');
       if(!name){ toast('กรุณาเลือกผู้ใช้งานก่อน','error'); return null; }
@@ -476,11 +470,14 @@
       if(!am||!pm){ toast('กรุณากรอกสถานที่ทั้ง AM และ PM','error'); return null; }
       return {name:name, split:true, amLoc:am, pmLoc:pm};
     }
-    var bulkThisWeekBtn=byId('bulkThisWeek'), bulkNextWeekBtn=byId('bulkNextWeek'), bulkRangeBtn=byId('bulkRange');
+    var bulkThisWeekBtn=byId('bulkThisWeek'),
+        bulkNextWeekBtn=byId('bulkNextWeek'),
+        bulkRangeBtn=byId('bulkRange');
 
     if(bulkThisWeekBtn) bulkThisWeekBtn.addEventListener('click', function(){
       var base=commonBulk(); if(!base) return;
-      var we=getWeekRange(0); var payload={}; for(var k in base){ payload[k]=base[k]; }
+      var we=getWeekRange(0);
+      var payload={}; for(var k in base){ payload[k]=base[k]; }
       payload.startDate=we.start; payload.endDate=we.end; payload.weekdaysOnly=true;
       setBtnLoading(bulkThisWeekBtn,true,'สร้าง จ–ศ สัปดาห์นี้','กำลังสร้าง...');
       callAPI('bulkCreate', payload, function(r){
@@ -493,7 +490,8 @@
 
     if(bulkNextWeekBtn) bulkNextWeekBtn.addEventListener('click', function(){
       var base=commonBulk(); if(!base) return;
-      var we=getWeekRange(1); var payload={}; for(var k in base){ payload[k]=base[k]; }
+      var we=getWeekRange(1);
+      var payload={}; for(var k in base){ payload[k]=base[k]; }
       payload.startDate=we.start; payload.endDate=we.end; payload.weekdaysOnly=true;
       setBtnLoading(bulkNextWeekBtn,true,'สร้าง จ–ศ สัปดาห์หน้า','กำลังสร้าง...');
       callAPI('bulkCreate', payload, function(r){
@@ -518,15 +516,16 @@
       });
     });
 
-    /* ===== Future schedule (Tab 2) ===== */
+    /* ===== Future schedule ===== */
     function formatThai(iso){ var d=new Date(iso); var m=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']; return d.getDate()+' '+m[d.getMonth()]+' '+(d.getFullYear()+543); }
     function renderItem(e){
-      var detail = e.split ? '<div class="text-sm text-white/90">🌅 AM: '+(e.am||'-')+'</div><div class="text-sm text-white/90">🌆 PM: '+(e.pm||'-')+'</div>'
-                           : '<div class="text-sm text-white/90">'+(e.location || e.am || '-')+'</div>';
+      var detail = e.split
+        ? '<div class="text-sm text-white/90">🌅 AM: '+(e.am||'-')+'</div><div class="text-sm text-white/90">🌆 PM: '+(e.pm||'-')+'</div>'
+        : '<div class="text-sm text-white/90">'+(e.location || e.am || '-')+'</div>';
       return ''+
         '<div class="row-card p-4">'+
           '<div class="flex items-center">'+
-            '<div class="flex-1 min-w-0">'+
+            <div class="flex-1 min-w-0">'+
               '<div class="font-semibold">'+formatThai(e.date)+'</div>'+detail+
             '</div>'+
             '<button type="button" class="ml-4 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 edit-btn" data-rowid="'+e.rowId+'" data-split="'+(e.split?'1':'0')+'" data-date="'+e.date+'" data-am="'+escapeHTML(e.am||'')+'" data-pm="'+escapeHTML(e.pm||'')+'" data-loc="'+escapeHTML(e.location||'')+'">แก้ไข</button>'+
@@ -536,7 +535,7 @@
     }
     function renderSchedule(name){
       var wrap=byId('scheduleWrap'), list=byId('scheduleList');
-      if(wrap) wrap.classList.remove('hidden');
+      if(wrap) removeClass(wrap,'hidden');
       if(list) list.innerHTML='<div class="text-white/80">กำลังโหลด...</div>';
       callAPI('listFuture',{name:name,from:today}, function(r){
         if(!byId('scheduleList')) return;
@@ -548,16 +547,23 @@
       });
     }
     var viewBtn=byId('viewBtn');
-    if(viewBtn){ viewBtn.addEventListener('click', function(){ var name=(byId('viewName').value||'').replace(/^\s+|\s+$/g,''); if(!name) return toast('กรุณาเลือกชื่อผู้ใช้','error'); setBtnLoading(viewBtn,true,'ดูตาราง','กำลังโหลด...'); renderSchedule(name); setTimeout(function(){ setBtnLoading(viewBtn,false,'ดูตาราง'); }, 400); }); }
+    if(viewBtn) viewBtn.addEventListener('click', function(){
+      var name=(byId('viewName').value||'').replace(/^\s+|\s+$/g,'');
+      if(!name) return toast('กรุณาเลือกชื่อผู้ใช้','error');
+      setBtnLoading(viewBtn,true,'ดูตาราง','กำลังโหลด...');
+      renderSchedule(name);
+      setTimeout(function(){ setBtnLoading(viewBtn,false,'ดูตาราง'); }, 400);
+    });
 
-    // delegation: edit / toggle-full / toggle-split / delete / save / cancel  ← (แก้จุดนี้)
+    // delegation: edit / delete / save (+ TOGGLE)  <-- BUGFIX: เพิ่ม toggle selectors
     var scheduleList = byId('scheduleList');
     if(scheduleList){
       scheduleList.addEventListener('click', function(ev){
-        var btn = ev.target.closest ? ev.target.closest('.edit-btn,[data-action="toggle-full"],[data-action="toggle-split"],[data-action="delete"],[data-action="save"],[data-action="cancel"]') : null;
+        var btn = ev.target.closest
+          ? ev.target.closest('.edit-btn,[data-action="delete"],[data-action="save"],[data-action="cancel"],[data-action="toggle-full"],[data-action="toggle-split"]')
+          : null;
         if(!btn) return;
 
-        // open edit
         if(btn.classList.contains('edit-btn')){
           var rowId=btn.getAttribute('data-rowid');
           var isSplit=btn.getAttribute('data-split')==='1';
@@ -591,33 +597,32 @@
                 '<button type="button" class="flex-1 py-2 rounded-xl border border-red-400/40 bg-red-500/15 hover:bg-red-500/25" data-action="delete" data-rowid="'+rowId+'">ลบ</button>'+
               '</div>'+
             '</div>';
-          box.classList.remove('hidden');
+          removeClass(box,'hidden');
           return;
         }
 
         var action = btn.getAttribute('data-action');
         if(!action) return;
 
-        // toggle full/split
         if(action==='toggle-full' || action==='toggle-split'){
           var id = btn.getAttribute('data-id');
           var fullB=byId('ed-full-'+id), splitB=byId('ed-split-'+id);
           var fb=byId('ed-fullBox-'+id), sb=byId('ed-splitBox-'+id);
           var toSplit = (action==='toggle-split');
           if(toSplit){
-            if(splitB) splitB.classList.add('bg-white/20'); if(fullB) splitB && fullB.classList.remove('bg-white/20');
-            if(sb) sb.classList.remove('hidden'); if(fb) fb.classList.add('hidden');
+            if(splitB) addClass(splitB,'bg-white/20'); if(fullB) removeClass(fullB,'bg-white/20');
+            if(sb) removeClass(sb,'hidden'); if(fb) addClass(fb,'hidden');
           }else{
-            if(fullB) fullB.classList.add('bg-white/20'); if(splitB) splitB.classList.remove('bg-white/20');
-            if(fb) fb.classList.remove('hidden'); if(sb) sb.classList.add('hidden');
+            if(fullB) addClass(fullB,'bg-white/20'); if(splitB) removeClass(splitB,'bg-white/20');
+            if(fb) removeClass(fb,'hidden'); if(sb) addClass(sb,'hidden');
           }
           return;
         }
 
-        // cancel edit
-        if(action==='cancel'){ var idc=btn.getAttribute('data-id'); var box2=byId('edit-'+idc); if(box2) box2.classList.add('hidden'); return; }
+        if(action==='cancel'){
+          var idc=btn.getAttribute('data-id'); var box2=byId('edit-'+idc); if(box2) addClass(box2,'hidden'); return;
+        }
 
-        // delete
         if(action==='delete'){
           var rowIdDel=btn.getAttribute('data-rowid');
           if(!confirm('ต้องการลบรายการนี้ใช่หรือไม่?')) return;
@@ -632,7 +637,6 @@
           return;
         }
 
-        // save
         if(action==='save'){
           var idS=btn.getAttribute('data-id');
           var dateS=byId('ed-date-'+idS).value;
@@ -663,25 +667,33 @@
       });
     }
 
-    /* ===== Scheduler (Tab 3) ===== */
+    /* ===== Scheduler ===== */
     var weekdayWrap=byId('weekdayWrap'), labels=['อา','จ','อ','พ','พฤ','ศ','ส'];
     var dayButtons=[];
     if(weekdayWrap){
       for(var di=0;di<7;di++){
-        var b=document.createElement('button'); b.type='button';
-        b.className='px-2 py-2 rounded-lg bg-white/10 hover:bg-white/20'; b.textContent=labels[di];
-        b.setAttribute('data-active', (di>=1&&di<=5)?'1':'0'); toggleDay(b);
-        b.addEventListener('click', (function(bb){ return function(){ bb.setAttribute('data-active', bb.getAttribute('data-active')==='1'?'0':'1'); toggleDay(bb); }; })(b));
-        weekdayWrap.appendChild(b); dayButtons.push(b);
+        var b=document.createElement('button');
+        b.type='button';
+        b.className='px-2 py-2 rounded-lg bg-white/10 hover:bg-white/20';
+        b.textContent=labels[di];
+        b.setAttribute('data-active', (di>=1&&di<=5)?'1':'0');
+        toggleDay(b);
+        b.addEventListener('click', (function(bb){
+          return function(){ bb.setAttribute('data-active', bb.getAttribute('data-active')==='1'?'0':'1'); toggleDay(bb); };
+        })(b));
+        weekdayWrap.appendChild(b);
+        dayButtons.push(b);
       }
     }
     function toggleDay(b){ if(b.getAttribute('data-active')==='1'){ b.classList.add('bg-emerald-500/20','border','border-emerald-400/40'); }else{ b.classList.remove('bg-emerald-500/20','border','border-emerald-400/40'); } }
-    function isoToJs(d){ return (d%7); } function jsToIso(i){ return (i===0?7:i); }
+    function isoToJs(d){ return (d%7); }
+    function jsToIso(i){ return (i===0?7:i); }
 
     function loadSchedule(){
       callAPI('getSchedule',{}, function(r){
         if(!r.ok){ var st=byId('schedStatus'); if(st) st.textContent=r.error||'โหลดตารางส่งไม่สำเร็จ'; return; }
-        var cfg=r.config||{}; var en=byId('schedEnabled'); if(en) en.checked=!!cfg.enabled;
+        var cfg=r.config||{};
+        var en=byId('schedEnabled'); if(en) en.checked=!!cfg.enabled;
         var tm=byId('schedTime'); if(tm) tm.value=cfg.time||'08:30';
         var sk=byId('schedSkipHolidays'); if(sk) sk.checked=!!cfg.skipHolidays;
         for(var i=0;i<dayButtons.length;i++){ dayButtons[i].setAttribute('data-active','0'); toggleDay(dayButtons[i]); }
