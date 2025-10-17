@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>FIN-JOD · Hybrid Tabs (ปุ่มมีสถานะกำลังโหลด)</title>
+  <title>FIN-JOD · Hybrid Tabs + Mini Dashboard</title>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
@@ -36,11 +36,12 @@
 
     .tabs{ display:flex; gap:.5rem; background:#1b1b1b; border:1px solid var(--line); border-radius:12px; padding:.25rem; margin-bottom:1rem }
     .tab-btn{ flex:1; padding:.7rem 1rem; border-radius:10px; border:1px solid transparent; background:transparent; color:#ddd; font-weight:700; cursor:pointer }
-    .tab-btn.active{ background:#2a2a2a; border-color:#3a2a3a; color:#fff }
+    .tab-btn.active{ background:#2a2a2a; border-color:#3a3a3a; color:#fff }
     .tab-pane{ display:none }
     .tab-pane.active{ display:block }
 
     .card{ background:#1f1f1f; border:1px solid var(--line); border-radius:16px; padding:1rem; margin-bottom:1rem }
+
     .row{ display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1rem }
     .col{ flex:1 1 46%; min-width:230px; display:flex; flex-direction:column; gap:.35rem }
     label{ color:var(--muted); display:flex; align-items:center; gap:.5rem }
@@ -54,8 +55,6 @@
 
     button{ background:var(--primary); border:none; font-weight:700; cursor:pointer; position:relative }
     button:disabled{ opacity:.65; cursor:not-allowed }
-
-    /* Busy spinner on buttons */
     button[aria-busy="true"]{ pointer-events:none }
     button[aria-busy="true"]::after{
       content:""; position:absolute; right:10px; top:50%; transform:translateY(-50%);
@@ -103,6 +102,18 @@
 
     .help{ font-size:.9rem; color:var(--muted) }
     .hide{ display:none }
+
+    /* Mini Dashboard */
+    .mini{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.75rem; }
+    .stat{ background:#1b1b1b; border:1px solid var(--line); border-radius:14px; padding:.75rem 1rem }
+    .stat .label{ color:#cbd5e1; font-size:.95rem }
+    .stat .value{ font-weight:800; font-size:1.6rem; margin-top:.25rem }
+    .stat.inc .value{ color:#9ff3df }
+    .stat.exp .value{ color:#ffb6cc }
+    .stat.sav .value{ color:#a7fff0 }
+    .stat.bal .value{ color:#ffe39c }
+    .mini .sub{ color:var(--muted); font-size:.85rem; margin-top:.15rem }
+    @media (max-width:720px){ .mini{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
   </style>
 
   <!-- LIFF SDK -->
@@ -115,15 +126,14 @@
       <div class="you" id="who"></div>
     </div>
 
-    <!-- ฟอร์มผูกบัญชี -->
-    <div id="linkBox" class="card hide" role="region" aria-label="ผูกบัญชี">
-      <div class="muted" style="margin-bottom:.5rem">ผูกบัญชีครั้งเดียวเพื่อใช้งานผ่าน LINE ได้อัตโนมัติ</div>
-      <div class="row">
-        <div class="col"><label for="inpUser">User ID</label><input id="inpUser" placeholder="ของคุณ"/></div>
-        <div class="col"><label for="inpPin">PIN</label><input id="inpPin" type="password" placeholder="รหัส"/></div>
-      </div>
-      <div style="display:flex; gap:.5rem; justify-content:flex-end">
-        <button id="btnLink" class="btn-ghost">ผูกบัญชี</button>
+    <!-- Mini Dashboard -->
+    <div class="card" id="miniCard" role="region" aria-label="ภาพรวมเดือนนี้">
+      <div class="muted" style="margin-bottom:.5rem">ภาพรวมเดือนนี้ <b id="miniMonth"></b></div>
+      <div class="mini">
+        <div class="stat inc"><div class="label">รายรับ</div><div class="value" id="miniInc">—</div><div class="sub" id="miniIncCnt"></div></div>
+        <div class="stat exp"><div class="label">รายจ่าย</div><div class="value" id="miniExp">—</div><div class="sub" id="miniExpCnt"></div></div>
+        <div class="stat sav"><div class="label">ออม</div><div class="value" id="miniSav">—</div><div class="sub" id="miniSavCnt"></div></div>
+        <div class="stat bal"><div class="label">คงเหลือ</div><div class="value" id="miniBal">—</div><div class="sub" id="miniBalNote"></div></div>
       </div>
     </div>
 
@@ -134,7 +144,7 @@
         <button id="tab-list"   class="tab-btn"        role="tab" aria-selected="false" aria-controls="pane-list">รายการ</button>
       </div>
 
-      <!-- แท็บ 1: บันทึก -->
+      <!-- ====== แท็บ 1: บันทึก ====== -->
       <section id="pane-create" class="tab-pane active" role="tabpanel" aria-labelledby="tab-create">
         <div class="card" role="region" aria-label="บันทึกธุรกรรม">
           <div class="row">
@@ -226,7 +236,7 @@
         </div>
       </section>
 
-      <!-- แท็บ 2: รายการ -->
+      <!-- ====== แท็บ 2: รายการ ====== -->
       <section id="pane-list" class="tab-pane" role="tabpanel" aria-labelledby="tab-list">
         <div class="card" role="region" aria-label="รายการย้อนหลัง">
           <div class="row">
@@ -402,54 +412,11 @@ function cacheGet(k){
 }
 function cacheSet(k,data,ttl){ localStorage.setItem(k, JSON.stringify({exp:Date.now()+ttl, data})); }
 
-/** ====== LIFF ====== */
-function waitForLiffReady(timeoutMs=5000){
-  return new Promise(res=>{
-    if (window.liff){ return res(true); }
-    const t0=Date.now(), iv=setInterval(()=>{ if (window.liff){ clearInterval(iv); res(true); } else if(Date.now()-t0>timeoutMs){ clearInterval(iv); res(false); } },30);
-  });
-}
-async function ensureTokenViaLIFF(){
-  const okReady = await waitForLiffReady();
-  if (!okReady){ toast('LIFF ยังไม่พร้อม โปรดรีเฟรช', false); return false; }
-  try{ await liff.init({ liffId: LIFF_ID }); }catch{ toast('เริ่ม LIFF ไม่สำเร็จ', false); return false; }
-  if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return false; }
-
-  let prof; try{ prof = await liff.getProfile(); }catch{ toast('อ่านโปรไฟล์ LINE ไม่ได้', false); return; }
-  const r = await api('liff/link_or_login', { line_user_id: prof.userId, display_name: prof.displayName||'' }, false);
-  if (!r.ok){ toast(r.message || 'เกิดข้อผิดพลาด', false); return false; }
-
-  if (r.need_verification){
-    $('#who').textContent = prof.displayName || '';
-    $('#linkBox').classList.remove('hide'); $('#app').classList.add('hide');
-    return false;
-  }
-  token = r.token; displayName = r.display_name || prof.displayName || '';
-  localStorage.setItem('fin_token', token); localStorage.setItem('fin_name', displayName);
-  $('#who').textContent = displayName;
-  $('#linkBox').classList.add('hide'); $('#app').classList.remove('hide');
-  return true;
-}
-$('#btnLink')?.addEventListener('click', async (e)=>{
-  const btn=e.currentTarget;
-  const user_id=$('#inpUser').value.trim(); const pin=$('#inpPin').value.trim();
-  if (!user_id || !pin){ toast('กรอก User และ PIN ให้ครบ', false); return; }
-  let prof; try{ prof=await liff.getProfile(); }catch{ toast('อ่านโปรไฟล์ LINE ไม่ได้', false); return; }
-  const r = await withBusy(btn, ()=> api('liff/link_or_login',{ line_user_id:prof.userId, display_name:prof.displayName||'', user_id, pin }, false), 'กำลังผูกบัญชี…');
-  if (!r.ok){ toast(r.message||'ผูกบัญชีไม่สำเร็จ', false); return; }
-  token=r.token; displayName=r.display_name||user_id;
-  localStorage.setItem('fin_token', token); localStorage.setItem('fin_name', displayName);
-  $('#who').textContent = displayName; $('#linkBox').classList.add('hide'); $('#app').classList.remove('hide');
-});
-
-/** ====== Categories / Debts (แคช + เร็วขึ้น) ====== */
+/** ====== Category helpers ====== */
 async function loadCategoriesAll(){
   const cache = cacheGet('fin_cats_v1');
   if (cache){
-    cats = cache;
-    $('#txCat').disabled = false;
-    populateCatSelect();
-    return;
+    cats = cache; $('#txCat').disabled = false; populateCatSelect(); return;
   }
   $('#txCat').disabled = true; $('#txCat').innerHTML = '<option>กำลังโหลด…</option>';
   const types=['income','expense','saving'];
@@ -478,6 +445,12 @@ function populateCatSelect(){
   if (!list.length) $('#txCat').innerHTML='<option value="">— ไม่มีหมวด —</option>';
   else fillSelect($('#txCat'), list, c=>c.category_id, c=>c.name_th||c.category_id);
 }
+function isWithdrawIncome(catId){
+  const it=(cats.income||[]).find(c=>String(c.category_id)===String(catId));
+  const name=(it&&it.name_th)||'';
+  const flag=(it&&String(it.is_saving_withdraw).toLowerCase()!=='false' && String(it.is_saving_withdraw)!=='');
+  return !!(flag || /ถอน.*ออม|ออม.*ถอน|ถอนออม/i.test(String(name)));
+}
 
 /** ====== Type Switch ====== */
 function setType(type){
@@ -489,11 +462,11 @@ function setType(type){
   $('#colAmount').classList.toggle('hide', isRepay && debtMode);
   $('#colDebt').classList.toggle('hide', !debtMode);
   $('#colDebtRepayFields').classList.toggle('hide', !isRepay);
-  $('#btnAddCatOpen').classList.toggle('hide', debtMode); // ไม่ให้เพิ่มหมวดในโหมดหนี้
+  $('#btnAddCatOpen').classList.toggle('hide', debtMode);
   if (!debtMode) populateCatSelect();
 }
 
-/** ====== Unified display helper (ใช้ทั้ง 2 ตาราง) ====== */
+/** ====== Unified display meta (ใช้ทั้งตาราง/ล่าสุด) ====== */
 function getDisplayMeta(x){
   const isDebtTx = (x.debt_tx_id || x.type==='debt' || (x.category_name||'').includes('หนี้'));
   const isRepay  = isDebtTx && (String(x.sub_type || 'repay').includes('repay') || (x.note||'').includes('จ่ายหนี้'));
@@ -501,13 +474,38 @@ function getDisplayMeta(x){
   if (isDebtTx){ badge='badge-debt'; text= isRepay?'จ่ายหนี้':'กู้หนี้'; }
   else if (x.type==='income'){ badge='badge-inc'; text='รายรับ'; }
   else if (x.type==='saving'){ badge='badge-sav'; text='ออมเงิน'; }
-
-  const catMap = {};
-  [...(cats.expense||[]), ...(cats.income||[]), ...(cats.saving||[])]
-    .forEach(c=> catMap[c.category_id]=c.name_th);
+  const catMap={}; [...(cats.expense||[]),...(cats.income||[]),...(cats.saving||[])].forEach(c=>catMap[c.category_id]=c.name_th);
   const catName = isDebtTx ? (x.lender_name || x.category_name || 'เจ้าหนี้')
-                            : (catMap[x.category_id] || x.category_name || x.cat_name || x.category_id || '');
+                           : (catMap[x.category_id] || x.category_name || x.cat_name || x.category_id || '');
   return { badge, text, catName };
+}
+
+/** ====== Mini Dashboard ====== */
+async function updateMiniDash(){
+  const now=new Date(); const mb=monthBounds(now);
+  $('#miniMonth').textContent = now.toLocaleDateString('th-TH', { year:'numeric', month:'long' });
+
+  const r = await api('transactions/list', { from: mb.start, to: mb.end, type:'all' }, true);
+  if (!r.ok){ ['miniInc','miniExp','miniSav','miniBal'].forEach(id=>$('#'+id).textContent='—'); return; }
+
+  let inc=0, exp=0, sav=0, incCnt=0, expCnt=0, savCnt=0;
+  for (const x of (r.items||[])){
+    if (x.type==='income'){
+      if (isWithdrawIncome(x.category_id)) continue; // ตัด “ถอนออม” ออกจากรายรับ
+      inc += Number(x.amount||0); incCnt++;
+    }else if (x.type==='expense'){ exp += Number(x.amount||0); expCnt++; }
+    else if (x.type==='saving'){  sav += Number(x.amount||0); savCnt++; }
+  }
+  const bal = inc - exp - sav;
+
+  $('#miniInc').textContent = fmt(inc);
+  $('#miniExp').textContent = fmt(exp);
+  $('#miniSav').textContent = fmt(sav);
+  $('#miniBal').textContent = fmt(bal);
+  $('#miniIncCnt').textContent = incCnt ? `${incCnt} รายการ` : '';
+  $('#miniExpCnt').textContent = expCnt ? `${expCnt} รายการ` : '';
+  $('#miniSavCnt').textContent = savCnt ? `${savCnt} รายการ` : '';
+  $('#miniBalNote').textContent = 'รายรับ−รายจ่าย−ออม';
 }
 
 /** ====== ล่าสุด 5 รายการ ====== */
@@ -535,8 +533,7 @@ function renderRecent(){
   tb.appendChild(frag);
 }
 async function loadRecentFromAPI(){
-  const to=todayISO();
-  const d=new Date(); d.setDate(d.getDate()-13);
+  const to=todayISO(); const d=new Date(); d.setDate(d.getDate()-13);
   const from=toYMD(d);
   const r = await api('transactions/list', { from, to, type:'all' }, true);
   if (!r.ok){ renderRecent(); return; }
@@ -547,19 +544,8 @@ async function loadRecentFromAPI(){
 }
 
 /** ====== เพิ่มหมวด (Modal) ====== */
-function openAddCat(){
-  // default ให้ตรงกับประเภทที่กำลังเลือก (ถ้าไม่ใช่โหมดหนี้)
-  const t = $('#txType').value;
-  $('#addCatType').value = (t==='debt_repay' || t==='debt_borrow') ? 'expense' : t;
-  $('#addCatName').value = '';
-  $('#addCatBackdrop').classList.add('show');
-  $('#addCatBackdrop').setAttribute('aria-hidden','false');
-  setTimeout(()=> $('#addCatName').focus(), 10);
-}
-function closeAddCat(){
-  $('#addCatBackdrop').classList.remove('show');
-  $('#addCatBackdrop').setAttribute('aria-hidden','true');
-}
+function openAddCat(){ const t=$('#txType').value; $('#addCatType').value=(t==='debt_repay'||t==='debt_borrow')?'expense':t; $('#addCatName').value=''; $('#addCatBackdrop').classList.add('show'); $('#addCatBackdrop').setAttribute('aria-hidden','false'); setTimeout(()=> $('#addCatName').focus(), 10); }
+function closeAddCat(){ $('#addCatBackdrop').classList.remove('show'); $('#addCatBackdrop').setAttribute('aria-hidden','true'); }
 async function saveAddCat(ev){
   const btn = ev.currentTarget;
   const type = $('#addCatType').value;
@@ -568,16 +554,11 @@ async function saveAddCat(ev){
   await withBusy(btn, async ()=>{
     const r = await api('categories/create', { type, name_th:name }, true);
     if (!r.ok){ toast(r.message||'เพิ่มหมวดไม่สำเร็จ', false); return; }
-    // อัปเดต state + cache
     const newObj = { category_id: r.category_id, name_th: name, type };
     cats[type] = [ ...(cats[type]||[]), newObj ];
-    cacheSet('fin_cats_v1', cats, cacheTTL.cats); // เขียนทับแคช
-    // สลับประเภทฟอร์มให้ตรงกับที่เพิ่งเพิ่ม และเลือกหมวดใหม่ให้เลย
-    setType(type);
-    populateCatSelect();
-    $('#txCat').value = newObj.category_id;
-    closeAddCat();
-    toast('เพิ่มหมวดสำเร็จ');
+    cacheSet('fin_cats_v1', cats, cacheTTL.cats);
+    setType(type); populateCatSelect(); $('#txCat').value=newObj.category_id;
+    closeAddCat(); toast('เพิ่มหมวดสำเร็จ'); updateMiniDash();
   }, 'กำลังบันทึก…');
 }
 $('#btnAddCatOpen').addEventListener('click', openAddCat);
@@ -587,10 +568,7 @@ $('#addCatName').addEventListener('keydown', (e)=>{ if (e.key==='Enter') $('#btn
 
 /** ====== Save Transaction ====== */
 function normalizeAmount(v){ const n=Number(v); return (isFinite(n) && n>0) ? Math.round(n*100)/100 : NaN; }
-function clearFormKeepDate(){
-  $('#txAmount').value=''; $('#txNote').value='';
-  $('#txInt').value=''; $('#txPrin').value='';
-}
+function clearFormKeepDate(){ $('#txAmount').value=''; $('#txNote').value=''; $('#txInt').value=''; $('#txPrin').value=''; }
 $('#btnSave').addEventListener('click', saveTx);
 
 async function saveTx(ev){
@@ -612,28 +590,19 @@ async function saveTx(ev){
         const amount = Math.round((interest + principal) * 100)/100;
         if (!(isFinite(amount) && amount>0)){ toast('ใส่ยอดจ่ายดอก/จ่ายต้นให้ถูกต้อง', false); return; }
         const r = await api('debts/repay', { debt_id, date, amount, interest_paid:interest, principal_paid:principal, note }, true);
-        if (r.ok){
-          toast('บันทึกจ่ายหนี้สำเร็จ');
-          await loadRecentFromAPI();
-          listDirty = true;
-          clearFormKeepDate(); $('#txAmount').focus();
-        } else toast(r.message||'บันทึกไม่สำเร็จ', false);
+        if (r.ok){ toast('บันทึกจ่ายหนี้สำเร็จ'); await loadRecentFromAPI(); listDirty = true; clearFormKeepDate(); $('#txAmount').focus(); updateMiniDash(); }
+        else toast(r.message||'บันทึกไม่สำเร็จ', false);
         return;
       }else{
         const amount = normalizeAmount($('#txAmount').value);
         if (isNaN(amount)){ toast('จำนวนเงินไม่ถูกต้อง', false); return; }
         const r = await api('debts/borrow', { debt_id, date, amount, note }, true);
-        if (r.ok){
-          toast('บันทึกกู้หนี้สำเร็จ');
-          await loadRecentFromAPI();
-          listDirty = true;
-          clearFormKeepDate(); $('#txAmount').focus();
-        } else toast(r.message||'บันทึกไม่สำเร็จ', false);
+        if (r.ok){ toast('บันทึกกู้หนี้สำเร็จ'); await loadRecentFromAPI(); listDirty = true; clearFormKeepDate(); $('#txAmount').focus(); updateMiniDash(); }
+        else toast(r.message||'บันทึกไม่สำเร็จ', false);
         return;
       }
     }
 
-    // income/expense/saving
     const amount = normalizeAmount($('#txAmount').value);
     const category_id = $('#txCat').value;
     if (isNaN(amount)){ toast('จำนวนเงินไม่ถูกต้อง', false); return; }
@@ -641,28 +610,23 @@ async function saveTx(ev){
 
     const payload = { date, type, category_id, amount, note };
     const r = await api('transactions/create', payload, true);
-    if (r.ok){
-      toast('บันทึกสำเร็จ');
-      await loadRecentFromAPI();
-      listDirty = true;
-      clearFormKeepDate(); $('#txAmount').focus();
-    } else toast('บันทึกไม่สำเร็จ', false);
+    if (r.ok){ toast('บันทึกสำเร็จ'); await loadRecentFromAPI(); listDirty = true; clearFormKeepDate(); $('#txAmount').focus(); updateMiniDash(); }
+    else toast('บันทึกไม่สำเร็จ', false);
   }, 'กำลังบันทึก…');
 }
 
-/** ====== รายการย้อนหลัง (แท็บรายการ) ====== */
+/** ====== รายการย้อนหลัง ====== */
 function safeKey(x){ return `${(x.date||'').slice(0,10)}T${(x.time||'00:00:00').slice(0,8)}`; }
 function renderTable(items){
   const tb = $('#tblBody'); tb.innerHTML='';
   const sorted = items.slice().sort((a,b)=> safeKey(b).localeCompare(safeKey(a)));
   $('#emptyList').style.display = sorted.length? 'none':'block';
-
   const frag = document.createDocumentFragment();
   for (const x of sorted){
     const { badge, text, catName } = getDisplayMeta(x);
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td title="${esc((x.date||'').slice(0,10))}">${esc((x.date||'').slice(0,10))}</td>
+      <td>${esc((x.date||'').slice(0,10))}</td>
       <td><span class="badge ${badge}">${text}</span></td>
       <td>${esc(catName)}</td>
       <td class="right">${fmt(+x.amount||0)}</td>
@@ -688,7 +652,7 @@ async function refreshList(btn){
   renderTable(lastItems);
 }
 
-// ปุ่มแก้ไขของ 2 ตาราง: แสดง busy ระหว่างโหลด modal
+/** ====== ปุ่มแก้ไข/ลบพร้อม busy ====== */
 document.addEventListener('click', (e)=>{
   const btn1 = e.target.closest('#tblBody button[data-act]');
   const btn2 = e.target.closest('#recentBody button[data-recent-act]');
@@ -713,8 +677,7 @@ async function openEditById(txId, dateHint){
   let it = lastItems.find(x=> String(x.tx_id)===String(txId));
   if (!it){
     if (!loaded.list && dateHint){
-      const from = addDays(dateHint, -20);
-      const to   = addDays(dateHint, 1);
+      const from = addDays(dateHint, -20); const to   = addDays(dateHint, 1);
       const r = await api('transactions/list', { from, to, type:'all' }, true);
       if (r.ok){ lastItems = (r.items||[]); }
     }else{
@@ -730,54 +693,38 @@ async function openEditById(txId, dateHint){
   $('#editNote').value = it.note||'';
 
   if (isDebtRepay){
-    $('#editColType').classList.add('hide');
-    $('#editColCat').classList.add('hide');
-    $('#editColAmount').classList.remove('hide');
-    $('#editColDebtRepayFields').classList.remove('hide');
-    $('#editAmount').readOnly = true;
-    $('#editType').disabled = true; $('#editCat').disabled = true;
+    $('#editColType').classList.add('hide'); $('#editColCat').classList.add('hide');
+    $('#editColAmount').classList.remove('hide'); $('#editColDebtRepayFields').classList.remove('hide');
+    $('#editAmount').readOnly = true; $('#editType').disabled = true; $('#editCat').disabled = true;
 
     const debtDetails = await api('debts/tx/get', { tx_id: it.debt_tx_id }, true);
     const prin = debtDetails.ok ? Number(debtDetails.item?.principal_paid||0) : 0;
     const intr = debtDetails.ok ? Number(debtDetails.item?.interest_paid||0)  : 0;
-    $('#editPrin').value = prin ? prin : '';
-    $('#editInt').value  = intr ? intr : '';
+    $('#editPrin').value = prin ? prin : ''; $('#editInt').value  = intr ? intr : '';
     $('#editAmount').value = (Math.round((prin+intr)*100)/100).toFixed(2);
     const updateTotal = ()=>{ const p=Number($('#editPrin').value||0), i=Number($('#editInt').value||0); $('#editAmount').value = (Math.round((p+i)*100)/100).toFixed(2); };
     $('#editPrin').oninput = updateTotal; $('#editInt').oninput  = updateTotal;
     $('#editBackdrop').dataset.isDebtRepay = 'true';
   }else{
-    $('#editColType').classList.remove('hide');
-    $('#editColCat').classList.remove('hide');
-    $('#editColAmount').classList.remove('hide');
-    $('#editColDebtRepayFields').classList.add('hide');
-    $('#editType').disabled = false; $('#editCat').disabled = false;
-    $('#editAmount').readOnly = false;
+    $('#editColType').classList.remove('hide'); $('#editColCat').classList.remove('hide');
+    $('#editColAmount').classList.remove('hide'); $('#editColDebtRepayFields').classList.add('hide');
+    $('#editType').disabled = false; $('#editCat').disabled = false; $('#editAmount').readOnly = false;
     $('#editType').value = it.type;
 
-    if (!(cats.expense.length || cats.income.length || cats.saving.length)){
-      await loadCategoriesAll();
-    }
+    if (!(cats.expense.length || cats.income.length || cats.saving.length)){ await loadCategoriesAll(); }
     fillSelect($('#editCat'), (cats[$('#editType').value]||[]), c=>c.category_id, c=>c.name_th||c.category_id);
 
-    $('#editCat').value = it.category_id;
-    $('#editAmount').value = String(it.amount||0);
+    $('#editCat').value = it.category_id; $('#editAmount').value = String(it.amount||0);
     $('#editBackdrop').dataset.isDebtRepay = 'false';
   }
 
-  $('#editBackdrop').classList.add('show');
-  $('#editBackdrop').setAttribute('aria-hidden','false');
+  $('#editBackdrop').classList.add('show'); $('#editBackdrop').setAttribute('aria-hidden','false');
 }
 function closeEdit(){ $('#editBackdrop').classList.remove('show'); $('#editBackdrop').setAttribute('aria-hidden','true'); }
 $('#btnCancel').addEventListener('click', closeEdit);
-$('#editType').addEventListener('change', ()=>{
-  fillSelect($('#editCat'), (cats[$('#editType').value]||[]), c=>c.category_id, c=>c.name_th||c.category_id);
-});
+$('#editType').addEventListener('change', ()=>{ fillSelect($('#editCat'), (cats[$('#editType').value]||[]), c=>c.category_id, c=>c.name_th||c.category_id); });
 $('#btnUpdate').addEventListener('click', async (e)=>{
-  const btn = e.currentTarget;
-  const tx_id = $('#editTxId').value;
-  const isDebtRepay = $('#editBackdrop').dataset.isDebtRepay === 'true';
-
+  const btn = e.currentTarget; const tx_id = $('#editTxId').value; const isDebtRepay = $('#editBackdrop').dataset.isDebtRepay === 'true';
   await withBusy(btn, async ()=>{
     let r;
     if (isDebtRepay){
@@ -786,30 +733,17 @@ $('#btnUpdate').addEventListener('click', async (e)=>{
       if (!debt_tx_id){ toast('ไม่พบรหัสธุรกรรมหนี้', false); return; }
       const principal_paid = Number($('#editPrin').value||0);
       const interest_paid  = Number($('#editInt').value||0);
-      const payload = {
-        debt_tx_id,
-        date: $('#editDate').value,
-        note: $('#editNote').value.trim(),
-        principal_paid: Math.round(principal_paid*100)/100,
-        interest_paid:  Math.round(interest_paid*100)/100
-      };
+      const payload = { debt_tx_id, date: $('#editDate').value, note: $('#editNote').value.trim(),
+                        principal_paid: Math.round(principal_paid*100)/100, interest_paid:  Math.round(interest_paid*100)/100 };
       r = await api('debts/tx/update', payload, true);
     }else{
       const amount = Number($('#editAmount').value);
-      const payload = {
-        tx_id,
-        date: $('#editDate').value,
-        type: $('#editType').value,
-        category_id: $('#editCat').value,
-        amount: Math.round(amount*100)/100,
-        note: $('#editNote').value.trim()
-      };
-      if (!(payload.date && payload.category_id && isFinite(payload.amount) && payload.amount>0)){
-        toast('ข้อมูลไม่ครบหรือจำนวนเงินไม่ถูกต้อง', false); return;
-      }
+      const payload = { tx_id, date: $('#editDate').value, type: $('#editType').value, category_id: $('#editCat').value,
+                        amount: Math.round(amount*100)/100, note: $('#editNote').value.trim() };
+      if (!(payload.date && payload.category_id && isFinite(payload.amount) && payload.amount>0)){ toast('ข้อมูลไม่ครบหรือจำนวนเงินไม่ถูกต้อง', false); return; }
       r = await api('transactions/update', payload, true);
     }
-    if (r.ok){ toast('บันทึกแก้ไขสำเร็จ'); closeEdit(); await loadRecentFromAPI(); refreshList(); }
+    if (r.ok){ toast('บันทึกแก้ไขสำเร็จ'); closeEdit(); await loadRecentFromAPI(); refreshList(); updateMiniDash(); }
     else toast(r.message||'อัปเดตไม่สำเร็จ', false);
   }, 'กำลังบันทึก…');
 });
@@ -817,11 +751,11 @@ async function confirmDelete(tx_id, btn){
   if (!tx_id) return;
   if (!confirm('ยืนยันการลบรายการนี้?')) return;
   const r = await withBusy(btn, ()=> api('transactions/delete', { tx_id }, true), 'กำลังลบ…');
-  if (r.ok){ toast('ลบสำเร็จ'); await loadRecentFromAPI(); refreshList(); }
+  if (r.ok){ toast('ลบสำเร็จ'); await loadRecentFromAPI(); refreshList(); updateMiniDash(); }
   else toast(r.message||'ลบไม่สำเร็จ', false);
 }
 
-/** ====== Range shortcuts (แท็บรายการ) ====== */
+/** ====== Range shortcuts ====== */
 const debouncedRefresh = debounce(()=> refreshList(), 350);
 function setRange(from, to){ $('#fFrom').value = from; $('#fTo').value = to; updateRangeUI(); debouncedRefresh(); }
 function setRangeDaysBack(days){
@@ -831,13 +765,11 @@ function setRangeDaysBack(days){
 function updateRangeUI(){
   const f=$('#fFrom').value, t=$('#fTo').value;
   const today=todayISO(); const mb=monthBounds(new Date()); const y=new Date().getFullYear();
-  const flags={
-    today:(f===today && t===today),
+  const flags={ today:(f===today && t===today),
     d7:(f===toYMD(new Date(new Date().setDate(new Date().getDate()-6))) && t===today),
     d30:(f===toYMD(new Date(new Date().setDate(new Date().getDate()-29))) && t===today),
     month:(f===mb.start && t===mb.end),
-    year:(f===`${y}-01-01` && t===`${y}-12-31`)
-  };
+    year:(f===`${y}-01-01` && t===`${y}-12-31`) };
   document.querySelectorAll('.chip[data-range]').forEach(ch=>{
     const k=ch.dataset.range;
     const on=(k==='today'&&flags.today)||(k==='7'&&flags.d7)||(k==='30'&&flags.d30)||(k==='month'&&flags.month)||(k==='year'&&flags.year);
@@ -873,8 +805,7 @@ function activateTab(tab){
     $('#txDate').value = todayISO();
     setType('expense');
     Promise.all([loadCategoriesAll(), loadDebtsList()]).then(()=> {
-      populateCatSelect();
-      loadRecentFromAPI();
+      populateCatSelect(); loadRecentFromAPI(); updateMiniDash();
     }).finally(()=> loaded.create = true);
   }
   if (!isCreate){
@@ -882,9 +813,9 @@ function activateTab(tab){
       const mb = monthBounds(new Date());
       $('#fFrom').value = mb.start; $('#fTo').value = mb.end; updateRangeUI();
       refreshList().then(()=> loaded.list = true);
-    } else if (listDirty){
-      refreshList().finally(()=> { listDirty = false; });
-    }
+    } else if (listDirty){ refreshList().finally(()=> { listDirty = false; }); }
+    // mini dashboard คงเดิม (เดือนนี้) — อัปเดตให้ชัวร์
+    updateMiniDash();
   }
 }
 $('#tab-create').addEventListener('click', ()=> activateTab('create'));
