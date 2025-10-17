@@ -199,7 +199,7 @@
           </div>
         </div>
 
-        <!-- ล่าสุด 5 รายการ (เพิ่มใหม่) -->
+        <!-- ล่าสุด 5 รายการ -->
         <div class="card" role="region" aria-label="ล่าสุด 5 รายการ">
           <div class="muted" style="margin-bottom:.5rem">ล่าสุด 5 รายการ</div>
           <div class="table-viewport" id="recentBox">
@@ -325,8 +325,9 @@ let cats = { income:[], expense:[], saving:[] };
 let debtsCache = [];
 const loaded = { create:false, list:false };
 const THB = new Intl.NumberFormat('th-TH',{minimumFractionDigits:2, maximumFractionDigits:2});
-let recentItems = []; // ล่าสุด 5 รายการ (ในหน้า "บันทึก")
+let recentItems = []; // ล่าสุด 5 รายการ
 const cacheTTL = { cats: 24*60*60*1000, debts: 10*60*1000 };
+let listDirty = false; // ✅ บันทึกสำเร็จในแท็บบันทึก -> ให้แท็บรายการรีเฟรชอัตโนมัติ
 
 /** ====== HELPERS ====== */
 const $  = s => document.querySelector(s);
@@ -482,14 +483,12 @@ function renderRecent(){
   tb.appendChild(frag);
 }
 async function loadRecentFromAPI(){
-  // ดึงย้อนหลัง 14 วันพอให้ไว
   const to=todayISO();
   const d=new Date(); d.setDate(d.getDate()-13);
   const from=toYMD(d);
   const r = await api('transactions/list', { from, to, type:'all' }, true);
   if (!r.ok){ renderRecent(); return; }
   const arr = (r.items||[]).map(it=>({ ...it, amount:+it.amount }));
-  // sort ล่าสุดก่อน แล้วเก็บ 5
   arr.sort((a,b)=> (String(b.date||'')+String(b.time||'')).localeCompare(String(a.date||'')+String(a.time||'')));
   recentItems = arr.slice(0,5);
   renderRecent();
@@ -497,12 +496,9 @@ async function loadRecentFromAPI(){
 
 /** ====== Save Transaction ====== */
 function normalizeAmount(v){ const n=Number(v); return (isFinite(n) && n>0) ? Math.round(n*100)/100 : NaN; }
-// IMPORTANT: ไม่ reset วันที่หลังบันทึก เพื่อ "ค้างวันที่ที่เปลี่ยนไว้"
 function clearFormKeepDate(){
-  // ไม่แตะ #txDate
   $('#txAmount').value=''; $('#txNote').value='';
   $('#txInt').value=''; $('#txPrin').value='';
-  // คง type/หมวดไว้เพื่อบันทึกรายการต่อไปไว ๆ
 }
 async function saveTx(ev){
   const btn = ev.currentTarget;
@@ -525,9 +521,9 @@ async function saveTx(ev){
         const r = await api('debts/repay', { debt_id, date, amount, interest_paid:interest, principal_paid:principal, note }, true);
         if (r.ok){
           toast('บันทึกจ่ายหนี้สำเร็จ');
-          // เพิ่มเข้า recent
           recentItems.unshift({ _kind:'debt_repay', date, amount, note, lender_name:(debtsCache.find(d=>String(d.debt_id)===String(debt_id))?.lender_name)||'' });
           recentItems = recentItems.slice(0,5); renderRecent();
+          listDirty = true; // ✅ แจ้งให้แท็บรายการรู้ว่ามีข้อมูลใหม่
           clearFormKeepDate(); $('#txAmount').focus();
         } else toast(r.message||'บันทึกไม่สำเร็จ', false);
         return;
@@ -539,13 +535,14 @@ async function saveTx(ev){
           toast('บันทึกกู้หนี้สำเร็จ');
           recentItems.unshift({ _kind:'debt_borrow', date, amount, note, lender_name:(debtsCache.find(d=>String(d.debt_id)===String(debt_id))?.lender_name)||'' });
           recentItems = recentItems.slice(0,5); renderRecent();
+          listDirty = true; // ✅
           clearFormKeepDate(); $('#txAmount').focus();
         } else toast(r.message||'บันทึกไม่สำเร็จ', false);
         return;
       }
     }
 
-    // ธรรมดา (income/expense/saving)
+    // income/expense/saving
     const amount = normalizeAmount($('#txAmount').value);
     const category_id = $('#txCat').value;
     if (isNaN(amount)){ toast('จำนวนเงินไม่ถูกต้อง', false); return; }
@@ -558,6 +555,7 @@ async function saveTx(ev){
       const catName = (cats[type]||[]).find(c=>String(c.category_id)===String(category_id))?.name_th || '';
       recentItems.unshift({ date, type, amount, note, cat_name:catName, category_id });
       recentItems = recentItems.slice(0,5); renderRecent();
+      listDirty = true; // ✅
       clearFormKeepDate(); $('#txAmount').focus();
     } else toast('บันทึกไม่สำเร็จ', false);
   }, 'กำลังบันทึก…');
@@ -608,12 +606,17 @@ async function refreshList(btn){
   lastItems = (r.items||[]).map(x=> ({...x, amount:+x.amount}));
   renderTable(lastItems);
 }
+
+// ✅ ใส่ busy ที่ปุ่มแก้ไข ขณะยังโหลดข้อมูลก่อนเปิด modal
 document.addEventListener('click', (e)=>{
   const btn = e.target.closest('#tblBody button[data-act]');
   if (!btn) return;
   const id = btn.getAttribute('data-id');
   const act = btn.getAttribute('data-act');
-  if (act==='edit') openEditById(id);
+  if (act==='edit'){
+    setBusy(btn, true, 'กำลังเปิด…');          // แสดงสัญลักษณ์กำลังโหลดบนปุ่มทันที
+    openEditById(id).finally(()=> setBusy(btn,false)); // เคลียร์เมื่อเสร็จ/ผิดพลาด
+  }
   if (act==='del')  confirmDelete(id, btn);
 });
 
@@ -773,18 +776,22 @@ function activateTab(tab){
   $('#pane-list').classList.toggle('active', !isCreate);
 
   if (isCreate && !loaded.create){
-    // ตั้ง default เป็น "วันนี้" เฉพาะตอนโหลดหน้า — ถ้าผู้ใช้เปลี่ยนวันและบันทึก เรา "ค้างวันที่" ไว้ (clearForm จะไม่รีเซ็ต)
     $('#txDate').value = todayISO();
     setType('expense');
     Promise.all([loadCategoriesAll(), loadDebtsList()]).then(()=> {
       populateCatSelect();
-      loadRecentFromAPI(); // โหลดล่าสุด 5 สำหรับแสดงตอนแรก
+      loadRecentFromAPI();
     }).finally(()=> loaded.create = true);
   }
-  if (!isCreate && !loaded.list){
-    const mb = monthBounds(new Date());
-    $('#fFrom').value = mb.start; $('#fTo').value = mb.end; updateRangeUI();
-    refreshList().then(()=> loaded.list = true);
+  if (!isCreate){
+    if (!loaded.list){
+      const mb = monthBounds(new Date());
+      $('#fFrom').value = mb.start; $('#fTo').value = mb.end; updateRangeUI();
+      refreshList().then(()=> loaded.list = true);
+    } else if (listDirty){
+      // ✅ ถ้ามีบันทึกรายการใหม่ในแท็บบันทึก ให้รีเฟรชอัตโนมัติเมื่อสลับมาที่แท็บรายการ
+      refreshList().finally(()=> { listDirty = false; });
+    }
   }
 }
 $('#tab-create').addEventListener('click', ()=> activateTab('create'));
