@@ -198,7 +198,7 @@
           </div>
         </div>
 
-        <!-- ล่าสุด 5 รายการ -->
+        <!-- ล่าสุด 5 รายการ (เพิ่มปุ่มแก้ไข/ลบ) -->
         <div class="card" role="region" aria-label="ล่าสุด 5 รายการ">
           <div class="muted" style="margin-bottom:.5rem">ล่าสุด 5 รายการ</div>
           <div class="table-viewport" id="recentBox">
@@ -210,10 +210,11 @@
                   <th>หมวด/เจ้าหนี้</th>
                   <th class="right" style="width:130px">จำนวน</th>
                   <th>หมายเหตุ</th>
+                  <th style="width:160px">จัดการ</th>
                 </tr>
               </thead>
               <tbody id="recentBody">
-                <tr><td colspan="5" class="muted">ยังไม่มีรายการ</td></tr>
+                <tr><td colspan="6" class="muted">ยังไม่มีรายการ</td></tr>
               </tbody>
             </table>
           </div>
@@ -338,6 +339,7 @@ const toYMD = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}
 const todayISO = ()=> toYMD(new Date());
 const monthBounds = d => ({ start: toYMD(new Date(d.getFullYear(), d.getMonth(), 1)), end: toYMD(new Date(d.getFullYear(), d.getMonth()+1, 0)) });
 const debounce = (fn,ms=300)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+function addDays(ymd, delta){ const [y,m,d]=ymd.split('-').map(Number); const nd=new Date(y, m-1, d+delta); return toYMD(nd); }
 
 function setBusy(btn, on, tempText){
   if (!btn) return;
@@ -462,7 +464,6 @@ function setType(type){
 
 /** ====== Unified display helper (ใช้ทั้ง 2 ตาราง) ====== */
 function getDisplayMeta(x){
-  // ตรรกะเดียวกับแท็บ "รายการ"
   const isDebtTx = (x.debt_tx_id || x.type==='debt' || (x.category_name||'').includes('หนี้'));
   const isRepay  = isDebtTx && (String(x.sub_type || 'repay').includes('repay') || (x.note||'').includes('จ่ายหนี้'));
   let badge='badge-exp', text='รายจ่าย';
@@ -470,7 +471,6 @@ function getDisplayMeta(x){
   else if (x.type==='income'){ badge='badge-inc'; text='รายรับ'; }
   else if (x.type==='saving'){ badge='badge-sav'; text='ออมเงิน'; }
 
-  // ชื่อหมวด/เจ้าหนี้
   const catMap = {};
   [...(cats.expense||[]), ...(cats.income||[]), ...(cats.saving||[])]
     .forEach(c=> catMap[c.category_id]=c.name_th);
@@ -482,7 +482,7 @@ function getDisplayMeta(x){
 /** ====== ล่าสุด 5 รายการ ====== */
 function renderRecent(){
   const tb = $('#recentBody'); tb.innerHTML='';
-  if (!recentItems.length){ tb.innerHTML='<tr><td colspan="5" class="muted">ยังไม่มีรายการ</td></tr>'; return; }
+  if (!recentItems.length){ tb.innerHTML='<tr><td colspan="6" class="muted">ยังไม่มีรายการ</td></tr>'; return; }
   const frag=document.createDocumentFragment();
   for (const x of recentItems.slice(0,5)){
     const { badge, text, catName } = getDisplayMeta(x);
@@ -492,7 +492,13 @@ function renderRecent(){
       <td><span class="badge ${badge}">${text}</span></td>
       <td>${esc(catName)}</td>
       <td class="right">${fmt(+x.amount||0)}</td>
-      <td>${esc(x.note||'')}</td>`;
+      <td>${esc(x.note||'')}</td>
+      <td>
+        <div class="actions">
+          <button class="btn-ghost" data-recent-act="edit" data-id="${esc(x.tx_id||'')}" data-date="${esc((x.date||'').slice(0,10))}">แก้ไข</button>
+          <button class="btn-danger" data-recent-act="del"  data-id="${esc(x.tx_id||'')}">ลบ</button>
+        </div>
+      </td>`;
     frag.appendChild(tr);
   }
   tb.appendChild(frag);
@@ -538,10 +544,7 @@ async function saveTx(ev){
         const r = await api('debts/repay', { debt_id, date, amount, interest_paid:interest, principal_paid:principal, note }, true);
         if (r.ok){
           toast('บันทึกจ่ายหนี้สำเร็จ');
-          const lender = debtsCache.find(d=>String(d.debt_id)===String(debt_id))?.lender_name || '';
-          // ใส่ sub_type เพื่อให้ logic เดียวกับแท็บรายการทำงานเหมือนกัน
-          recentItems.unshift({ debt_tx_id:'new', sub_type:'repay', date, amount, note, lender_name:lender, type:'debt' });
-          recentItems = recentItems.slice(0,5); renderRecent();
+          await loadRecentFromAPI();  // ดึงจากเซิร์ฟเวอร์เพื่อให้มี tx_id ใช้งานปุ่มได้
           listDirty = true;
           clearFormKeepDate(); $('#txAmount').focus();
         } else toast(r.message||'บันทึกไม่สำเร็จ', false);
@@ -552,9 +555,7 @@ async function saveTx(ev){
         const r = await api('debts/borrow', { debt_id, date, amount, note }, true);
         if (r.ok){
           toast('บันทึกกู้หนี้สำเร็จ');
-          const lender = debtsCache.find(d=>String(d.debt_id)===String(debt_id))?.lender_name || '';
-          recentItems.unshift({ debt_tx_id:'new', sub_type:'borrow', date, amount, note, lender_name:lender, type:'debt' });
-          recentItems = recentItems.slice(0,5); renderRecent();
+          await loadRecentFromAPI();
           listDirty = true;
           clearFormKeepDate(); $('#txAmount').focus();
         } else toast(r.message||'บันทึกไม่สำเร็จ', false);
@@ -572,9 +573,7 @@ async function saveTx(ev){
     const r = await api('transactions/create', payload, true);
     if (r.ok){
       toast('บันทึกสำเร็จ');
-      const catName = (cats[type]||[]).find(c=>String(c.category_id)===String(category_id))?.name_th || '';
-      recentItems.unshift({ date, type, amount, note, cat_name:catName, category_id });
-      recentItems = recentItems.slice(0,5); renderRecent();
+      await loadRecentFromAPI();
       listDirty = true;
       clearFormKeepDate(); $('#txAmount').focus();
     } else toast('บันทึกไม่สำเร็จ', false);
@@ -619,27 +618,41 @@ async function refreshList(btn){
   renderTable(lastItems);
 }
 
-// ปุ่มแก้ไข: แสดง busy ระหว่างโหลด modal
+// ปุ่มแก้ไขของแท็บรายการ: แสดง busy ระหว่างโหลด modal
 document.addEventListener('click', (e)=>{
-  const btn = e.target.closest('#tblBody button[data-act]');
-  if (!btn) return;
-  const id = btn.getAttribute('data-id');
-  const act = btn.getAttribute('data-act');
-  if (act==='edit'){
-    setBusy(btn, true, 'กำลังเปิด…');
-    openEditById(id).finally(()=> setBusy(btn,false));
+  const btn1 = e.target.closest('#tblBody button[data-act]');
+  const btn2 = e.target.closest('#recentBody button[data-recent-act]');
+  if (btn1){
+    const id = btn1.getAttribute('data-id');
+    const act = btn1.getAttribute('data-act');
+    if (act==='edit'){ setBusy(btn1, true, 'กำลังเปิด…'); openEditById(id).finally(()=> setBusy(btn1,false)); }
+    if (act==='del')  confirmDelete(id, btn1);
   }
-  if (act==='del')  confirmDelete(id, btn);
+  if (btn2){
+    const id = btn2.getAttribute('data-id');
+    const act = btn2.getAttribute('data-recent-act');
+    const dateHint = btn2.getAttribute('data-date') || todayISO();
+    if (act==='edit'){ setBusy(btn2, true, 'กำลังเปิด…'); openEditById(id, dateHint).finally(()=> setBusy(btn2,false)); }
+    if (act==='del')  confirmDelete(id, btn2);
+  }
 });
 
 /** ====== Edit/Delete ====== */
-async function openEditById(txId){
+async function openEditById(txId, dateHint){
   if (!txId){ toast('ไม่พบรหัสรายการ', false); return; }
   let it = lastItems.find(x=> String(x.tx_id)===String(txId));
   if (!it){
-    const r = await api('transactions/list', { from: $('#fFrom').value, to: $('#fTo').value, type:'all' }, true);
-    if (!r.ok){ toast('โหลดรายการไม่สำเร็จ', false); return; }
-    lastItems = (r.items||[]); it = lastItems.find(x=> String(x.tx_id)===String(txId));
+    // ถ้ายังไม่เคยเปิดแท็บรายการ ให้ใช้ช่วงอิง dateHint เพื่อดึงจากเซิร์ฟเวอร์
+    if (!loaded.list && dateHint){
+      const from = addDays(dateHint, -20);
+      const to   = addDays(dateHint, 1);
+      const r = await api('transactions/list', { from, to, type:'all' }, true);
+      if (r.ok){ lastItems = (r.items||[]); }
+    }else{
+      const r = await api('transactions/list', { from: $('#fFrom').value, to: $('#fTo').value, type:'all' }, true);
+      if (r.ok){ lastItems = (r.items||[]); }
+    }
+    it = lastItems.find(x=> String(x.tx_id)===String(txId));
     if (!it){ toast('รายการหายไปแล้ว', false); return; }
   }
   const isDebtRepay = !!it.debt_tx_id && (String(it.debt_type||'repay').includes('repay') || (it.category_name||'').includes('จ่ายหนี้'));
@@ -727,7 +740,7 @@ $('#btnUpdate').addEventListener('click', async (e)=>{
       }
       r = await api('transactions/update', payload, true);
     }
-    if (r.ok){ toast('บันทึกแก้ไขสำเร็จ'); closeEdit(); refreshList(); }
+    if (r.ok){ toast('บันทึกแก้ไขสำเร็จ'); closeEdit(); await loadRecentFromAPI(); refreshList(); }
     else toast(r.message||'อัปเดตไม่สำเร็จ', false);
   }, 'กำลังบันทึก…');
 });
@@ -735,7 +748,7 @@ async function confirmDelete(tx_id, btn){
   if (!tx_id) return;
   if (!confirm('ยืนยันการลบรายการนี้?')) return;
   const r = await withBusy(btn, ()=> api('transactions/delete', { tx_id }, true), 'กำลังลบ…');
-  if (r.ok){ toast('ลบสำเร็จ'); refreshList(); }
+  if (r.ok){ toast('ลบสำเร็จ'); await loadRecentFromAPI(); refreshList(); }
   else toast(r.message||'ลบไม่สำเร็จ', false);
 }
 
