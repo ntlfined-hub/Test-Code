@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>FIN-JOD · Hybrid Tabs (เร็วขึ้น + ล่าสุด 5 รายการ)</title>
+  <title>FIN-JOD · Hybrid Tabs (ปุ่มมีสถานะกำลังโหลด)</title>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
@@ -36,7 +36,7 @@
 
     .tabs{ display:flex; gap:.5rem; background:#1b1b1b; border:1px solid var(--line); border-radius:12px; padding:.25rem; margin-bottom:1rem }
     .tab-btn{ flex:1; padding:.7rem 1rem; border-radius:10px; border:1px solid transparent; background:transparent; color:#ddd; font-weight:700; cursor:pointer }
-    .tab-btn.active{ background:#2a2a2a; border-color:#3a3a3a; color:#fff }
+    .tab-btn.active{ background:#2a2a2a; border-color:#3a2a3a; color:#fff }
     .tab-pane{ display:none }
     .tab-pane.active{ display:block }
 
@@ -55,7 +55,7 @@
     button{ background:var(--primary); border:none; font-weight:700; cursor:pointer; position:relative }
     button:disabled{ opacity:.65; cursor:not-allowed }
 
-    /* ปุ่มกำลังโหลด */
+    /* ปุ่มสถานะกำลังโหลด — วงกลมเล็กด้านขวาปุ่ม */
     button[aria-busy="true"]{ pointer-events:none }
     button[aria-busy="true"]::after{
       content:""; position:absolute; right:10px; top:50%; transform:translateY(-50%);
@@ -199,21 +199,23 @@
           </div>
         </div>
 
-        <!-- ล่าสุด 5 รายการ -->
+        <!-- ล่าสุด 5 รายการ (เพิ่มใหม่) -->
         <div class="card" role="region" aria-label="ล่าสุด 5 รายการ">
-          <div class="muted" style="margin-bottom:.5rem">ล่าสุด 5 รายการ (เฉพาะที่บันทึกใน session นี้)</div>
-          <div class="table-viewport" style="max-height:280px">
+          <div class="muted" style="margin-bottom:.5rem">ล่าสุด 5 รายการ</div>
+          <div class="table-viewport" id="recentBox">
             <table>
               <thead>
                 <tr>
-                  <th style="width:120px">วันที่</th>
-                  <th style="width:120px">ประเภท</th>
+                  <th style="width:110px">วันที่</th>
+                  <th style="width:140px">ประเภท</th>
                   <th>หมวด/เจ้าหนี้</th>
-                  <th class="right" style="width:140px">จำนวน</th>
+                  <th class="right" style="width:130px">จำนวน</th>
                   <th>หมายเหตุ</th>
                 </tr>
               </thead>
-              <tbody id="recentBody"><tr><td colspan="5" class="muted">ยังไม่มีรายการล่าสุด</td></tr></tbody>
+              <tbody id="recentBody">
+                <tr><td colspan="5" class="muted">ยังไม่มีรายการ</td></tr>
+              </tbody>
             </table>
           </div>
         </div>
@@ -228,11 +230,11 @@
             <div class="col">
               <label>&nbsp;</label>
               <div class="seg">
-                <button class="segbtn" data-r="today">วันนี้</button>
-                <button class="segbtn" data-r="7">7 วัน</button>
-                <button class="segbtn" data-r="30">30 วัน</button>
-                <button class="segbtn" data-r="month">เดือนนี้</button>
-                <button class="segbtn" data-r="year">ปีนี้</button>
+                <button class="chip" data-range="today">วันนี้</button>
+                <button class="chip" data-range="7">7 วัน</button>
+                <button class="chip" data-range="30">30 วัน</button>
+                <button class="chip" data-range="month">เดือนนี้</button>
+                <button class="chip" data-range="year">ปีนี้</button>
                 <button id="btnRefresh" class="btn-blue" style="margin-left:auto">รีเฟรช</button>
               </div>
               <div class="muted" style="margin-top:.4rem">กำลังดู: <b id="rangeBadge">กำหนดเอง</b></div>
@@ -313,7 +315,7 @@
 <script>
 /** ====== CONFIG ====== */
 const LIFF_ID = '2008276151-Oyp12d62';
-const API_URL  = 'https://script.google.com/macros/s/AKfycbxV3xOU1kQM86jUJtfer8hW_HgYkcLfpH942saPVbCZ1RDmN_4LYjpk72OxdKKLQAFt/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxV3xOU1kQM86jUJtfer8hW_HgYkcLfpH942saPVbCZ1RDmN_4LYjpk72OxdKKLQAFt/exec';
 
 /** ====== STATE ====== */
 let token = localStorage.getItem('fin_token') || '';
@@ -321,24 +323,22 @@ let displayName = localStorage.getItem('fin_name') || '';
 let lastItems = [];
 let cats = { income:[], expense:[], saving:[] };
 let debtsCache = [];
-let recent5 = [];                  // เก็บล่าสุด 5 (session นี้)
-let pinnedDate = null;             // วันที่ที่ผู้ใช้ตั้งเอง ให้ค้างไว้จนรีเฟรช
 const loaded = { create:false, list:false };
 const THB = new Intl.NumberFormat('th-TH',{minimumFractionDigits:2, maximumFractionDigits:2});
+let recentItems = []; // ล่าสุด 5 รายการ (ในหน้า "บันทึก")
+const cacheTTL = { cats: 24*60*60*1000, debts: 10*60*1000 };
 
 /** ====== HELPERS ====== */
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const fmt = n => THB.format(Number(n||0));
-const esc = s => String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const esc = s => String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]));
 const toast = (msg, ok=true)=>{ const el=$('#toast'); el.textContent=msg; el.style.background= ok?'#00c896':'#ff4d4f'; el.style.opacity='1'; setTimeout(()=> el.style.opacity='0', 2200); };
 const toYMD = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const todayISO = ()=> toYMD(new Date());
 const monthBounds = d => ({ start: toYMD(new Date(d.getFullYear(), d.getMonth(), 1)), end: toYMD(new Date(d.getFullYear(), d.getMonth()+1, 0)) });
-const safeKey = x => `${(x.date||'').slice(0,10)}T${(x.time||'00:00:00').slice(0,8)}`;
 const debounce = (fn,ms=300)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
 
-/** ====== Busy (เฉพาะปุ่ม) ====== */
 function setBusy(btn, on, tempText){
   if (!btn) return;
   if (on){
@@ -354,29 +354,27 @@ async function withBusy(btn, fn, textWhile='กำลังโหลด…'){
   setBusy(btn, true, textWhile);
   try{ return await fn(); } finally{ setBusy(btn, false); }
 }
-
-/** ====== API ====== */
-async function fetchJSON(url, options={}) {
+async function fetchJSON(url, options={}){
   try{
-    const res = await fetch(url, { ...options, headers:{ 'Content-Type':'text/plain;charset=utf-8', ...(options.headers||{}) } });
-    const text = await res.text();
-    try { return JSON.parse(text); } catch { return { ok:false, error:'NON_JSON', raw:text }; }
+    const res = await fetch(url, { ...options, headers:{'Content-Type':'text/plain;charset=utf-8', ...(options.headers||{})} });
+    const text = await res.text(); try { return JSON.parse(text); } catch{ return { ok:false, error:'NON_JSON', raw:text }; }
   }catch(e){ return { ok:false, error:'NETWORK', message:String(e&&e.message||e) }; }
 }
 async function api(path, payload={}, useToken=true){
   const body = { path, payload }; if (useToken && token) body.token = token;
   return fetchJSON(API_URL, { method:'POST', body: JSON.stringify(body) });
 }
+function cacheGet(k){
+  const raw = localStorage.getItem(k); if(!raw) return null;
+  try{ const {exp,data} = JSON.parse(raw); if (Date.now()>exp){ localStorage.removeItem(k); return null; } return data; }catch{ return null; }
+}
+function cacheSet(k,data,ttl){ localStorage.setItem(k, JSON.stringify({exp:Date.now()+ttl, data})); }
 
 /** ====== LIFF ====== */
 function waitForLiffReady(timeoutMs=5000){
   return new Promise(res=>{
     if (window.liff){ return res(true); }
-    const t0 = Date.now();
-    const iv = setInterval(()=>{
-      if (window.liff){ clearInterval(iv); res(true); }
-      else if (Date.now()-t0>timeoutMs){ clearInterval(iv); res(false); }
-    }, 30);
+    const t0=Date.now(), iv=setInterval(()=>{ if (window.liff){ clearInterval(iv); res(true); } else if(Date.now()-t0>timeoutMs){ clearInterval(iv); res(false); } },30);
   });
 }
 async function ensureTokenViaLIFF(){
@@ -384,69 +382,63 @@ async function ensureTokenViaLIFF(){
   if (!okReady){ toast('LIFF ยังไม่พร้อม โปรดรีเฟรช', false); return false; }
   try{ await liff.init({ liffId: LIFF_ID }); }catch{ toast('เริ่ม LIFF ไม่สำเร็จ', false); return false; }
   if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return false; }
-  let prof; try{ prof = await liff.getProfile(); }catch{ toast('อ่านโปรไฟล์ LINE ไม่ได้', false); return false; }
 
+  let prof; try{ prof = await liff.getProfile(); }catch{ toast('อ่านโปรไฟล์ LINE ไม่ได้', false); return false; }
   const r = await api('liff/link_or_login', { line_user_id: prof.userId, display_name: prof.displayName||'' }, false);
   if (!r.ok){ toast(r.message || 'เกิดข้อผิดพลาด', false); return false; }
 
   if (r.need_verification){
     $('#who').textContent = prof.displayName || '';
-    $('#linkBox').classList.remove('hide');
-    $('#app').classList.add('hide');
+    $('#linkBox').classList.remove('hide'); $('#app').classList.add('hide');
     return false;
   }
   token = r.token; displayName = r.display_name || prof.displayName || '';
-  localStorage.setItem('fin_token', token);
-  localStorage.setItem('fin_name', displayName);
+  localStorage.setItem('fin_token', token); localStorage.setItem('fin_name', displayName);
   $('#who').textContent = displayName;
-  $('#linkBox').classList.add('hide');
-  $('#app').classList.remove('hide');
+  $('#linkBox').classList.add('hide'); $('#app').classList.remove('hide');
   return true;
 }
+$('#btnLink')?.addEventListener('click', async (e)=>{
+  const btn=e.currentTarget;
+  const user_id=$('#inpUser').value.trim(); const pin=$('#inpPin').value.trim();
+  if (!user_id || !pin){ toast('กรอก User และ PIN ให้ครบ', false); return; }
+  let prof; try{ prof=await liff.getProfile(); }catch{ toast('อ่านโปรไฟล์ LINE ไม่ได้', false); return; }
+  const r = await withBusy(btn, ()=> api('liff/link_or_login',{ line_user_id:prof.userId, display_name:prof.displayName||'', user_id, pin }, false), 'กำลังผูกบัญชี…');
+  if (!r.ok){ toast(r.message||'ผูกบัญชีไม่สำเร็จ', false); return; }
+  token=r.token; displayName=r.display_name||user_id;
+  localStorage.setItem('fin_token', token); localStorage.setItem('fin_name', displayName);
+  $('#who').textContent = displayName; $('#linkBox').classList.add('hide'); $('#app').classList.remove('hide');
+});
 
-/** ====== Cache helpers ====== */
-function cacheGet(k){
-  try{ const raw = localStorage.getItem(k); if(!raw) return null; const {exp,data}=JSON.parse(raw); if(Date.now()>exp){ localStorage.removeItem(k); return null; } return data; }catch{return null}
-}
-function cacheSet(k,data,ttlMs){ localStorage.setItem(k, JSON.stringify({exp: Date.now()+ttlMs, data})); }
-
-/** ====== Categories / Debts (แคช) ====== */
+/** ====== Categories / Debts (แคช + เร็วขึ้น) ====== */
 async function loadCategoriesAll(){
+  const cache = cacheGet('fin_cats_v1');
+  if (cache){ cats = cache; populateCatSelect(); return; }
   $('#txCat').disabled = true; $('#txCat').innerHTML = '<option>กำลังโหลด…</option>';
-
-  const cached = cacheGet('fin_cats_v1');
-  if (cached){ cats = cached; $('#txCat').disabled=false; populateCatSelect(); return; }
-
-  const types = ['income','expense','saving'];
-  const results = await Promise.all(types.map(t=> api('categories/list', { type:t }, true)));
-  types.forEach((t,i)=>{ cats[t] = results[i].ok ? (results[i].items||[]) : []; });
-  cacheSet('fin_cats_v1', cats, 24*60*60*1000); // 24 ชม.
+  const types=['income','expense','saving'];
+  const [ri,re,rs]=await Promise.all(types.map(t=> api('categories/list',{type:t},true)));
+  cats={ income:ri.ok?(ri.items||[]):[], expense:re.ok?(re.items||[]):[], saving:rs.ok?(rs.items||[]):[] };
+  cacheSet('fin_cats_v1', cats, cacheTTL.cats);
   $('#txCat').disabled = false; populateCatSelect();
 }
 async function loadDebtsList(){
-  $('#txDebt').disabled = true; $('#txDebt').innerHTML = '<option>กำลังโหลด…</option>';
-
-  const cached = cacheGet('fin_debts_v1');
-  if (cached){ debtsCache = cached; fillSelect($('#txDebt'), debtsCache, d=>d.debt_id, d=>d.lender_name||d.debt_id); $('#txDebt').disabled=false; return; }
-
-  const r = await api('debts/list', {}, true);
-  debtsCache = r.ok ? (r.items||[]) : [];
-  cacheSet('fin_debts_v1', debtsCache, 10*60*1000); // 10 นาที
+  const cache = cacheGet('fin_debts_v1');
+  if (cache){ debtsCache = cache; fillSelect($('#txDebt'), debtsCache, d=>d.debt_id, d=>d.lender_name||d.debt_id); $('#txDebt').disabled=false; return; }
+  $('#txDebt').disabled=true; $('#txDebt').innerHTML='<option>กำลังโหลด…</option>';
+  const r=await api('debts/list', {}, true);
+  debtsCache = r.ok?(r.items||[]):[];
+  cacheSet('fin_debts_v1', debtsCache, cacheTTL.debts);
   fillSelect($('#txDebt'), debtsCache, d=>d.debt_id, d=>d.lender_name||d.debt_id);
-  $('#txDebt').disabled = false;
+  $('#txDebt').disabled=false;
 }
 function fillSelect(el, items, getVal, getText){
-  const frag = document.createDocumentFragment();
-  for(const it of items){
-    const o=document.createElement('option');
-    o.value=getVal(it); o.textContent=getText(it); frag.appendChild(o);
-  }
+  const frag=document.createDocumentFragment();
+  for(const it of items){ const o=document.createElement('option'); o.value=getVal(it); o.textContent=getText(it); frag.appendChild(o); }
   el.innerHTML=''; el.appendChild(frag);
 }
 function populateCatSelect(){
-  const t = $('#txType').value;
-  const list = (cats[t]||[]);
-  if (!list.length) $('#txCat').innerHTML = '<option value="">— ไม่มีหมวด —</option>';
+  const t=$('#txType').value; const list=(cats[t]||[]);
+  if (!list.length) $('#txCat').innerHTML='<option value="">— ไม่มีหมวด —</option>';
   else fillSelect($('#txCat'), list, c=>c.category_id, c=>c.name_th||c.category_id);
 }
 
@@ -463,54 +455,55 @@ function setType(type){
   if (!debtMode) populateCatSelect();
 }
 
-/** ====== Date pinning ====== */
-function setDefaultDate(){
-  // ถ้ายังไม่เคยเปลี่ยน ให้เป็นวันนี้; ถ้ามีการเปลี่ยนแล้ว ให้ค้างตามนั้น
-  $('#txDate').value = pinnedDate || todayISO();
-}
-$('#txDate').addEventListener('change', ()=>{ // ผู้ใช้ปรับวันที่ → pin
-  const v = $('#txDate').value;
-  pinnedDate = v || todayISO();
-});
-
-/** ====== Save Transaction ====== */
-function normalizeAmount(v){ const n=Number(v); return (isFinite(n) && n>0) ? Math.round(n*100)/100 : NaN; }
-function clearFormKeepDate(){
-  // เคลียร์ทุกอย่าง ยกเว้นวันที่ค้างไว้ตาม pinnedDate
-  $('#txAmount').value=''; $('#txNote').value=''; $('#txInt').value=''; $('#txPrin').value='';
-  if ($('#txCat').options.length) $('#txCat').selectedIndex = 0;
-  if ($('#txDebt').options.length) $('#txDebt').selectedIndex = 0;
-  setDefaultDate(); // ใช้ pinnedDate ถ้ามี
-}
-function catNameById(id){
-  const all = [...(cats.expense||[]), ...(cats.income||[]), ...(cats.saving||[])];
-  const f = all.find(c=> String(c.category_id)===String(id));
-  return f ? (f.name_th || f.category_id) : (id || '');
-}
-function pushRecent(row){
-  // เก็บมากสุด 5 รายการล่าสุด (บนสุดใหม่สุด)
-  recent5.unshift(row);
-  if (recent5.length>5) recent5.pop();
-  renderRecent();
+/** ====== ล่าสุด 5 รายการ ====== */
+function normalizeTypeBadge(x){
+  const isDebt = (x._kind==='debt_repay' || x._kind==='debt_borrow');
+  if (isDebt) return { cls:'badge-debt', text:(x._kind==='debt_repay'?'จ่ายหนี้':'กู้หนี้') };
+  if (x.type==='income') return { cls:'badge-inc', text:'รายรับ' };
+  if (x.type==='saving') return { cls:'badge-sav', text:'ออมเงิน' };
+  return { cls:'badge-exp', text:'รายจ่าย' };
 }
 function renderRecent(){
   const tb = $('#recentBody'); tb.innerHTML='';
-  if (!recent5.length){ tb.innerHTML='<tr><td colspan="5" class="muted">ยังไม่มีรายการล่าสุด</td></tr>'; return; }
-  const frag = document.createDocumentFragment();
-  for(const x of recent5){
-    const badge = x.badge || 'badge-exp';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${esc(x.date||'')}</td>
-      <td><span class="badge ${badge}">${esc(x.typeText||'')}</span></td>
-      <td>${esc(x.catText||'')}</td>
-      <td class="right">${fmt(x.amount||0)}</td>
+  if (!recentItems.length){ tb.innerHTML='<tr><td colspan="5" class="muted">ยังไม่มีรายการ</td></tr>'; return; }
+  const frag=document.createDocumentFragment();
+  for (const x of recentItems.slice(0,5)){
+    const { cls, text } = normalizeTypeBadge(x);
+    const catName = x._kind?.startsWith('debt') ? (x.lender_name||x.category_name||'เจ้าหนี้') : (x.category_name||x.cat_name||x.category_id||'');
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${esc((x.date||'').slice(0,10))}</td>
+      <td><span class="badge ${cls}">${text}</span></td>
+      <td>${esc(catName)}</td>
+      <td class="right">${fmt(+x.amount||0)}</td>
       <td>${esc(x.note||'')}</td>`;
     frag.appendChild(tr);
   }
   tb.appendChild(frag);
 }
+async function loadRecentFromAPI(){
+  // ดึงย้อนหลัง 14 วันพอให้ไว
+  const to=todayISO();
+  const d=new Date(); d.setDate(d.getDate()-13);
+  const from=toYMD(d);
+  const r = await api('transactions/list', { from, to, type:'all' }, true);
+  if (!r.ok){ renderRecent(); return; }
+  const arr = (r.items||[]).map(it=>({ ...it, amount:+it.amount }));
+  // sort ล่าสุดก่อน แล้วเก็บ 5
+  arr.sort((a,b)=> (String(b.date||'')+String(b.time||'')).localeCompare(String(a.date||'')+String(a.time||'')));
+  recentItems = arr.slice(0,5);
+  renderRecent();
+}
 
+/** ====== Save Transaction ====== */
+function normalizeAmount(v){ const n=Number(v); return (isFinite(n) && n>0) ? Math.round(n*100)/100 : NaN; }
+// IMPORTANT: ไม่ reset วันที่หลังบันทึก เพื่อ "ค้างวันที่ที่เปลี่ยนไว้"
+function clearFormKeepDate(){
+  // ไม่แตะ #txDate
+  $('#txAmount').value=''; $('#txNote').value='';
+  $('#txInt').value=''; $('#txPrin').value='';
+  // คง type/หมวดไว้เพื่อบันทึกรายการต่อไปไว ๆ
+}
 async function saveTx(ev){
   const btn = ev.currentTarget;
   const type = $('#txType').value;
@@ -519,7 +512,7 @@ async function saveTx(ev){
   if (!date){ toast('กรุณาเลือกวันที่', false); return; }
   if (!token){ toast('ยังไม่ได้รับสิทธิ์เข้าใช้งาน (LIFF)', false); return; }
 
-  const doReq = async ()=>{
+  await withBusy(btn, async ()=>{
     if (type==='debt_repay' || type==='debt_borrow'){
       const debt_id = $('#txDebt').value;
       if (!debt_id){ toast('กรุณาเลือกเจ้าหนี้', false); return; }
@@ -532,9 +525,9 @@ async function saveTx(ev){
         const r = await api('debts/repay', { debt_id, date, amount, interest_paid:interest, principal_paid:principal, note }, true);
         if (r.ok){
           toast('บันทึกจ่ายหนี้สำเร็จ');
-          // เพิ่มลง “ล่าสุด 5”
-          const lender = (debtsCache.find(d=> String(d.debt_id)===String(debt_id))||{}).lender_name || 'เจ้าหนี้';
-          pushRecent({ date, typeText:'จ่ายหนี้', badge:'badge-debt', catText:lender, amount, note });
+          // เพิ่มเข้า recent
+          recentItems.unshift({ _kind:'debt_repay', date, amount, note, lender_name:(debtsCache.find(d=>String(d.debt_id)===String(debt_id))?.lender_name)||'' });
+          recentItems = recentItems.slice(0,5); renderRecent();
           clearFormKeepDate(); $('#txAmount').focus();
         } else toast(r.message||'บันทึกไม่สำเร็จ', false);
         return;
@@ -544,14 +537,15 @@ async function saveTx(ev){
         const r = await api('debts/borrow', { debt_id, date, amount, note }, true);
         if (r.ok){
           toast('บันทึกกู้หนี้สำเร็จ');
-          const lender = (debtsCache.find(d=> String(d.debt_id)===String(debt_id))||{}).lender_name || 'เจ้าหนี้';
-          pushRecent({ date, typeText:'กู้หนี้', badge:'badge-debt', catText:lender, amount, note });
+          recentItems.unshift({ _kind:'debt_borrow', date, amount, note, lender_name:(debtsCache.find(d=>String(d.debt_id)===String(debt_id))?.lender_name)||'' });
+          recentItems = recentItems.slice(0,5); renderRecent();
           clearFormKeepDate(); $('#txAmount').focus();
         } else toast(r.message||'บันทึกไม่สำเร็จ', false);
         return;
       }
     }
 
+    // ธรรมดา (income/expense/saving)
     const amount = normalizeAmount($('#txAmount').value);
     const category_id = $('#txCat').value;
     if (isNaN(amount)){ toast('จำนวนเงินไม่ถูกต้อง', false); return; }
@@ -561,27 +555,23 @@ async function saveTx(ev){
     const r = await api('transactions/create', payload, true);
     if (r.ok){
       toast('บันทึกสำเร็จ');
-      // push “ล่าสุด 5”
-      const catText = catNameById(category_id);
-      const typeText = type==='income' ? 'รายรับ' : type==='saving' ? 'ออมเงิน' : 'รายจ่าย';
-      const badge = type==='income' ? 'badge-inc' : (type==='saving' ? 'badge-sav' : 'badge-exp');
-      pushRecent({ date, typeText, badge, catText, amount, note });
+      const catName = (cats[type]||[]).find(c=>String(c.category_id)===String(category_id))?.name_th || '';
+      recentItems.unshift({ date, type, amount, note, cat_name:catName, category_id });
+      recentItems = recentItems.slice(0,5); renderRecent();
       clearFormKeepDate(); $('#txAmount').focus();
     } else toast('บันทึกไม่สำเร็จ', false);
-  };
-
-  await withBusy(btn, doReq, 'กำลังบันทึก…');
+  }, 'กำลังบันทึก…');
 }
 $('#btnSave').addEventListener('click', saveTx);
 
-/** ====== รายการย้อนหลัง ====== */
+/** ====== รายการย้อนหลัง (แท็บรายการ) ====== */
+function safeKey(x){ return `${(x.date||'').slice(0,10)}T${(x.time||'00:00:00').slice(0,8)}`; }
 function renderTable(items){
   const tb = $('#tblBody'); tb.innerHTML='';
   const sorted = items.slice().sort((a,b)=> safeKey(b).localeCompare(safeKey(a)));
   $('#emptyList').style.display = sorted.length? 'none':'block';
-
-  const catMap = {};
-  [...(cats.expense||[]), ...(cats.income||[]), ...(cats.saving||[])].forEach(c=> catMap[c.category_id]=c.name_th);
+  const catMap = {}; [...(cats.expense||[]), ...(cats.income||[]), ...(cats.saving||[])]
+    .forEach(c=> catMap[c.category_id]=c.name_th);
 
   const frag = document.createDocumentFragment();
   for (const x of sorted){
@@ -666,8 +656,13 @@ async function openEditById(txId){
     $('#editColDebtRepayFields').classList.add('hide');
     $('#editType').disabled = false; $('#editCat').disabled = false;
     $('#editAmount').readOnly = false;
-    if (!(cats.expense.length || cats.income.length || cats.saving.length)){ await loadCategoriesAll(); }
+    $('#editType').value = it.type;
+
+    if (!(cats.expense.length || cats.income.length || cats.saving.length)){
+      await loadCategoriesAll();
+    }
     fillSelect($('#editCat'), (cats[$('#editType').value]||[]), c=>c.category_id, c=>c.name_th||c.category_id);
+
     $('#editCat').value = it.category_id;
     $('#editAmount').value = String(it.amount||0);
     $('#editBackdrop').dataset.isDebtRepay = 'false';
@@ -678,8 +673,9 @@ async function openEditById(txId){
 }
 function closeEdit(){ $('#editBackdrop').classList.remove('show'); $('#editBackdrop').setAttribute('aria-hidden','true'); }
 $('#btnCancel').addEventListener('click', closeEdit);
-$('#editType').addEventListener('change', ()=> fillSelect($('#editCat'), (cats[$('#editType').value]||[]), c=>c.category_id, c=>c.name_th||c.category_id));
-
+$('#editType').addEventListener('change', ()=>{
+  fillSelect($('#editCat'), (cats[$('#editType').value]||[]), c=>c.category_id, c=>c.name_th||c.category_id);
+});
 $('#btnUpdate').addEventListener('click', async (e)=>{
   const btn = e.currentTarget;
   const tx_id = $('#editTxId').value;
@@ -693,13 +689,14 @@ $('#btnUpdate').addEventListener('click', async (e)=>{
       if (!debt_tx_id){ toast('ไม่พบรหัสธุรกรรมหนี้', false); return; }
       const principal_paid = Number($('#editPrin').value||0);
       const interest_paid  = Number($('#editInt').value||0);
-      r = await api('debts/tx/update', {
+      const payload = {
         debt_tx_id,
         date: $('#editDate').value,
         note: $('#editNote').value.trim(),
         principal_paid: Math.round(principal_paid*100)/100,
         interest_paid:  Math.round(interest_paid*100)/100
-      }, true);
+      };
+      r = await api('debts/tx/update', payload, true);
     }else{
       const amount = Number($('#editAmount').value);
       const payload = {
@@ -719,7 +716,6 @@ $('#btnUpdate').addEventListener('click', async (e)=>{
     else toast(r.message||'อัปเดตไม่สำเร็จ', false);
   }, 'กำลังบันทึก…');
 });
-
 async function confirmDelete(tx_id, btn){
   if (!tx_id) return;
   if (!confirm('ยืนยันการลบรายการนี้?')) return;
@@ -745,20 +741,17 @@ function updateRangeUI(){
     month:(f===mb.start && t===mb.end),
     year:(f===`${y}-01-01` && t===`${y}-12-31`)
   };
-  $$('.seg button[data-r], .segbtn[data-r]').forEach(()=>{}); // keep style compatibility
+  document.querySelectorAll('.chip[data-range]').forEach(ch=>{
+    const k=ch.dataset.range;
+    const on=(k==='today'&&flags.today)||(k==='7'&&flags.d7)||(k==='30'&&flags.d30)||(k==='month'&&flags.month)||(k==='year'&&flags.year);
+    ch.classList.toggle('active',on);
+  });
   let txt='กำหนดเอง'; if(flags.today)txt='วันนี้'; else if(flags.d7)txt='7 วันล่าสุด'; else if(flags.d30)txt='30 วันล่าสุด'; else if(flags.month)txt='เดือนนี้'; else if(flags.year)txt='ปีนี้';
   $('#rangeBadge').textContent=txt;
-
-  // ปุ่มสถานะ (ชุดนี้ใช้ .segbtn[data-r])
-  document.querySelectorAll('.seg .segbtn[data-r]').forEach(b=>{
-    const k=b.dataset.r;
-    const on=(k==='today'&&flags.today)||(k==='7'&&flags.d7)||(k==='30'&&flags.d30)||(k==='month'&&flags.month)||(k==='year'&&flags.year);
-    b.classList.toggle('active',on);
-  });
 }
-document.querySelectorAll('.seg .segbtn[data-r]').forEach(ch=>{
+document.querySelectorAll('.chip[data-range]').forEach(ch=>{
   ch.addEventListener('click', ()=>{
-    const k=ch.dataset.r;
+    const k=ch.dataset.range;
     if (k==='today'){ const d=todayISO(); setRange(d,d); }
     if (k==='7') setRangeDaysBack(7);
     if (k==='30') setRangeDaysBack(30);
@@ -769,7 +762,7 @@ document.querySelectorAll('.seg .segbtn[data-r]').forEach(ch=>{
 $('#fFrom').addEventListener('change', ()=>{ updateRangeUI(); debouncedRefresh(); });
 $('#fTo').addEventListener('change',   ()=>{ updateRangeUI(); debouncedRefresh(); });
 
-/** ====== Tabs: Lazy Load ====== */
+/** ====== Tabs & Prefetch ====== */
 function activateTab(tab){
   const isCreate = (tab==='create');
   $('#tab-create').classList.toggle('active', isCreate);
@@ -780,10 +773,13 @@ function activateTab(tab){
   $('#pane-list').classList.toggle('active', !isCreate);
 
   if (isCreate && !loaded.create){
-    pinnedDate = null; // เริ่ม session ใหม่ → วันที่วันนี้
-    setDefaultDate();
+    // ตั้ง default เป็น "วันนี้" เฉพาะตอนโหลดหน้า — ถ้าผู้ใช้เปลี่ยนวันและบันทึก เรา "ค้างวันที่" ไว้ (clearForm จะไม่รีเซ็ต)
+    $('#txDate').value = todayISO();
     setType('expense');
-    Promise.all([loadCategoriesAll(), loadDebtsList()]).then(()=>{}).finally(()=> loaded.create = true);
+    Promise.all([loadCategoriesAll(), loadDebtsList()]).then(()=> {
+      populateCatSelect();
+      loadRecentFromAPI(); // โหลดล่าสุด 5 สำหรับแสดงตอนแรก
+    }).finally(()=> loaded.create = true);
   }
   if (!isCreate && !loaded.list){
     const mb = monthBounds(new Date());
@@ -793,9 +789,12 @@ function activateTab(tab){
 }
 $('#tab-create').addEventListener('click', ()=> activateTab('create'));
 $('#tab-list').addEventListener('click',   ()=> activateTab('list'));
-$('#btnPrefetchCreate').addEventListener('click', (e)=> withBusy(e.currentTarget, async ()=>{
-  await Promise.all([loadCategoriesAll(), loadDebtsList()]);
-}, 'กำลังรีเฟรช…'));
+$('#btnPrefetchCreate').addEventListener('click', async (e)=>{
+  await withBusy(e.currentTarget, async ()=>{
+    await Promise.all([loadCategoriesAll(), loadDebtsList()]);
+    populateCatSelect();
+  }, 'กำลังรีเฟรช…');
+});
 $('#btnRefresh').addEventListener('click', (e)=> refreshList(e.currentTarget));
 
 /** ====== INIT ====== */
@@ -804,12 +803,11 @@ $('#btnRefresh').addEventListener('click', (e)=> refreshList(e.currentTarget));
   const overlay = $('#overlay'); overlay.classList.remove('hide');
   let ok=false; try{ ok = await ensureTokenViaLIFF(); }catch{ toast('เริ่มต้นผ่าน LIFF ไม่สำเร็จ', false); }
   overlay.classList.add('hide');
-
-  if (ok){ $('#app').classList.remove('hide'); activateTab('create'); }
-  else   { $('#linkBox').classList.remove('hide'); }
+  if (ok){ $('#app').classList.remove('hide'); activateTab('create'); } else { $('#linkBox').classList.remove('hide'); }
 })();
 
-/** ====== Edit modal misc ====== */
+/** ====== UI listeners ====== */
+$$('.segbtn').forEach(b=> b.addEventListener('click', ()=> setType(b.dataset.type)));
 $('#btnCancel').addEventListener('click', ()=>{ $('#editBackdrop').classList.remove('show'); $('#editBackdrop').setAttribute('aria-hidden','true'); });
 </script>
 </body>
