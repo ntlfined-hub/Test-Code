@@ -16,7 +16,7 @@
     :root{
       --bg:#1e1e1e; --bg2:#242424; --panel:#2a2a2a; --line:#3a3a3a; --muted:#bfbfbf; --text:#f1f1f1;
       --primary:#ff2e80; --primary-2:#e91e63; --blue:#6c8cff; --green:#00c896; --danger:#ff4d4f; --warning:#ffb020; --cyan:#2dd4bf;
-      --hue:170; /* ใช้กับ loader แบบ hourglass */
+      --hue:170; /* ใช้โทนเดียวกับหน้าแรกสำหรับโหลดแบบ hourglass */
     }
     html,body{ height:100% }
     body{
@@ -76,16 +76,17 @@
     @media(max-width:980px){ .chart-wrap{ height:220px } }
     @media(max-width:768px){ .chart-wrap{ height:200px } .col{ flex:1 1 100% } }
 
-    /* toast */
+    /* toast + overlay + skeleton */
     #toast{ position:fixed; left:50%; bottom:calc(22px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%);
       background:#333; color:#fff; padding:.75rem 1.2rem; border-radius:12px; opacity:0; transition:.35s; pointer-events:none; z-index:100 }
-
-    /* === Overlay + Hourglass Loader (Uiverse: nima-mollazadeh) === */
     .hide{ display:none }
+
+    /* Overlay */
     #overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.45); backdrop-filter:blur(2px); z-index:99; transition:.2s }
     #overlay.hide{ opacity:0; pointer-events:none }
 
-    .loader { --dur: 2s; display:block; margin:auto; width:14em; height:auto; }
+    /* ===== Loader (Uiverse.io: nima-mollazadeh) ===== */
+    .loader{ --dur:2s; display:block; margin:auto; width:14em; height:auto; }
     .loader__glare-top,
     .loader__glare-bottom,
     .loader__model,
@@ -120,6 +121,10 @@
     .loader__sand-mound-top{ animation-name:sand-mound-top }
     .loader__sand-mound-bottom{ animation-name:sand-mound-bottom; transform-origin:12.25px 31.5px }
 
+    @media (prefers-color-scheme: dark){
+      :root{ --fg:hsl(var(--hue),90%,90%) }
+    }
+    /* Animations */
     @keyframes loader-flip{ from{ transform:translate(13.75px,9.25px) rotate(-180deg) } 24%,to{ transform:translate(13.75px,9.25px) rotate(0) } }
     @keyframes glare-top{ from{ stroke:rgba(255,255,255,0) } 24%,to{ stroke:white } }
     @keyframes glare-bottom{ from{ stroke:white } 24%,to{ stroke:rgba(255,255,255,0) } }
@@ -154,10 +159,9 @@
       56%,to{ transform:scale(1,1) }
     }
 
-    /* skeleton shimmer */
+    /* skeleton for KPI */
     .skeleton{ position:relative; overflow:hidden; background:#2b2b2b; border-radius:8px; min-height:20px }
     .skeleton::after{ content:""; position:absolute; inset:0; transform:translateX(-100%); background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent); animation:skeleton 1.2s infinite }
-    @keyframes skeleton{ 100%{ transform:translateX(100%) } }
   </style>
 
   <!-- LIFF SDK -->
@@ -284,7 +288,7 @@
 
   <div id="toast">แจ้งเตือน</div>
 
-  <!-- Overlay พร้อม Hourglass Loader -->
+  <!-- Overlay: เปลี่ยนเป็น loader แบบ hourglass -->
   <div id="overlay" class="hide" aria-live="polite" aria-busy="true">
     <!-- From Uiverse.io by nima-mollazadeh -->
     <svg aria-label="loader being flipped clockwise and circled by three white curves fading in and out"
@@ -319,8 +323,11 @@
           </g>
 
           <g stroke-width="2" stroke-linecap="round" opacity="0.7" fill="none">
-            <path d="M 19.437 3.421 C 19.437 3.421 19.671 6.454 17.914 8.846 C 16.157 11.238 14.5 11.5 14.5 11.5" stroke="hsl(0,0%,100%)" class="loader__glare-top"></path>
-            <path transform="rotate(180,12.25,16.75)" d="M 19.437 3.421 C 19.437 3.421 19.671 6.454 17.914 8.846 C 16.157 11.238 14.5 11.5 14.5 11.5" stroke="hsla(0,0%,100%,0)" class="loader__glare-bottom"></path>
+            <path d="M 19.437 3.421 C 19.437 3.421 19.671 6.454 17.914 8.846 C 16.157 11.238 14.5 11.5 14.5 11.5"
+              stroke="hsl(0,0%,100%)" class="loader__glare-top"></path>
+            <path transform="rotate(180,12.25,16.75)"
+              d="M 19.437 3.421 C 19.437 3.421 19.671 6.454 17.914 8.846 C 16.157 11.238 14.5 11.5 14.5 11.5"
+              stroke="hsla(0,0%,100%,0)" class="loader__glare-bottom"></path>
           </g>
 
           <rect height="2" width="24.5" fill="hsl(var(--hue),90%,50%)"></rect>
@@ -504,11 +511,13 @@ function sessionKey(from,to){ return `fin_dash_${from}_${to}`; }
 async function refreshDash(silent){
   if (!token){ if(!silent) toast('ยังไม่ได้รับสิทธิ์เข้าใช้งาน', false); return; }
 
+  // ยกเลิกคำขอเดิม
   if (controller) controller.abort();
   controller = new AbortController();
 
   setKpiLoading(true);
 
+  // แสดงจากแคชก่อน (รู้สึกไวขึ้น)
   const from = $('#fFrom').value, to = $('#fTo').value;
   const sKey = sessionKey(from,to);
   const cached = sessionStorage.getItem(sKey);
@@ -516,18 +525,17 @@ async function refreshDash(silent){
     try{ const j = JSON.parse(cached); paintFromSummary(j); setKpiLoading(false); }catch{}
   }
 
+  // ดึงหมวดหมู่ (จากแคช/หรือ API)
   if (!cats.expense.length && !cats.income.length && !cats.saving.length){ await loadCategoriesAll(); }
 
+  // โหลดงบเดือนปัจจุบันสำหรับแผงภาพรวม (ใช้ fFrom เป็นตัวกำหนดเดือน)
   const mk = monthKeyFromRange(); loadMonthSettings(mk).catch(()=>{});
 
   try{
-    showOverlay(true);
     const [rTx, rDebtSum] = await Promise.all([
       api('transactions/list', { from, to, type:'all' }, true),
       api('debts/summary', {}, true)
     ]);
-    showOverlay(false);
-
     if (!rTx.ok){ if(!silent) toast('โหลดรายการไม่สำเร็จ', false); return; }
 
     lastItems = (rTx.items||[]).map(x=> ({...x, amount:+x.amount}));
@@ -542,14 +550,16 @@ async function refreshDash(silent){
     const mapCat = Object.fromEntries((cats.expense.concat(cats.income).concat(cats.saving)).map(c=> [c.category_id, c.name_th]));
 
     const summary = { inc, exp, savNet, net, debtTotal, from, to, mapCat, items:lastItems };
-    sessionStorage.setItem(sKey, JSON.stringify({ inc, exp, savNet, net, debtTotal }));
+    sessionStorage.setItem(sKey, JSON.stringify({ inc, exp, savNet, net, debtTotal })); // เก็บเฉพาะ KPI ให้เร็ว
 
     paintFromSummary(summary);
     setKpiLoading(false);
 
+    // อัปเดตก้านงบ/ออมในแท็บ Budget ตามเดือนที่เลือก (ถ้ามี)
     const bMonth = $('#bMonth').value || mk;
     updateBudgetUI(exp, savNet, bMonth).catch(()=>{});
 
+    // วาดกราฟเมื่อ canvas เข้าสายตา (lazy)
     queueLazyCharts(() => {
       drawExpByCat(lastItems, mapCat);
       drawFlow(lastItems);
@@ -559,7 +569,6 @@ async function refreshDash(silent){
     });
 
   }catch(e){
-    showOverlay(false);
     if (e.name !== 'AbortError'){ if(!silent) toast('เกิดข้อผิดพลาดขณะโหลดข้อมูล', false); }
   }
 }
@@ -576,10 +585,11 @@ function paintFromSummary(s){
   }
 }
 
-/** ====== Budget UI ====== */
+/** ====== Budget UI (ใช้เดือนจาก #bMonth) ====== */
 async function updateBudgetUI(expenseTotal, savingNet, monthKey){
   const cache = await loadMonthSettings(monthKey);
   const b = Number(cache.budget||0), g = Number(cache.goal||0);
+  // แสดงค่าใน input เมื่ออยู่ในแท็บ Budget
   if (document.getElementById('panel-budget').classList.contains('active')){
     $('#budgetThisMonth').value = b ? String(b) : '';
     $('#savingGoalThisMonth').value = g ? String(g) : '';
@@ -607,15 +617,7 @@ async function updateBudgetUI(expenseTotal, savingNet, monthKey){
   $('#savingGoalStatus').textContent = sTxt;
 }
 
-/** ====== Charts ====== */
-function ensureChart(id, cfg){
-  if (charts[id]){ charts[id].data = cfg.data; charts[id].options = cfg.options||charts[id].options; charts[id].update('none'); }
-  else{ charts[id] = new Chart(document.getElementById(id), cfg); }
-}
-function groupBy(arr, key){ return arr.reduce((a,x)=> ((a[key(x)] = a[key(x)]||[]).push(x),a),{}); }
-function sum(arr, pick){ return arr.reduce((s,x)=> s+(pick(x)||0),0); }
-function runningSum(arr){ let s=0; return arr.map(v => (s+=v, s)); }
-
+/** ====== Charts (reuse instances) ====== */
 function drawExpByCat(items, mapCat){
   const panelNo = $('#noDataExp');
   const exps = items.filter(x=>x.type==='expense');
@@ -673,7 +675,7 @@ function drawSavingCum(items){
   });
 }
 
-/** ====== Debt charts ====== */
+/** ====== Debt charts (ตามธุรกรรมจริง ไม่คาดการณ์) ====== */
 async function drawDebtNetTotalOverTime(from, to){
   const panelNo = $('#noDataDebtTS');
   const rActive = await api('debts/list', { include_closed:false }, true);
@@ -730,7 +732,7 @@ async function drawPrincipalInterestMonthly(from, to){
   });
 }
 
-/** ====== Lazy render ====== */
+/** ====== Lazy render (IntersectionObserver) ====== */
 function queueLazyCharts(cb){
   if (visibleCanvases.size >= document.querySelectorAll('.chart-wrap.observe canvas').length){
     cb(); return;
@@ -779,7 +781,9 @@ tabBudget.addEventListener('click', ()=> activateTab('budget'));
 document.getElementById('btnSaveBudget').addEventListener('click', async ()=>{
   const mk = $('#bMonth').value || monthKeyFromRange();
   const ok = await saveMonthSettings(mk, $('#budgetThisMonth').value, $('#savingGoalThisMonth').value);
-  if (ok){ refreshDash(true); }
+  if (ok){
+    refreshDash(true);
+  }
 });
 
 /** ====== INIT ====== */
