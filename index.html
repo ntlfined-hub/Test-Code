@@ -40,7 +40,7 @@
     .btn-ghost{ background:#333 } .btn-blue{ background:var(--blue) } .btn-danger{ background:var(--danger) } .btn-cyan{ background:var(--cyan); color:#052a27 }
     button:disabled{ opacity:.6; cursor:not-allowed }
 
-    /* per-button busy spinner */
+    /* ปุ่ม busy: โชว์สไปน์เนอร์เล็กที่ปุ่มเอง */
     button[aria-busy="true"]{ pointer-events:none }
     button[aria-busy="true"]::after{
       content:""; position:absolute; right:10px; top:50%; transform:translateY(-50%);
@@ -64,9 +64,10 @@
     #toast{ position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%);
       background:#333; color:#fff; padding:.6rem .9rem; border-radius:10px; opacity:0; transition:.3s; pointer-events:none; z-index:120 }
 
-    /* Hourglass overlay (big) */
     #overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.45); backdrop-filter:blur(2px); z-index:110; transition:.2s }
     #overlay.hide{ opacity:0; pointer-events:none }
+
+    /* Hourglass loader (Uiverse.io: nima-mollazadeh) */
     .loader{ --dur:2s; display:block; margin:auto; width:14em; height:auto; }
     .loader__glare-top,.loader__glare-bottom,.loader__model,.loader__motion-thick,.loader__motion-medium,.loader__motion-thin,.loader__sand-drop,.loader__sand-fill,.loader__sand-grain-left,.loader__sand-grain-right,.loader__sand-line-left,.loader__sand-line-right,.loader__sand-mound-top,.loader__sand-mound-bottom{ animation-duration:var(--dur); animation-timing-function:cubic-bezier(0.83,0,0.17,1); animation-iteration-count:infinite }
     .loader__glare-top{ animation-name:glare-top } .loader__glare-bottom{ animation-name:glare-bottom }
@@ -83,18 +84,21 @@
     @keyframes motion-thick{ from{ animation-timing-function:cubic-bezier(0.33,0,0.67,0); stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(0.67turn) } 20%{ animation-timing-function:cubic-bezier(0.33,1,0.67,1); stroke:rgb(32,32,32); stroke-dashoffset:141.11; transform:rotate(1turn) } 40%,to{ stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(1.33turn) } }
     @keyframes motion-medium{ from,8%{ animation-timing-function:cubic-bezier(0.33,0,0.67,0); stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(0.5turn) } 20%{ animation-timing-function:cubic-bezier(0.33,1,0.67,1); stroke:white; stroke-dashoffset:147.53; transform:rotate(0.83turn) } 32%,to{ stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(1.17turn) } }
     @keyframes motion-thin{ from,4%{ animation-timing-function:cubic-bezier(0.33,0,0.67,0); stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(0.33turn) } 24%{ animation-timing-function:cubic-bezier(0.33,1,0.67,1); stroke:rgb(53,53,53); stroke-dashoffset:134.7; transform:rotate(0.67turn) } 44%,to{ stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(1turn) } }
+    @keyframes sand-drop{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:1 } 70%,to{ stroke-dashoffset:-107 } }
+    @keyframes sand-fill{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:55 } 70%,to{ stroke-dashoffset:-54 } }
+    @keyframes sand-grain-left{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:29 } 70%,to{ stroke-dashoffset:-22 } }
+    @keyframes sand-grain-right{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:27 } 70%,to{ stroke-dashoffset:-24 } }
+    @keyframes sand-line-left{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:53 } 70%,to{ stroke-dashoffset:-55 } }
+    @keyframes sand-line-right{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:14 } 70%,to{ stroke-dashoffset:-24.5 } }
+    @keyframes sand-mound-top{ from,10%{ animation-timing-function:linear; transform:translate(0,0) } 15%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); transform:translate(0,1.5px) } 51%,to{ transform:translate(0,13px) } }
+    @keyframes sand-mound-bottom{ from,31%{ animation-timing-function:cubic-bezier(0.61,1,0.88,1); transform:scale(1,0) } 56%,to{ transform:scale(1,1) } }
 
     /* Modal */
     .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:140 }
     .modal-backdrop.show{ display:flex }
-    .modal{ width:min(640px,96vw); background:#242424; border:1px solid var(--line); border-radius:16px; padding:1rem 1rem 1.25rem; position:relative }
+    .modal{ width:min(640px,96vw); background:#242424; border:1px solid var(--line); border-radius:16px; padding:1rem 1rem 1.25rem }
     .modal .title{ font-weight:700; margin-bottom:.75rem }
     .modal .actions{ display:flex; gap:.5rem; justify-content:flex-end; margin-top:.5rem }
-
-    /* Inline loader inside modal while fetching */
-    .inline-loading{ display:flex; align-items:center; gap:.6rem; color:#ddd; background:#1c1c1c; border:1px dashed #3a3a3a; border-radius:10px; padding:.6rem .8rem; }
-    .mini-spinner{ width:18px; height:18px; border-radius:50%; border:3px solid #3a3a3a; border-top-color:#fff; animation:spin 1s linear infinite }
-    .disabled-field input{ opacity:.7 }
   </style>
 
   <!-- LIFF SDK -->
@@ -154,11 +158,19 @@
     <section id="panel-repay-history" class="tabpanel" role="tabpanel" aria-labelledby="tab-repay-history">
       <div class="card" style="margin-bottom:1rem">
         <div class="row" style="align-items:flex-end">
-          <div class="col"><label for="rhFrom">จาก</label><input id="rhFrom" type="date"></div>
-          <div class="col"><label for="rhTo">ถึง</label><input id="rhTo" type="date"></div>
+          <div class="col">
+            <label for="rhFrom">จาก</label>
+            <input id="rhFrom" type="date">
+          </div>
+          <div class="col">
+            <label for="rhTo">ถึง</label>
+            <input id="rhTo" type="date">
+          </div>
           <div class="col">
             <label for="rhDebt">กรองตามเจ้าหนี้</label>
-            <select id="rhDebt"><option value="">ทั้งหมด</option></select>
+            <select id="rhDebt">
+              <option value="">ทั้งหมด</option>
+            </select>
           </div>
           <div class="col" style="display:flex; gap:.5rem">
             <button id="btnRhQuick30" class="btn-ghost">30 วันล่าสุด</button>
@@ -195,13 +207,6 @@
   <div id="editRepayBackdrop" class="modal-backdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editRepayTitle">
       <div id="editRepayTitle" class="title">แก้ไขรายการจ่ายหนี้</div>
-
-      <!-- inline loader shown until data loaded -->
-      <div id="editRepayLoading" class="inline-loading" style="display:none; margin-bottom:.75rem">
-        <div class="mini-spinner"></div>
-        <div>กำลังโหลดข้อมูล...</div>
-      </div>
-
       <input id="editRepayId" type="hidden">
       <div class="row">
         <div class="col"><label for="editRepayDate">วันที่</label><input id="editRepayDate" type="date"></div>
@@ -232,6 +237,19 @@
           <circle transform="rotate(180,26,26)" r="24.5" cy="26" cx="26" stroke-width="1" class="loader__motion-thin"></circle>
         </g>
         <g transform="translate(13.75,9.25)" class="loader__model">
+          <path d="M 1.5 2 L 23 2 C 23 2 22.5 8.5 19 12 C 16 15.5 13.5 13.5 13.5 16.75 C 13.5 20 16 18 19 21.5 C 22.5 25 23 31.5 23 31.5 L 1.5 31.5 C 1.5 31.5 2 25 5.5 21.5 C 8.5 18 11 20 11 16.75 C 11 13.5 8.5 15.5 5.5 12 C 2 8.5 1.5 2 1.5 2 Z" fill="hsl(var(--hue),90%,85%)"></path>
+          <g stroke-linecap="round" stroke="hsl(35,90%,90%)">
+            <line y2="20.75" x2="12" y1="15.75" x1="12" stroke-dasharray="0.25 33.75" stroke-width="1" class="loader__sand-grain-left"></line>
+            <line y2="21.75" x2="12.5" y1="16.75" x1="12.5" stroke-dasharray="0.25 33.75" stroke-width="1" class="loader__sand-grain-right"></line>
+            <line y2="31.5" x2="12.25" y1="18" x1="12.25" stroke-dasharray="0.5 107.5" stroke-width="1" class="loader__sand-drop"></line>
+            <line y2="31.5" x2="12.25" y1="14.75" x1="12.25" stroke-dasharray="54 54" stroke-width="1.5" class="loader__sand-fill"></line>
+            <line y2="31.5" x2="12" y1="16" x1="12" stroke-dasharray="1 107" stroke-width="1" stroke="hsl(35,90%,83%)" class="loader__sand-line-left"></line>
+            <line y2="31.5" x2="12.5" y1="16" x1="12.5" stroke-dasharray="12 96" stroke-width="1" stroke="hsl(35,90%,83%)" class="loader__sand-line-right"></line>
+          </g>
+          <g stroke-width="2" stroke-linecap="round" opacity="0.7" fill="none">
+            <path d="M 19.437 3.421 C 19.437 3.421 19.671 6.454 17.914 8.846 C 16.157 11.238 14.5 11.5 14.5 11.5" stroke="hsl(0,0%,100%)" class="loader__glare-top"></path>
+            <path transform="rotate(180,12.25,16.75)" d="M 19.437 3.421 C 19.437 3.421 19.671 6.454 17.914 8.846 C 16.157 11.238 14.5 11.5 14.5 11.5" stroke="hsla(0,0%,100%,0)" class="loader__glare-bottom"></path>
+          </g>
           <rect height="2" width="24.5" fill="hsl(var(--hue),90%,50%)"></rect>
           <rect height="1" width="19.5" y="0.5" x="2.5" ry="0.5" rx="0.5" fill="hsl(var(--hue),90%,57.5%)"></rect>
           <rect height="2" width="24.5" y="31.5" fill="hsl(var(--hue),90%,50%)"></rect>
@@ -241,20 +259,20 @@
     </svg>
   </div>
 
-  <!-- LIFF SDK (dup safe) -->
+  <!-- LIFF SDK (duplicate safe) -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <script>
 /** ===== CONFIG ===== */
-const LIFF_ID = '2008276151-Oyp12d62';
+const LIFF_ID = '2008276151-oyp12d62';
 const API_URL = 'https://script.google.com/macros/s/AKfycbxV3xOU1kQM86jUJtfer8hW_HgYkcLfpH942saPVbCZ1RDmN_4LYjpk72OxdKKLQAFt/exec';
 
 /** ===== STATE ===== */
 let token = localStorage.getItem('fin_token') || '';
 let displayName = localStorage.getItem('fin_name') || '';
 let debtsCache = [];
-let debtNameMap = {};
-let repayCache = [];
+let debtNameMap = {}; // debt_id -> lender_name
+let repayCache = [];  // list of DebtTx repay entries (filtered in FE)
 
 /** ===== HELPERS ===== */
 const $ = s => document.querySelector(s);
@@ -262,6 +280,7 @@ const fmt = n => Number(n||0).toLocaleString('th-TH',{minimumFractionDigits:2, m
 const esc = s => String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const toast = (m,ok=true)=>{ const el=$('#toast'); el.textContent=m; el.style.background=ok?'#00c896':'#ff4d4f'; el.style.opacity='1'; setTimeout(()=> el.style.opacity='0', 2200); };
 const showOverlay = on => $('#overlay').classList.toggle('hide', !on);
+
 function setBusy(btn, on, tempText){
   if (!btn) return;
   if (on){ btn.dataset._text=btn.textContent; if (tempText) btn.textContent=tempText; btn.setAttribute('aria-busy','true'); btn.disabled=true; }
@@ -269,15 +288,7 @@ function setBusy(btn, on, tempText){
 }
 async function withBusy(btn, fn, textWhile='กำลังโหลด…'){ setBusy(btn,true,textWhile); try{ return await fn(); } finally{ setBusy(btn,false);} }
 
-function disableEditRepayFields(disabled){
-  ['#editRepayDate','#editRepayInterest','#editRepayPrincipal','#editRepayNote','#btnEditRepaySave'].forEach(sel=>{
-    const el = $(sel); if (!el) return;
-    el.toggleAttribute('disabled', !!disabled);
-    if (sel !== '#btnEditRepaySave'){
-      el.closest('.col')?.classList.toggle('disabled-field', !!disabled);
-    }
-  });
-}
+function toYMD(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
 /** ===== API ===== */
 async function fetchJSON(url, options={}){ try{ const res=await fetch(url,{...options,headers:{'Content-Type':'text/plain;charset=utf-8',...(options.headers||{})}}); const t=await res.text(); try{ return JSON.parse(t); }catch{ return {ok:false,error:'NON_JSON',raw:t}; } }catch(e){ return {ok:false,error:'NETWORK',message:String(e?.message||e)}; } }
@@ -299,13 +310,15 @@ async function ensureTokenViaLIFF(){
   return true;
 }
 
-/** ===== Debts (creditors) ===== */
+/** ===== Debts (creditors panel) ===== */
 async function loadDebts(){
   $('#tblDebts').innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center">กำลังโหลด…</td></tr>';
   const r = await api('debts/summary', {}, true);
   debtsCache = r.ok ? (r.items||[]) : [];
   debtNameMap = {}; (debtsCache||[]).forEach(d => debtNameMap[String(d.debt_id)] = d.lender_name || '');
   renderDebts();
+
+  // เติม dropdown filter ใน Repay History
   const sel = $('#rhDebt'); const keep = sel.value;
   sel.innerHTML = '<option value="">ทั้งหมด</option>' + (debtsCache||[]).map(d=>`<option value="${esc(d.debt_id)}">${esc(d.lender_name||'')}</option>`).join('');
   if (keep) sel.value = keep;
@@ -355,7 +368,7 @@ $('#btnAddDebt').addEventListener('click', async (e)=>{
 });
 $('#btnReload').addEventListener('click', (e)=> withBusy(e.currentTarget, loadDebts, 'กำลังโหลด…'));
 
-/** ===== Debt Edit Modal (creditors) ===== */
+/** Debt Edit Modal (creditors) */
 function openDebtEdit(id){
   const d = debtsCache.find(x=> String(x.debt_id)===String(id));
   if (!d){ toast('ไม่พบเจ้าหนี้', false); return; }
@@ -379,16 +392,19 @@ document.addEventListener('click', async (e)=>{
 
 /** ===== Repay History ===== */
 function setRhQuick30(){ const now=new Date(); const to=now; const from=new Date(now.getFullYear(),now.getMonth(),now.getDate()-29); $('#rhFrom').value=toYMD(from); $('#rhTo').value=toYMD(to); }
-function toYMD(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
 async function loadRepayHistory(){
   const from = $('#rhFrom').value || '';
   const to   = $('#rhTo').value || '';
   const debtFilter = $('#rhDebt').value || '';
+
   $('#tblRepay').innerHTML = '<tr><td colspan="7" class="muted" style="text-align:center">กำลังโหลด…</td></tr>';
+
   const r = await api('debts/tx/list', { from, to, debt_id: debtFilter||undefined }, true);
   const items = (r.ok ? (r.items||[]) : []).filter(x => String(x.type)==='repay');
+
   items.forEach(it => it.lender_name = debtNameMap[String(it.debt_id)] || '');
+
   repayCache = items;
   renderRepayHistory();
 }
@@ -417,47 +433,40 @@ function renderRepayHistory(){
   }
 }
 
-/** NEW: Open edit modal immediately with loader, then fill */
-function openRepayEditModal(debt_tx_id, srcBtn){
-  // 1) open modal immediately with inline loader & disabled fields
+/** NEW: เปิด modal แก้ไข “พร้อมตัวบอกกำลังโหลดที่ปุ่ม + overlay ดีเลย์” */
+function openRepayEditModal(debt_tx_id, triggerBtn){
   $('#editRepayId').value = debt_tx_id;
-  $('#editRepayDate').value = '';
-  $('#editRepayInterest').value = '';
-  $('#editRepayPrincipal').value = '';
-  $('#editRepayNote').value = '';
-  $('#editRepayLoading').style.display = 'flex';
-  disableEditRepayFields(true);
-  $('#editRepayBackdrop').classList.add('show');
-  $('#editRepayBackdrop').setAttribute('aria-hidden','false');
 
-  // show spinner on the clicked button too
-  if (srcBtn) setBusy(srcBtn, true, 'กำลังโหลด…');
+  // ถ้าโหลดช้าเกิน 350ms ให้โชว์ overlay ทรายไหล
+  let overlayTimer = setTimeout(()=> showOverlay(true), 350);
 
-  // 2) fetch detail
-  api('debts/tx/get', { tx_id: debt_tx_id }, true).then(r=>{
-    if (!r.ok){ toast(r.message||'ไม่พบข้อมูล', false); closeRepayEditModal(); }
-    else{
+  // สปินเนอร์เฉพาะปุ่มที่กด
+  setBusy(triggerBtn, true, 'กำลังเปิด…');
+
+  api('debts/tx/get', { tx_id: debt_tx_id }, true)
+    .then(r=>{
+      if (!r.ok){ throw new Error(r.message || 'ไม่พบข้อมูล'); }
       const it = r.item || r.data || {};
       $('#editRepayDate').value = (it.date||'').slice(0,10);
       $('#editRepayInterest').value = Number(it.interest_paid||0);
       $('#editRepayPrincipal').value = Number(it.principal_paid||0);
       $('#editRepayNote').value = it.note || '';
-      $('#editRepayLoading').style.display = 'none';
-      disableEditRepayFields(false);
-    }
-  }).catch(()=>{
-    toast('โหลดข้อมูลไม่สำเร็จ', false);
-    closeRepayEditModal();
-  }).finally(()=>{
-    if (srcBtn) setBusy(srcBtn, false);
-  });
+
+      // เปิด modal หลังได้ข้อมูล
+      $('#editRepayBackdrop').classList.add('show');
+      $('#editRepayBackdrop').setAttribute('aria-hidden','false');
+    })
+    .catch(err=>{
+      toast(err.message || 'เกิดข้อผิดพลาด', false);
+    })
+    .finally(()=>{
+      clearTimeout(overlayTimer);
+      showOverlay(false);
+      setBusy(triggerBtn, false);
+    });
 }
-function closeRepayEditModal(){
-  $('#editRepayBackdrop').classList.remove('show');
-  $('#editRepayBackdrop').setAttribute('aria-hidden','true');
-  $('#editRepayLoading').style.display = 'none';
-  disableEditRepayFields(false);
-}
+
+function closeRepayEditModal(){ $('#editRepayBackdrop').classList.remove('show'); $('#editRepayBackdrop').setAttribute('aria-hidden','true'); }
 $('#btnEditRepayCancel').addEventListener('click', closeRepayEditModal);
 
 $('#btnEditRepaySave').addEventListener('click', async (e)=>{
@@ -487,7 +496,7 @@ async function deleteRepay(debt_tx_id, btn){
 $('#tblRepay').addEventListener('click', (e)=>{
   const btn = e.target.closest('button[data-rh-act]'); if (!btn) return;
   const act = btn.getAttribute('data-rh-act'); const id = btn.getAttribute('data-debt-tx-id');
-  if (act==='edit') openRepayEditModal(id, btn);   // pass the clicked button for spinner
+  if (act==='edit') openRepayEditModal(id, btn);
   if (act==='del')  deleteRepay(id, btn);
 });
 
@@ -526,7 +535,7 @@ $('#rhDebt').addEventListener('change', ()=> loadRepayHistory());
 })();
 </script>
 
-<!-- HIDDEN: debt edit modal (เดิม) -->
+<!-- Debt edit modal (เดิม) -->
 <div id="editDebtBackdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editDebtTitle">
     <div id="editDebtTitle" class="title">แก้ไขเจ้าหนี้</div>
