@@ -9,7 +9,7 @@
     :root{
       --bg:#1e1e1e; --panel:#242424; --line:#3a3a3a; --muted:#bfbfbf; --text:#f1f1f1;
       --primary:#00c896; --danger:#ff4d4f; --blue:#6c8cff; --cyan:#2dd4bf;
-      --hue:170; /* โทนสีสำหรับ hourglass loader */
+      --hue:170;
     }
     *{ box-sizing:border-box } html,body{ height:100% }
     body{ margin:0; padding:clamp(.75rem,2vw,1.25rem);
@@ -20,6 +20,13 @@
     h1{ margin:.25rem 0 1rem; font-size:clamp(1.25rem,4.5vw,1.8rem); color:var(--primary); text-align:center }
     .head{ display:flex; align-items:center; gap:.75rem; margin-bottom:.75rem }
     .head .you{ margin-left:auto; color:#9fe9d4; font-weight:600 }
+
+    /* Tabs */
+    .tabs{ display:flex; gap:.5rem; background:#1e1e1e; border:1px solid var(--line); padding:.4rem; border-radius:14px; margin:0 0 1rem }
+    .tabbtn{ flex:1; text-align:center; padding:.7rem 1rem; border-radius:10px; cursor:pointer; user-select:none; border:1px solid transparent; color:#ddd; background:#1d1d1d }
+    .tabbtn.active{ background:var(--primary); color:#052a27; font-weight:700; border-color:var(--primary) }
+    .tabpanel{ display:none }
+    .tabpanel.active{ display:block }
 
     .row{ display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1rem }
     .col{ flex:1 1 46%; min-width:220px; display:flex; flex-direction:column; gap:.35rem }
@@ -32,8 +39,6 @@
     button{ background:var(--primary); border:none; font-weight:700; cursor:pointer; position:relative }
     .btn-ghost{ background:#333 } .btn-blue{ background:var(--blue) } .btn-danger{ background:var(--danger) } .btn-cyan{ background:var(--cyan); color:#052a27 }
     button:disabled{ opacity:.6; cursor:not-allowed }
-
-    /* ปุ่มกำลังโหลด: วงกลมเล็กด้านขวา */
     button[aria-busy="true"]{ pointer-events:none }
     button[aria-busy="true"]::after{
       content:""; position:absolute; right:10px; top:50%; transform:translateY(-50%);
@@ -48,94 +53,45 @@
     .table-viewport{ max-height:70vh; overflow:auto; border-radius:12px; border:1px solid var(--line) }
     .right{ text-align:right }
     .muted{ color:var(--muted) }
-
-    /* ช่อง % */
     .rate-cell{ white-space:nowrap; overflow:visible }
     .rate-field{ position:relative; display:inline-block; white-space:nowrap }
     .rate-field input{ width:96px; padding-right:1.6rem; text-align:right }
     .rate-field .suffix{ position:absolute; right:.6rem; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none }
 
-    /* toast + overlay(init เท่านั้น) */
+    /* Toast + overlay */
     #toast{ position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%);
       background:#333; color:#fff; padding:.6rem .9rem; border-radius:10px; opacity:0; transition:.3s; pointer-events:none; z-index:120 }
 
     #overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.45); backdrop-filter:blur(2px); z-index:110; transition:.2s }
     #overlay.hide{ opacity:0; pointer-events:none }
 
-    /* ===== Hourglass Loader (Uiverse.io by nima-mollazadeh) ===== */
+    /* Hourglass loader (Uiverse.io: nima-mollazadeh) */
     .loader{ --dur:2s; display:block; margin:auto; width:14em; height:auto; }
-    .loader__glare-top,
-    .loader__glare-bottom,
-    .loader__model,
-    .loader__motion-thick,
-    .loader__motion-medium,
-    .loader__motion-thin,
-    .loader__sand-drop,
-    .loader__sand-fill,
-    .loader__sand-grain-left,
-    .loader__sand-grain-right,
-    .loader__sand-line-left,
-    .loader__sand-line-right,
-    .loader__sand-mound-top,
-    .loader__sand-mound-bottom{
-      animation-duration:var(--dur);
-      animation-timing-function:cubic-bezier(0.83,0,0.17,1);
-      animation-iteration-count:infinite;
-    }
-    .loader__glare-top{ animation-name:glare-top }
-    .loader__glare-bottom{ animation-name:glare-bottom }
+    .loader__glare-top,.loader__glare-bottom,.loader__model,.loader__motion-thick,.loader__motion-medium,.loader__motion-thin,.loader__sand-drop,.loader__sand-fill,.loader__sand-grain-left,.loader__sand-grain-right,.loader__sand-line-left,.loader__sand-line-right,.loader__sand-mound-top,.loader__sand-mound-bottom{ animation-duration:var(--dur); animation-timing-function:cubic-bezier(0.83,0,0.17,1); animation-iteration-count:infinite }
+    .loader__glare-top{ animation-name:glare-top } .loader__glare-bottom{ animation-name:glare-bottom }
     .loader__model{ animation-name:loader-flip; transform-origin:12.25px 16.75px }
     .loader__motion-thick,.loader__motion-medium,.loader__motion-thin{ transform-origin:26px 26px }
-    .loader__motion-thick{ animation-name:motion-thick }
-    .loader__motion-medium{ animation-name:motion-medium }
-    .loader__motion-thin{ animation-name:motion-thin }
-    .loader__sand-drop{ animation-name:sand-drop }
-    .loader__sand-fill{ animation-name:sand-fill }
-    .loader__sand-grain-left{ animation-name:sand-grain-left }
-    .loader__sand-grain-right{ animation-name:sand-grain-right }
-    .loader__sand-line-left{ animation-name:sand-line-left }
-    .loader__sand-line-right{ animation-name:sand-line-right }
-    .loader__sand-mound-top{ animation-name:sand-mound-top }
-    .loader__sand-mound-bottom{ animation-name:sand-mound-bottom; transform-origin:12.25px 31.5px }
-
-    @media (prefers-color-scheme: dark){
-      :root{ --fg:hsl(var(--hue),90%,90%) }
-    }
+    .loader__motion-thick{ animation-name:motion-thick } .loader__motion-medium{ animation-name:motion-medium } .loader__motion-thin{ animation-name:motion-thin }
+    .loader__sand-drop{ animation-name:sand-drop } .loader__sand-fill{ animation-name:sand-fill }
+    .loader__sand-grain-left{ animation-name:sand-grain-left } .loader__sand-grain-right{ animation-name:sand-grain-right }
+    .loader__sand-line-left{ animation-name:sand-line-left } .loader__sand-line-right{ animation-name:sand-line-right }
+    .loader__sand-mound-top{ animation-name:sand-mound-top } .loader__sand-mound-bottom{ animation-name:sand-mound-bottom; transform-origin:12.25px 31.5px }
     @keyframes loader-flip{ from{ transform:translate(13.75px,9.25px) rotate(-180deg) } 24%,to{ transform:translate(13.75px,9.25px) rotate(0) } }
     @keyframes glare-top{ from{ stroke:rgba(255,255,255,0) } 24%,to{ stroke:white } }
     @keyframes glare-bottom{ from{ stroke:white } 24%,to{ stroke:rgba(255,255,255,0) } }
-    @keyframes motion-thick{
-      from{ animation-timing-function:cubic-bezier(0.33,0,0.67,0); stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(0.67turn) }
-      20%{ animation-timing-function:cubic-bezier(0.33,1,0.67,1); stroke:rgb(32,32,32); stroke-dashoffset:141.11; transform:rotate(1turn) }
-      40%,to{ stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(1.33turn) }
-    }
-    @keyframes motion-medium{
-      from,8%{ animation-timing-function:cubic-bezier(0.33,0,0.67,0); stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(0.5turn) }
-      20%{ animation-timing-function:cubic-bezier(0.33,1,0.67,1); stroke:white; stroke-dashoffset:147.53; transform:rotate(0.83turn) }
-      32%,to{ stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(1.17turn) }
-    }
-    @keyframes motion-thin{
-      from,4%{ animation-timing-function:cubic-bezier(0.33,0,0.67,0); stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(0.33turn) }
-      24%{ animation-timing-function:cubic-bezier(0.33,1,0.67,1); stroke:rgb(53,53,53); stroke-dashoffset:134.7; transform:rotate(0.67turn) }
-      44%,to{ stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(1turn) }
-    }
+    @keyframes motion-thick{ from{ animation-timing-function:cubic-bezier(0.33,0,0.67,0); stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(0.67turn) } 20%{ animation-timing-function:cubic-bezier(0.33,1,0.67,1); stroke:rgb(32,32,32); stroke-dashoffset:141.11; transform:rotate(1turn) } 40%,to{ stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(1.33turn) } }
+    @keyframes motion-medium{ from,8%{ animation-timing-function:cubic-bezier(0.33,0,0.67,0); stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(0.5turn) } 20%{ animation-timing-function:cubic-bezier(0.33,1,0.67,1); stroke:white; stroke-dashoffset:147.53; transform:rotate(0.83turn) } 32%,to{ stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(1.17turn) } }
+    @keyframes motion-thin{ from,4%{ animation-timing-function:cubic-bezier(0.33,0,0.67,0); stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(0.33turn) } 24%{ animation-timing-function:cubic-bezier(0.33,1,0.67,1); stroke:rgb(53,53,53); stroke-dashoffset:134.7; transform:rotate(0.67turn) } 44%,to{ stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(1turn) } }
     @keyframes sand-drop{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:1 } 70%,to{ stroke-dashoffset:-107 } }
     @keyframes sand-fill{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:55 } 70%,to{ stroke-dashoffset:-54 } }
     @keyframes sand-grain-left{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:29 } 70%,to{ stroke-dashoffset:-22 } }
     @keyframes sand-grain-right{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:27 } 70%,to{ stroke-dashoffset:-24 } }
     @keyframes sand-line-left{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:53 } 70%,to{ stroke-dashoffset:-55 } }
     @keyframes sand-line-right{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:14 } 70%,to{ stroke-dashoffset:-24.5 } }
-    @keyframes sand-mound-top{
-      from,10%{ animation-timing-function:linear; transform:translate(0,0) }
-      15%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); transform:translate(0,1.5px) }
-      51%,to{ transform:translate(0,13px) }
-    }
-    @keyframes sand-mound-bottom{
-      from,31%{ animation-timing-function:cubic-bezier(0.61,1,0.88,1); transform:scale(1,0) }
-      56%,to{ transform:scale(1,1) }
-    }
+    @keyframes sand-mound-top{ from,10%{ animation-timing-function:linear; transform:translate(0,0) } 15%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); transform:translate(0,1.5px) } 51%,to{ transform:translate(0,13px) } }
+    @keyframes sand-mound-bottom{ from,31%{ animation-timing-function:cubic-bezier(0.61,1,0.88,1); transform:scale(1,0) } 56%,to{ transform:scale(1,1) } }
 
-    /* modal */
+    /* Modal */
     .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:140 }
     .modal-backdrop.show{ display:flex }
     .modal{ width:min(640px,96vw); background:#242424; border:1px solid var(--line); border-radius:16px; padding:1rem 1rem 1.25rem }
@@ -153,127 +109,135 @@
       <div class="you" id="who"></div>
     </div>
 
-    <!-- เพิ่มเจ้าหนี้ -->
-    <div class="card" style="margin-bottom:1rem">
-      <div class="muted" style="margin-bottom:.5rem">เพิ่มเจ้าหนี้</div>
-      <div class="row">
-        <div class="col"><label for="dName">ชื่อเจ้าหนี้</label><input id="dName" placeholder="เช่น บัตร X / เพื่อน A"></div>
-        <div class="col"><label for="dRate">อัตราดอกเบี้ย/ปี (%)</label><input id="dRate" type="number" step="0.01" placeholder="เช่น 18"></div>
-        <div class="col"><label for="dPrincipal">ยอดตั้งต้น (ไม่บังคับ)</label><input id="dPrincipal" type="number" step="0.01" placeholder="เช่น 10000"></div>
-        <div class="col" style="align-self:flex-end; display:flex; gap:.5rem">
-          <button id="btnReload" class="btn-ghost" title="รีเฟรชรายการ">รีเฟรชรายการ</button>
-          <button id="btnAddDebt" class="btn-blue">+ เพิ่มเจ้าหนี้</button>
-        </div>
-      </div>
+    <!-- Tabs -->
+    <div class="tabs" role="tablist">
+      <button class="tabbtn active" id="tab-creditors" role="tab" aria-controls="panel-creditors" aria-selected="true">เจ้าหนี้</button>
+      <button class="tabbtn" id="tab-repay-history" role="tab" aria-controls="panel-repay-history" aria-selected="false">รายการจ่ายหนี้ย้อนหลัง</button>
     </div>
 
-    <!-- รายการเจ้าหนี้ -->
-    <div class="card">
-      <div class="muted" style="margin-bottom:.5rem">รายการเจ้าหนี้ของคุณ</div>
-      <div class="table-viewport">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:220px">เจ้าหนี้</th>
-              <th class="right" style="width:140px">คงเหลือ</th>
-              <th class="right" style="width:160px">ดอกเบี้ย/ปี</th>
-              <th style="width:120px">สถานะ</th>
-              <th style="width:210px">จัดการ</th>
-            </tr>
-          </thead>
-          <tbody id="tblDebts">
-            <tr><td colspan="5" class="muted" style="text-align:center">ยังไม่โหลดข้อมูล</td></tr>
-          </tbody>
-        </table>
+    <!-- PANEL: เจ้าหนี้ -->
+    <section id="panel-creditors" class="tabpanel active" role="tabpanel" aria-labelledby="tab-creditors">
+      <!-- เพิ่มเจ้าหนี้ -->
+      <div class="card" style="margin-bottom:1rem">
+        <div class="muted" style="margin-bottom:.5rem">เพิ่มเจ้าหนี้</div>
+        <div class="row">
+          <div class="col"><label for="dName">ชื่อเจ้าหนี้</label><input id="dName" placeholder="เช่น บัตร X / เพื่อน A"></div>
+          <div class="col"><label for="dRate">อัตราดอกเบี้ย/ปี (%)</label><input id="dRate" type="number" step="0.01" placeholder="เช่น 18"></div>
+          <div class="col"><label for="dPrincipal">ยอดตั้งต้น (ไม่บังคับ)</label><input id="dPrincipal" type="number" step="0.01" placeholder="เช่น 10000"></div>
+          <div class="col" style="align-self:flex-end; display:flex; gap:.5rem">
+            <button id="btnReload" class="btn-ghost" title="รีเฟรชรายการ">รีเฟรชรายการ</button>
+            <button id="btnAddDebt" class="btn-blue">+ เพิ่มเจ้าหนี้</button>
+          </div>
+        </div>
       </div>
-      <div class="muted" style="margin-top:.5rem">* อัปเดต/ปิดบัญชีจากปุ่มด้านขวา</div>
-    </div>
+
+      <!-- รายการเจ้าหนี้ -->
+      <div class="card">
+        <div class="muted" style="margin-bottom:.5rem">รายการเจ้าหนี้ของคุณ</div>
+        <div class="table-viewport">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:220px">เจ้าหนี้</th>
+                <th class="right" style="width:140px">คงเหลือ</th>
+                <th class="right" style="width:160px">ดอกเบี้ย/ปี</th>
+                <th style="width:120px">สถานะ</th>
+                <th style="width:210px">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="tblDebts">
+              <tr><td colspan="5" class="muted" style="text-align:center">ยังไม่โหลดข้อมูล</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="muted" style="margin-top:.5rem">* อัปเดต/ปิดบัญชีจากปุ่มด้านขวา</div>
+      </div>
+    </section>
+
+    <!-- PANEL: รายการจ่ายหนี้ย้อนหลัง -->
+    <section id="panel-repay-history" class="tabpanel" role="tabpanel" aria-labelledby="tab-repay-history">
+      <div class="card" style="margin-bottom:1rem">
+        <div class="row" style="align-items:flex-end">
+          <div class="col">
+            <label for="rhFrom">จาก</label>
+            <input id="rhFrom" type="date">
+          </div>
+          <div class="col">
+            <label for="rhTo">ถึง</label>
+            <input id="rhTo" type="date">
+          </div>
+          <div class="col">
+            <label for="rhDebt">กรองตามเจ้าหนี้</label>
+            <select id="rhDebt">
+              <option value="">ทั้งหมด</option>
+            </select>
+          </div>
+          <div class="col" style="display:flex; gap:.5rem">
+            <button id="btnRhQuick30" class="btn-ghost">30 วันล่าสุด</button>
+            <button id="btnRhReload" class="btn-blue">รีเฟรช</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="muted" style="margin-bottom:.5rem">เฉพาะรายการ “จ่ายหนี้ (repay)”</div>
+        <div class="table-viewport">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:112px">วันที่</th>
+                <th style="width:220px">เจ้าหนี้</th>
+                <th class="right" style="width:120px">รวม(บาท)</th>
+                <th class="right" style="width:120px">ดอกเบี้ย</th>
+                <th class="right" style="width:120px">เงินต้น</th>
+                <th>หมายเหตุ</th>
+                <th style="width:210px">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="tblRepay">
+              <tr><td colspan="7" class="muted" style="text-align:center">ยังไม่โหลดข้อมูล</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   </div>
 
-  <!-- แก้ไขเจ้าหนี้ -->
-  <div id="editDebtBackdrop" class="modal-backdrop" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editDebtTitle">
-      <div id="editDebtTitle" class="title">แก้ไขเจ้าหนี้</div>
-      <input id="editDebtId" type="hidden">
+  <!-- MODAL: แก้ไขรายการจ่ายหนี้ -->
+  <div id="editRepayBackdrop" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editRepayTitle">
+      <div id="editRepayTitle" class="title">แก้ไขรายการจ่ายหนี้</div>
+      <input id="editRepayId" type="hidden">
       <div class="row">
-        <div class="col"><label for="editDebtName">ชื่อเจ้าหนี้</label><input id="editDebtName" placeholder="เช่น บัตร X / เพื่อน A"></div>
-        <div class="col">
-          <label for="editDebtRate">อัตราดอกเบี้ย/ปี</label>
-          <div class="rate-field"><input id="editDebtRate" type="number" step="0.01" placeholder="0.00"><span class="suffix">%</span></div>
-        </div>
+        <div class="col"><label for="editRepayDate">วันที่</label><input id="editRepayDate" type="date"></div>
+        <div class="col"><label for="editRepayInterest">ดอกเบี้ย (บาท)</label><input id="editRepayInterest" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="col"><label for="editRepayPrincipal">เงินต้น (บาท)</label><input id="editRepayPrincipal" type="number" step="0.01" placeholder="0.00"></div>
+      </div>
+      <div class="row">
+        <div class="col"><label for="editRepayNote">หมายเหตุ</label><input id="editRepayNote" placeholder="เช่น โอนพร้อมเพย์"></div>
       </div>
       <div class="actions">
-        <button id="btnEditDebtCancel" class="btn-ghost">ยกเลิก</button>
-        <button id="btnEditDebtSave" class="btn-cyan">บันทึก</button>
+        <button id="btnEditRepayCancel" class="btn-ghost">ยกเลิก</button>
+        <button id="btnEditRepaySave" class="btn-cyan">บันทึก</button>
       </div>
     </div>
   </div>
 
   <div id="toast">แจ้งเตือน</div>
 
-  <!-- Overlay: เปลี่ยนเป็น hourglass loader -->
+  <!-- Overlay: hourglass -->
   <div id="overlay" class="hide" aria-live="polite" aria-busy="true">
-    <!-- From Uiverse.io by nima-mollazadeh -->
-    <svg
-      aria-label="loader being flipped clockwise and circled by three white curves fading in and out"
-      role="img"
-      height="56px"
-      width="56px"
-      viewBox="0 0 56 56"
-      class="loader"
-    >
-      <clipPath id="sand-mound-top">
-        <path
-          d="M 14.613 13.087 C 15.814 12.059 19.3 8.039 20.3 6.539 C 21.5 4.789 21.5 2.039 21.5 2.039 L 3 2.039 C 3 2.039 3 4.789 4.2 6.539 C 5.2 8.039 8.686 12.059 9.887 13.087 C 11 14.039 12.25 14.039 12.25 14.039 C 12.25 14.039 13.5 14.039 14.613 13.087 Z"
-          class="loader__sand-mound-top"
-        ></path>
-      </clipPath>
-      <clipPath id="sand-mound-bottom">
-        <path
-          d="M 14.613 20.452 C 15.814 21.48 19.3 25.5 20.3 27 C 21.5 28.75 21.5 31.5 21.5 31.5 L 3 31.5 C 3 31.5 3 28.75 4.2 27 C 5.2 25.5 8.686 21.48 9.887 20.452 C 11 19.5 12.25 19.5 12.25 19.5 C 12.25 19.5 13.5 19.5 14.613 20.452 Z"
-          class="loader__sand-mound-bottom"
-        ></path>
-      </clipPath>
+    <svg aria-label="loader" role="img" height="56px" width="56px" viewBox="0 0 56 56" class="loader">
+      <clipPath id="sand-mound-top"><path d="M 14.613 13.087 C 15.814 12.059 19.3 8.039 20.3 6.539 C 21.5 4.789 21.5 2.039 21.5 2.039 L 3 2.039 C 3 2.039 3 4.789 4.2 6.539 C 5.2 8.039 8.686 12.059 9.887 13.087 C 11 14.039 12.25 14.039 12.25 14.039 C 12.25 14.039 13.5 14.039 14.613 13.087 Z" class="loader__sand-mound-top"/></clipPath>
+      <clipPath id="sand-mound-bottom"><path d="M 14.613 20.452 C 15.814 21.48 19.3 25.5 20.3 27 C 21.5 28.75 21.5 31.5 21.5 31.5 L 3 31.5 C 3 31.5 3 28.75 4.2 27 C 5.2 25.5 8.686 21.48 9.887 20.452 C 11 19.5 12.25 19.5 12.25 19.5 C 12.25 19.5 13.5 19.5 14.613 20.452 Z" class="loader__sand-mound-bottom"/></clipPath>
       <g transform="translate(2,2)">
-        <g
-          transform="rotate(-90,26,26)"
-          stroke-linecap="round"
-          stroke-dashoffset="153.94"
-          stroke-dasharray="153.94 153.94"
-          stroke="hsl(0,0%,100%)"
-          fill="none"
-        >
-          <circle
-            transform="rotate(0,26,26)"
-            r="24.5"
-            cy="26"
-            cx="26"
-            stroke-width="2.5"
-            class="loader__motion-thick"
-          ></circle>
-          <circle
-            transform="rotate(90,26,26)"
-            r="24.5"
-            cy="26"
-            cx="26"
-            stroke-width="1.75"
-            class="loader__motion-medium"
-          ></circle>
-          <circle
-            transform="rotate(180,26,26)"
-            r="24.5"
-            cy="26"
-            cx="26"
-            stroke-width="1"
-            class="loader__motion-thin"
-          ></circle>
+        <g transform="rotate(-90,26,26)" stroke-linecap="round" stroke-dashoffset="153.94" stroke-dasharray="153.94 153.94" stroke="hsl(0,0%,100%)" fill="none">
+          <circle transform="rotate(0,26,26)" r="24.5" cy="26" cx="26" stroke-width="2.5" class="loader__motion-thick"></circle>
+          <circle transform="rotate(90,26,26)" r="24.5" cy="26" cx="26" stroke-width="1.75" class="loader__motion-medium"></circle>
+          <circle transform="rotate(180,26,26)" r="24.5" cy="26" cx="26" stroke-width="1" class="loader__motion-thin"></circle>
         </g>
         <g transform="translate(13.75,9.25)" class="loader__model">
-          <path
-            d="M 1.5 2 L 23 2 C 23 2 22.5 8.5 19 12 C 16 15.5 13.5 13.5 13.5 16.75 C 13.5 20 16 18 19 21.5 C 22.5 25 23 31.5 23 31.5 L 1.5 31.5 C 1.5 31.5 2 25 5.5 21.5 C 8.5 18 11 20 11 16.75 C 11 13.5 8.5 15.5 5.5 12 C 2 8.5 1.5 2 1.5 2 Z"
-            fill="hsl(var(--hue),90%,85%)"
-          ></path>
-
+          <path d="M 1.5 2 L 23 2 C 23 2 22.5 8.5 19 12 C 16 15.5 13.5 13.5 13.5 16.75 C 13.5 20 16 18 19 21.5 C 22.5 25 23 31.5 23 31.5 L 1.5 31.5 C 1.5 31.5 2 25 5.5 21.5 C 8.5 18 11 20 11 16.75 C 11 13.5 8.5 15.5 5.5 12 C 2 8.5 1.5 2 1.5 2 Z" fill="hsl(var(--hue),90%,85%)"></path>
           <g stroke-linecap="round" stroke="hsl(35,90%,90%)">
             <line y2="20.75" x2="12" y1="15.75" x1="12" stroke-dasharray="0.25 33.75" stroke-width="1" class="loader__sand-grain-left"></line>
             <line y2="21.75" x2="12.5" y1="16.75" x1="12.5" stroke-dasharray="0.25 33.75" stroke-width="1" class="loader__sand-grain-right"></line>
@@ -281,18 +245,15 @@
             <line y2="31.5" x2="12.25" y1="14.75" x1="12.25" stroke-dasharray="54 54" stroke-width="1.5" class="loader__sand-fill"></line>
             <line y2="31.5" x2="12" y1="16" x1="12" stroke-dasharray="1 107" stroke-width="1" stroke="hsl(35,90%,83%)" class="loader__sand-line-left"></line>
             <line y2="31.5" x2="12.5" y1="16" x1="12.5" stroke-dasharray="12 96" stroke-width="1" stroke="hsl(35,90%,83%)" class="loader__sand-line-right"></line>
-
             <g stroke-width="0" fill="hsl(35,90%,90%)">
               <path d="M 12.25 15 L 15.392 13.486 C 21.737 11.168 22.5 2 22.5 2 L 2 2.013 C 2 2.013 2.753 11.046 9.009 13.438 L 12.25 15 Z" clip-path="url(#sand-mound-top)"></path>
               <path d="M 12.25 18.5 L 15.392 20.014 C 21.737 22.332 22.5 31.5 22.5 31.5 L 2 31.487 C 2 31.487 2.753 22.454 9.009 20.062 Z" clip-path="url(#sand-mound-bottom)"></path>
             </g>
           </g>
-
           <g stroke-width="2" stroke-linecap="round" opacity="0.7" fill="none">
             <path d="M 19.437 3.421 C 19.437 3.421 19.671 6.454 17.914 8.846 C 16.157 11.238 14.5 11.5 14.5 11.5" stroke="hsl(0,0%,100%)" class="loader__glare-top"></path>
             <path transform="rotate(180,12.25,16.75)" d="M 19.437 3.421 C 19.437 3.421 19.671 6.454 17.914 8.846 C 16.157 11.238 14.5 11.5 14.5 11.5" stroke="hsla(0,0%,100%,0)" class="loader__glare-bottom"></path>
           </g>
-
           <rect height="2" width="24.5" fill="hsl(var(--hue),90%,50%)"></rect>
           <rect height="1" width="19.5" y="0.5" x="2.5" ry="0.5" rx="0.5" fill="hsl(var(--hue),90%,57.5%)"></rect>
           <rect height="2" width="24.5" y="31.5" fill="hsl(var(--hue),90%,50%)"></rect>
@@ -302,18 +263,20 @@
     </svg>
   </div>
 
-  <!-- LIFF SDK -->
+  <!-- LIFF SDK (duplicate safe) -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <script>
 /** ===== CONFIG ===== */
-const LIFF_ID = '2008276151-Oyp12d62';
+const LIFF_ID = '2008276151-1g5alK2l';
 const API_URL = 'https://script.google.com/macros/s/AKfycbxV3xOU1kQM86jUJtfer8hW_HgYkcLfpH942saPVbCZ1RDmN_4LYjpk72OxdKKLQAFt/exec';
 
 /** ===== STATE ===== */
 let token = localStorage.getItem('fin_token') || '';
 let displayName = localStorage.getItem('fin_name') || '';
 let debtsCache = [];
+let debtNameMap = {}; // debt_id -> lender_name
+let repayCache = [];  // list of DebtTx repay entries (filtered in FE)
 
 /** ===== HELPERS ===== */
 const $ = s => document.querySelector(s);
@@ -322,98 +285,55 @@ const esc = s => String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;'
 const toast = (m,ok=true)=>{ const el=$('#toast'); el.textContent=m; el.style.background=ok?'#00c896':'#ff4d4f'; el.style.opacity='1'; setTimeout(()=> el.style.opacity='0', 2200); };
 const showOverlay = on => $('#overlay').classList.toggle('hide', !on);
 
-/* ปุ่ม busy เฉพาะกิจ */
 function setBusy(btn, on, tempText){
   if (!btn) return;
-  if (on){
-    btn.dataset._text = btn.textContent;
-    if (tempText) btn.textContent = tempText;
-    btn.setAttribute('aria-busy','true');
-    btn.disabled = true;
-  }else{
-    btn.disabled = false;
-    btn.removeAttribute('aria-busy');
-    if (btn.dataset._text){ btn.textContent = btn.dataset._text; delete btn.dataset._text; }
-  }
+  if (on){ btn.dataset._text=btn.textContent; if (tempText) btn.textContent=tempText; btn.setAttribute('aria-busy','true'); btn.disabled=true; }
+  else { btn.disabled=false; btn.removeAttribute('aria-busy'); if (btn.dataset._text){ btn.textContent=btn.dataset._text; delete btn.dataset._text; } }
 }
-async function withBusy(btn, fn, textWhile='กำลังโหลด…'){
-  setBusy(btn, true, textWhile);
-  try{ return await fn(); } finally{ setBusy(btn, false); }
-}
+async function withBusy(btn, fn, textWhile='กำลังโหลด…'){ setBusy(btn,true,textWhile); try{ return await fn(); } finally{ setBusy(btn,false);} }
 
 /** ===== API ===== */
-async function fetchJSON(url, options={}){
-  try{
-    const res = await fetch(url, { ...options, headers:{'Content-Type':'text/plain;charset=utf-8', ...(options.headers||{})} });
-    const t = await res.text();
-    try{ return JSON.parse(t); }catch{ return { ok:false, error:'NON_JSON', raw:t }; }
-  }catch(e){ return { ok:false, error:'NETWORK', message:String(e?.message||e) }; }
-}
-async function api(path, payload={}, useToken=true){
-  const body = { path, payload }; if (useToken && token) body.token = token;
-  return fetchJSON(API_URL, { method:'POST', body: JSON.stringify(body) });
-}
+async function fetchJSON(url, options={}){ try{ const res=await fetch(url,{...options,headers:{'Content-Type':'text/plain;charset=utf-8',...(options.headers||{})}}); const t=await res.text(); try{ return JSON.parse(t); }catch{ return {ok:false,error:'NON_JSON',raw:t}; } }catch(e){ return {ok:false,error:'NETWORK',message:String(e?.message||e)}; } }
+async function api(path, payload={}, useToken=true){ const body={path,payload}; if (useToken && token) body.token=token; return fetchJSON(API_URL,{method:'POST', body:JSON.stringify(body)}); }
 
 /** ===== LIFF ===== */
-function waitForLiffReady(timeoutMs=5000){
-  return new Promise(res=>{
-    if (window.liff){ return res(true); }
-    const t0=Date.now(); const iv=setInterval(()=>{
-      if (window.liff){ clearInterval(iv); res(true); }
-      else if (Date.now()-t0>timeoutMs){ clearInterval(iv); res(false); }
-    },30);
-  });
-}
+function waitForLiffReady(timeoutMs=5000){ return new Promise(res=>{ if (window.liff) return res(true); const t0=Date.now(); const iv=setInterval(()=>{ if (window.liff){ clearInterval(iv); res(true);} else if (Date.now()-t0>timeoutMs){ clearInterval(iv); res(false);} },30); }); }
 async function ensureTokenViaLIFF(){
-  const okReady = await waitForLiffReady();
-  if (!okReady){ toast('LIFF ยังไม่พร้อม โปรดรีเฟรช', false); return false; }
-
-  try{ await liff.init({ liffId: LIFF_ID }); }
-  catch(e){ toast('เริ่ม LIFF ไม่สำเร็จ', false); return false; }
-
+  const okReady = await waitForLiffReady(); if (!okReady){ toast('LIFF ยังไม่พร้อม โปรดรีเฟรช', false); return false; }
+  try{ await liff.init({ liffId: LIFF_ID }); }catch(e){ toast('เริ่ม LIFF ไม่สำเร็จ', false); return false; }
   if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return false; }
-
   let prof; try{ prof = await liff.getProfile(); }catch{ toast('อ่านโปรไฟล์ LINE ไม่ได้', false); return false; }
   const r = await api('liff/link_or_login', { line_user_id: prof.userId, display_name: prof.displayName||'' }, false);
   if (!r.ok){ toast(r.message||'เกิดข้อผิดพลาด', false); return false; }
-
-  if (r.need_verification){
-    $('#who').textContent = prof.displayName||'';
-    toast('ยังไม่ผูกบัญชี กรุณาไปผูกก่อน', false);
-    return false;
-  }
+  if (r.need_verification){ $('#who').textContent = prof.displayName||''; toast('ยังไม่ผูกบัญชี กรุณาไปผูกก่อน', false); return false; }
   token = r.token; displayName = r.display_name || prof.displayName || '';
   localStorage.setItem('fin_token', token); localStorage.setItem('fin_name', displayName);
   $('#who').textContent = displayName;
   return true;
 }
 
-/** ===== Debts ===== */
+/** ===== Debts (creditors panel) ===== */
 async function loadDebts(){
-  // แสดงกำลังโหลดในตาราง (ไม่ใช้ overlay)
   $('#tblDebts').innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center">กำลังโหลด…</td></tr>';
   const r = await api('debts/summary', {}, true);
   debtsCache = r.ok ? (r.items||[]) : [];
+  debtNameMap = {}; (debtsCache||[]).forEach(d => debtNameMap[String(d.debt_id)] = d.lender_name || '');
   renderDebts();
+  // เติม dropdown filter ใน Repay History
+  const sel = $('#rhDebt'); const keep = sel.value;
+  sel.innerHTML = '<option value="">ทั้งหมด</option>' + (debtsCache||[]).map(d=>`<option value="${esc(d.debt_id)}">${esc(d.lender_name||'')}</option>`).join('');
+  if (keep) sel.value = keep;
 }
 function renderDebts(){
   const tb = $('#tblDebts'); tb.innerHTML='';
-  if (!debtsCache.length){
-    tb.innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center">ยังไม่มีหนี้</td></tr>';
-    return;
-  }
+  if (!debtsCache.length){ tb.innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center">ยังไม่มีหนี้</td></tr>'; return; }
   for (const d of debtsCache){
     const tr = document.createElement('tr');
     const status = (d.is_closed)?'ปิดบัญชี':'ใช้งาน';
     tr.innerHTML = `
       <td>${esc(d.lender_name||'')}</td>
       <td class="right">${fmt(d.total_due ?? (Number(d.principal_current||0)+Number(d.accrued_interest||0)))}</td>
-      <td class="right rate-cell">
-        <div class="rate-field">
-          <input value="${esc(Number(d.annual_rate||0))}" readonly>
-          <span class="suffix">%</span>
-        </div>
-      </td>
+      <td class="right rate-cell"><div class="rate-field"><input value="${esc(Number(d.annual_rate||0))}" readonly><span class="suffix">%</span></div></td>
       <td>${status}</td>
       <td>
         <div style="display:flex; gap:.5rem">
@@ -424,8 +344,6 @@ function renderDebts(){
     tb.appendChild(tr);
   }
 }
-
-/* คลิกในตาราง: ใช้ busy เฉพาะปุ่มที่กด */
 $('#tblDebts').addEventListener('click', async (e)=>{
   const btn = e.target.closest('button[data-act]'); if (!btn) return;
   const id = btn.getAttribute('data-id'); const act = btn.getAttribute('data-act');
@@ -438,7 +356,7 @@ $('#tblDebts').addEventListener('click', async (e)=>{
   }
 });
 
-/** เพิ่มเจ้าหนี้ใหม่ (busy ที่ปุ่ม) */
+/** เพิ่มเจ้าหนี้ใหม่ */
 $('#btnAddDebt').addEventListener('click', async (e)=>{
   const btn = e.currentTarget;
   const lender_name = $('#dName').value.trim();
@@ -446,21 +364,12 @@ $('#btnAddDebt').addEventListener('click', async (e)=>{
   const principal_initial = Number($('#dPrincipal').value||0);
   if (!lender_name || !isFinite(annual_rate) || annual_rate<0){ toast('กรอกชื่อและอัตราดอกให้ถูกต้อง', false); return; }
   const payload = { lender_name, annual_rate, principal_initial: isFinite(principal_initial)&&principal_initial>0? principal_initial:0 };
-
   const r = await withBusy(btn, ()=> api('debts/create', payload, true), 'กำลังบันทึก…');
-  if (r.ok){
-    toast('เพิ่มเจ้าหนี้สำเร็จ');
-    $('#dName').value=''; $('#dRate').value=''; $('#dPrincipal').value='';
-    loadDebts();
-  }else{
-    toast(r.message||'ไม่สำเร็จ', false);
-  }
+  if (r.ok){ toast('เพิ่มเจ้าหนี้สำเร็จ'); $('#dName').value=''; $('#dRate').value=''; $('#dPrincipal').value=''; loadDebts(); } else { toast(r.message||'ไม่สำเร็จ', false); }
 });
-
-/** รีเฟรชรายการ (busy ที่ปุ่ม) */
 $('#btnReload').addEventListener('click', (e)=> withBusy(e.currentTarget, loadDebts, 'กำลังโหลด…'));
 
-/** ===== Edit modal ===== */
+/** ===== Debt Edit Modal (creditors) ===== */
 function openDebtEdit(id){
   const d = debtsCache.find(x=> String(x.debt_id)===String(id));
   if (!d){ toast('ไม่พบเจ้าหนี้', false); return; }
@@ -470,9 +379,10 @@ function openDebtEdit(id){
   $('#editDebtBackdrop').classList.add('show'); $('#editDebtBackdrop').setAttribute('aria-hidden','false');
 }
 function closeDebtEdit(){ $('#editDebtBackdrop').classList.remove('show'); $('#editDebtBackdrop').setAttribute('aria-hidden','true'); }
-$('#btnEditDebtCancel').addEventListener('click', closeDebtEdit);
-$('#btnEditDebtSave').addEventListener('click', async (e)=>{
-  const btn = e.currentTarget;
+document.addEventListener('click', (e)=>{ if (e.target.id==='btnEditDebtCancel') closeDebtEdit(); });
+document.addEventListener('click', async (e)=>{
+  if (e.target.id!=='btnEditDebtSave') return;
+  const btn = e.target;
   const id = $('#editDebtId').value;
   const name = $('#editDebtName').value.trim();
   const rate = Number($('#editDebtRate').value);
@@ -481,13 +391,159 @@ $('#btnEditDebtSave').addEventListener('click', async (e)=>{
   if (r.ok){ toast('บันทึกสำเร็จ'); closeDebtEdit(); loadDebts(); } else toast(r.message||'อัปเดตไม่สำเร็จ', false);
 });
 
+/** ===== Repay History (new tab) ===== */
+function setRhQuick30(){ const now=new Date(); const to=now; const from=new Date(now.getFullYear(),now.getMonth(),now.getDate()-29); $('#rhFrom').value=toYMD(from); $('#rhTo').value=toYMD(to); }
+function toYMD(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+async function loadRepayHistory(){
+  const from = $('#rhFrom').value || '';
+  const to   = $('#rhTo').value || '';
+  const debtFilter = $('#rhDebt').value || '';
+
+  $('#tblRepay').innerHTML = '<tr><td colspan="7" class="muted" style="text-align:center">กำลังโหลด…</td></tr>';
+
+  // ดึงเฉพาะธุรกรรมหนี้ (DebtTx)
+  const r = await api('debts/tx/list', { from, to, debt_id: debtFilter||undefined }, true);
+  const items = (r.ok ? (r.items||[]) : []).filter(x => String(x.type)==='repay');
+
+  // map ชื่อเจ้าหนี้
+  items.forEach(it => it.lender_name = debtNameMap[String(it.debt_id)] || '');
+
+  repayCache = items;
+  renderRepayHistory();
+}
+function renderRepayHistory(){
+  const tb = $('#tblRepay'); tb.innerHTML='';
+  if (!repayCache.length){ tb.innerHTML='<tr><td colspan="7" class="muted" style="text-align:center">ไม่พบรายการ</td></tr>'; return; }
+  for (const it of repayCache){
+    const tr = document.createElement('tr');
+    const sumAmt = Number(it.amount||0);
+    const ip = Number(it.interest_paid||0);
+    const pp = Number(it.principal_paid||0);
+    tr.innerHTML = `
+      <td>${esc(it.date||'')}</td>
+      <td>${esc(it.lender_name||'')}</td>
+      <td class="right">${fmt(sumAmt)}</td>
+      <td class="right">${fmt(ip)}</td>
+      <td class="right">${fmt(pp)}</td>
+      <td title="${esc(it.note||'')}">${esc(it.note||'')}</td>
+      <td>
+        <div style="display:flex; gap:.5rem">
+          <button class="btn-ghost" data-rh-act="edit" data-debt-tx-id="${esc(it.tx_id)}">แก้ไข</button>
+          <button class="btn-danger" data-rh-act="del" data-debt-tx-id="${esc(it.tx_id)}">ลบ</button>
+        </div>
+      </td>`;
+    tb.appendChild(tr);
+  }
+}
+
+/** Edit repay modal */
+function openRepayEditModal(debt_tx_id){
+  $('#editRepayId').value = debt_tx_id;
+  // preload
+  api('debts/tx/get', { tx_id: debt_tx_id }, true).then(r=>{
+    if (!r.ok){ toast(r.message||'ไม่พบข้อมูล', false); return; }
+    const it = r.item || r.data || {};
+    $('#editRepayDate').value = (it.date||'').slice(0,10);
+    $('#editRepayInterest').value = Number(it.interest_paid||0);
+    $('#editRepayPrincipal').value = Number(it.principal_paid||0);
+    $('#editRepayNote').value = it.note || '';
+    $('#editRepayBackdrop').classList.add('show'); $('#editRepayBackdrop').setAttribute('aria-hidden','false');
+  });
+}
+function closeRepayEditModal(){ $('#editRepayBackdrop').classList.remove('show'); $('#editRepayBackdrop').setAttribute('aria-hidden','true'); }
+$('#btnEditRepayCancel').addEventListener('click', closeRepayEditModal);
+$('#btnEditRepaySave').addEventListener('click', async (e)=>{
+  const btn = e.currentTarget;
+  const debt_tx_id = $('#editRepayId').value;
+  const date = $('#editRepayDate').value;
+  const interest_paid = Number($('#editRepayInterest').value||0);
+  const principal_paid = Number($('#editRepayPrincipal').value||0);
+  const note = $('#editRepayNote').value||'';
+  if (!date || interest_paid<0 || principal_paid<0){ toast('ตรวจสอบข้อมูลอีกครั้ง', false); return; }
+  const r = await withBusy(btn, ()=> api('debts/tx/update', { debt_tx_id, date, interest_paid, principal_paid, note }, true), 'กำลังบันทึก…');
+  if (r.ok){ toast('บันทึกสำเร็จ'); closeRepayEditModal(); loadRepayHistory(); } else toast(r.message||'อัปเดตไม่สำเร็จ', false);
+});
+
+/** Delete repay:
+ * หา Transactions ที่ผูกกับ debt_tx_id นี้ แล้วเรียก transactions/delete (GAS จะลบ DebtTx ให้ด้วย)
+ */
+async function deleteRepay(debt_tx_id, btn){
+  if (!confirm('ต้องการลบรายการจ่ายหนี้นี้หรือไม่?')) return;
+  // หา tx_id จาก transactions/list (จะมี field debt_tx_id)
+  const rTx = await withBusy(btn, ()=> api('transactions/list', { type:'all' }, true), 'กำลังลบ…');
+  if (!rTx.ok){ toast('โหลดรายการเงินสดไม่สำเร็จ', false); return; }
+  const linked = (rTx.items||[]).find(t => String(t.debt_tx_id||'')===String(debt_tx_id));
+  if (!linked || !linked.tx_id){ toast('ไม่พบลิงก์ธุรกรรมเงินสดของรายการนี้', false); return; }
+  const rDel = await api('transactions/delete', { tx_id: linked.tx_id }, true);
+  if (rDel.ok){ toast('ลบสำเร็จ'); loadRepayHistory(); } else toast(rDel.message||'ลบไม่สำเร็จ', false);
+}
+
+/** Repay table events */
+$('#tblRepay').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-rh-act]'); if (!btn) return;
+  const act = btn.getAttribute('data-rh-act'); const id = btn.getAttribute('data-debt-tx-id');
+  if (act==='edit') openRepayEditModal(id);
+  if (act==='del')  deleteRepay(id, btn);
+});
+
+/** ===== Tabs ===== */
+const tabCreditors = $('#tab-creditors');
+const tabRepay = $('#tab-repay-history');
+const panelCreditors = $('#panel-creditors');
+const panelRepay = $('#panel-repay-history');
+
+function activateTab(which){
+  const isCred = (which==='cred');
+  tabCreditors.classList.toggle('active', isCred);
+  tabRepay.classList.toggle('active', !isCred);
+  panelCreditors.classList.toggle('active', isCred);
+  panelRepay.classList.toggle('active', !isCred);
+  if (!isCred) {
+    // default filter = 30 วันล่าสุด เมื่อเปิดครั้งแรก
+    if (!$('#rhFrom').value || !$('#rhTo').value) setRhQuick30();
+    loadRepayHistory();
+  }
+}
+tabCreditors.addEventListener('click', ()=> activateTab('cred'));
+tabRepay.addEventListener('click', ()=> activateTab('repay'));
+$('#btnRhReload').addEventListener('click', ()=> loadRepayHistory());
+$('#btnRhQuick30').addEventListener('click', ()=>{ setRhQuick30(); loadRepayHistory(); });
+$('#rhFrom').addEventListener('change', ()=> loadRepayHistory());
+$('#rhTo').addEventListener('change', ()=> loadRepayHistory());
+$('#rhDebt').addEventListener('change', ()=> loadRepayHistory());
+
 /** ===== INIT ===== */
 (async function init(){
-  showOverlay(true);  // overlay เฉพาะตอนเริ่ม LIFF
+  // ตั้งค่า default ช่วง Repay = 30 วันล่าสุด
+  setRhQuick30();
+
+  showOverlay(true);
   let ok=false; try{ ok = await ensureTokenViaLIFF(); }catch(e){ console.error(e); toast('เริ่มต้น LIFF ไม่สำเร็จ', false); }
   showOverlay(false);
-  if (ok) loadDebts();
+
+  if (ok){
+    await loadDebts();
+    // เปิดเริ่มต้นที่ "เจ้าหนี้" ตามเดิม
+  }
 })();
 </script>
+
+<!-- HIDDEN: debt edit modal (เดิม) -->
+<div id="editDebtBackdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editDebtTitle">
+    <div id="editDebtTitle" class="title">แก้ไขเจ้าหนี้</div>
+    <input id="editDebtId" type="hidden">
+    <div class="row">
+      <div class="col"><label for="editDebtName">ชื่อเจ้าหนี้</label><input id="editDebtName" placeholder="เช่น บัตร X / เพื่อน A"></div>
+      <div class="col"><label for="editDebtRate">อัตราดอกเบี้ย/ปี</label><div class="rate-field"><input id="editDebtRate" type="number" step="0.01" placeholder="0.00"><span class="suffix">%</span></div></div>
+    </div>
+    <div class="actions">
+      <button id="btnEditDebtCancel" class="btn-ghost">ยกเลิก</button>
+      <button id="btnEditDebtSave" class="btn-cyan">บันทึก</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
