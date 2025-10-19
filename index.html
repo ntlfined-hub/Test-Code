@@ -39,7 +39,7 @@
     button{ background:var(--primary); border:none; font-weight:700; cursor:pointer; position:relative }
     .btn-ghost{ background:#333 } .btn-blue{ background:var(--blue) } .btn-danger{ background:var(--danger) } .btn-cyan{ background:var(--cyan); color:#052a27 }
     button:disabled{ opacity:.6; cursor:not-allowed }
-    /* Busy spinner on a button (used for “แก้ไข” ขณะโหลด pop up) */
+    /* Loader on button */
     button[aria-busy="true"]{ pointer-events:none }
     button[aria-busy="true"]::after{
       content:""; position:absolute; right:10px; top:50%; transform:translateY(-50%);
@@ -66,23 +66,23 @@
     #overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.45); backdrop-filter:blur(2px); z-index:110; transition:.2s }
     #overlay.hide{ opacity:0; pointer-events:none }
 
-    /* Hourglass loader (Uiverse.io: nima-mollazadeh) */
+    /* Hourglass loader (Uiverse.io) */
     .loader{ --dur:2s; display:block; margin:auto; width:14em; height:auto; }
     .loader__glare-top,.loader__glare-bottom,.loader__model,.loader__motion-thick,.loader__motion-medium,.loader__motion-thin,.loader__sand-drop,.loader__sand-fill,.loader__sand-grain-left,.loader__sand-grain-right,.loader__sand-line-left,.loader__sand-line-right,.loader__sand-mound-top,.loader__sand-mound-bottom{ animation-duration:var(--dur); animation-timing-function:cubic-bezier(0.83,0,0.17,1); animation-iteration-count:infinite }
-    .loader__glare-top{ animation-name:glare-top } .loader__glare-bottom{ animation-name:glare-bottom }
-    .loader__model{ animation-name:loader-flip; transform-origin:12.25px 16.75px }
-    .loader__motion-thick,.loader__motion-medium,.loader__motion-thin{ transform-origin:26px 26px }
-    .loader__motion-thick{ animation-name:motion-thick } .loader__motion-medium{ animation-name:motion-medium } .loader__motion-thin{ animation-name:motion-thin }
-    .loader__sand-drop{ animation-name:sand-drop } .loader__sand-fill{ animation-name:sand-fill }
-    .loader__sand-grain-left{ animation-name:sand-grain-left } .loader__sand-grain-right{ animation-name:sand-grain-right }
-    .loader__sand-line-left{ animation-name:sand-line-left } .loader__sand-line-right{ animation-name:sand-line-right }
-    .loader__sand-mound-top{ animation-name:sand-mound-top } .loader__sand-mound-bottom{ animation-name:sand-mound-bottom; transform-origin:12.25px 31.5px }
     @keyframes loader-flip{ from{ transform:translate(13.75px,9.25px) rotate(-180deg) } 24%,to{ transform:translate(13.75px,9.25px) rotate(0) } }
     @keyframes glare-top{ from{ stroke:rgba(255,255,255,0) } 24%,to{ stroke:white } }
     @keyframes glare-bottom{ from{ stroke:white } 24%,to{ stroke:rgba(255,255,255,0) } }
     @keyframes motion-thick{ from{ animation-timing-function:cubic-bezier(0.33,0,0.67,0); stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(0.67turn) } 20%{ animation-timing-function:cubic-bezier(0.33,1,0.67,1); stroke:rgb(32,32,32); stroke-dashoffset:141.11; transform:rotate(1turn) } 40%,to{ stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(1.33turn) } }
     @keyframes motion-medium{ from,8%{ animation-timing-function:cubic-bezier(0.33,0,0.67,0); stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(0.5turn) } 20%{ animation-timing-function:cubic-bezier(0.33,1,0.67,1); stroke:white; stroke-dashoffset:147.53; transform:rotate(0.83turn) } 32%,to{ stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(1.17turn) } }
     @keyframes motion-thin{ from,4%{ animation-timing-function:cubic-bezier(0.33,0,0.67,0); stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(0.33turn) } 24%{ animation-timing-function:cubic-bezier(0.33,1,0.67,1); stroke:rgb(53,53,53); stroke-dashoffset:134.7; transform:rotate(0.67turn) } 44%,to{ stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(1turn) } }
+    @keyframes sand-drop{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:1 } 70%,to{ stroke-dashoffset:-107 } }
+    @keyframes sand-fill{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:55 } 70%,to{ stroke-dashoffset:-54 } }
+    @keyframes sand-grain-left{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:29 } 70%,to{ stroke-dashoffset:-22 } }
+    @keyframes sand-grain-right{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:27 } 70%,to{ stroke-dashoffset:-24 } }
+    @keyframes sand-line-left{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:53 } 70%,to{ stroke-dashoffset:-55 } }
+    @keyframes sand-line-right{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:14 } 70%,to{ stroke-dashoffset:-24.5 } }
+    @keyframes sand-mound-top{ from,10%{ animation-timing-function:linear; transform:translate(0,0) } 15%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); transform:translate(0,1.5px) } 51%,to{ transform:translate(0,13px) } }
+    @keyframes sand-mound-bottom{ from,31%{ animation-timing-function:cubic-bezier(0.61,1,0.88,1); transform:scale(1,0) } 56%,to{ transform:scale(1,1) } }
 
     /* Modal */
     .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:140 }
@@ -261,7 +261,7 @@
 
 <script>
 /** ===== CONFIG ===== */
-const LIFF_ID = '2008276151-oyp12d62';
+const LIFF_ID = '2008276151-Oyp12d62';
 const API_URL = 'https://script.google.com/macros/s/AKfycbxV3xOU1kQM86jUJtfer8hW_HgYkcLfpH942saPVbCZ1RDmN_4LYjpk72OxdKKLQAFt/exec';
 
 /** ===== STATE ===== */
@@ -278,7 +278,6 @@ const esc = s => String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;'
 const toast = (m,ok=true)=>{ const el=$('#toast'); el.textContent=m; el.style.background=ok?'#00c896':'#ff4d4f'; el.style.opacity='1'; setTimeout(()=> el.style.opacity='0', 2200); };
 const showOverlay = on => $('#overlay').classList.toggle('hide', !on);
 
-/* Busy helper (มีอยู่แล้ว ใช้กับปุ่มแก้ไขด้วย) */
 function setBusy(btn, on, tempText){
   if (!btn) return;
   if (on){ btn.dataset._text=btn.textContent; if (tempText) btn.textContent=tempText; btn.setAttribute('aria-busy','true'); btn.disabled=true; }
@@ -396,9 +395,11 @@ async function loadRepayHistory(){
 
   $('#tblRepay').innerHTML = '<tr><td colspan="7" class="muted" style="text-align:center">กำลังโหลด…</td></tr>';
 
+  // ดึงเฉพาะธุรกรรมหนี้ (DebtTx)
   const r = await api('debts/tx/list', { from, to, debt_id: debtFilter||undefined }, true);
   const items = (r.ok ? (r.items||[]) : []).filter(x => String(x.type)==='repay');
 
+  // map ชื่อเจ้าหนี้
   items.forEach(it => it.lender_name = debtNameMap[String(it.debt_id)] || '');
 
   repayCache = items;
@@ -429,19 +430,19 @@ function renderRepayHistory(){
   }
 }
 
-/** Edit repay modal (แสดง busy ที่ปุ่ม “แก้ไข” ระหว่างโหลดข้อมูล) */
-function openRepayEditModal(debt_tx_id){
-  $('#editRepayId').value = debt_tx_id;
-  // IMPORTANT: return Promise เพื่อให้ withBusy จับสถานะได้
-  return api('debts/tx/get', { tx_id: debt_tx_id }, true).then(r=>{
+/** Edit repay modal — with inline spinner on the clicked button */
+async function openRepayEditModal(debt_tx_id, btn){
+  await withBusy(btn, async ()=>{
+    const r = await api('debts/tx/get', { tx_id: debt_tx_id }, true);
     if (!r.ok){ toast(r.message||'ไม่พบข้อมูล', false); return; }
     const it = r.item || r.data || {};
+    $('#editRepayId').value = debt_tx_id;
     $('#editRepayDate').value = (it.date||'').slice(0,10);
     $('#editRepayInterest').value = Number(it.interest_paid||0);
     $('#editRepayPrincipal').value = Number(it.principal_paid||0);
     $('#editRepayNote').value = it.note || '';
     $('#editRepayBackdrop').classList.add('show'); $('#editRepayBackdrop').setAttribute('aria-hidden','false');
-  });
+  }, 'กำลังโหลด…');
 }
 function closeRepayEditModal(){ $('#editRepayBackdrop').classList.remove('show'); $('#editRepayBackdrop').setAttribute('aria-hidden','true'); }
 $('#btnEditRepayCancel').addEventListener('click', closeRepayEditModal);
@@ -457,25 +458,22 @@ $('#btnEditRepaySave').addEventListener('click', async (e)=>{
   if (r.ok){ toast('บันทึกสำเร็จ'); closeRepayEditModal(); loadRepayHistory(); } else toast(r.message||'อัปเดตไม่สำเร็จ', false);
 });
 
-/** Delete repay */
+/** Delete repay: show inline spinner on the clicked Delete button (already busy-wrapped) */
 async function deleteRepay(debt_tx_id, btn){
   if (!confirm('ต้องการลบรายการจ่ายหนี้นี้หรือไม่?')) return;
   const rTx = await withBusy(btn, ()=> api('transactions/list', { type:'all' }, true), 'กำลังลบ…');
-  if (!rTx.ok){ toast('โหลดรายการเงินสดไม่สำเร็จ', false); return; }
+  if (!rTx?.ok){ toast('โหลดรายการเงินสดไม่สำเร็จ', false); return; }
   const linked = (rTx.items||[]).find(t => String(t.debt_tx_id||'')===String(debt_tx_id));
   if (!linked || !linked.tx_id){ toast('ไม่พบลิงก์ธุรกรรมเงินสดของรายการนี้', false); return; }
   const rDel = await api('transactions/delete', { tx_id: linked.tx_id }, true);
   if (rDel.ok){ toast('ลบสำเร็จ'); loadRepayHistory(); } else toast(rDel.message||'ลบไม่สำเร็จ', false);
 }
 
-/** Repay table events */
+/** Repay table events — pass the clicked button for spinner */
 $('#tblRepay').addEventListener('click', (e)=>{
   const btn = e.target.closest('button[data-rh-act]'); if (!btn) return;
   const act = btn.getAttribute('data-rh-act'); const id = btn.getAttribute('data-debt-tx-id');
-  if (act==='edit'){
-    // NEW: แสดงตัวหมุนบนปุ่ม “แก้ไข” ระหว่างดึงข้อมูลก่อนเปิดป็อปอัป
-    return withBusy(btn, ()=> openRepayEditModal(id), 'กำลังโหลด…');
-  }
+  if (act==='edit') openRepayEditModal(id, btn);
   if (act==='del')  deleteRepay(id, btn);
 });
 
@@ -492,25 +490,32 @@ function activateTab(which){
   panelCreditors.classList.toggle('active', isCred);
   panelRepay.classList.toggle('active', !isCred);
   if (!isCred) {
+    // default filter = 30 วันล่าสุด เมื่อเปิดครั้งแรก
     if (!$('#rhFrom').value || !$('#rhTo').value) setRhQuick30();
     loadRepayHistory();
   }
 }
 tabCreditors.addEventListener('click', ()=> activateTab('cred'));
 tabRepay.addEventListener('click', ()=> activateTab('repay'));
-$('#btnRhReload').addEventListener('click', ()=> loadRepayHistory());
-$('#btnRhQuick30').addEventListener('click', ()=>{ setRhQuick30(); loadRepayHistory(); });
+$('#btnRhReload').addEventListener('click', (e)=> withBusy(e.currentTarget, loadRepayHistory, 'กำลังโหลด…'));
+$('#btnRhQuick30').addEventListener('click', (e)=>{ setRhQuick30(); withBusy(e.currentTarget, loadRepayHistory, 'กำลังโหลด…'); });
 $('#rhFrom').addEventListener('change', ()=> loadRepayHistory());
 $('#rhTo').addEventListener('change', ()=> loadRepayHistory());
 $('#rhDebt').addEventListener('change', ()=> loadRepayHistory());
 
 /** ===== INIT ===== */
 (async function init(){
+  // ตั้งค่า default ช่วง Repay = 30 วันล่าสุด
   setRhQuick30();
+
   showOverlay(true);
   let ok=false; try{ ok = await ensureTokenViaLIFF(); }catch(e){ console.error(e); toast('เริ่มต้น LIFF ไม่สำเร็จ', false); }
   showOverlay(false);
-  if (ok){ await loadDebts(); }
+
+  if (ok){
+    await loadDebts();
+    // เปิดเริ่มต้นที่ "เจ้าหนี้" ตามเดิม
+  }
 })();
 </script>
 
