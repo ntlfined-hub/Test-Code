@@ -32,48 +32,6 @@
     body.auth-locked { overflow: hidden; }
     @keyframes shake {10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
     .shake { animation: shake .35s linear both; }
-
-    /* ==== Loader (Newton's Cradle) ==== */
-    /* From Uiverse.io by dovatgabriel */
-    .newtons-cradle {
-      --uib-size: 50px;
-      --uib-speed: 1.2s;
-      --uib-color: #e5e7eb; /* ปรับเป็นโทนอ่อนให้เข้ากับธีมมืด */
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: var(--uib-size);
-      height: var(--uib-size);
-    }
-    .newtons-cradle__dot {
-      position: relative;
-      display: flex;
-      align-items: center;
-      height: 100%;
-      width: 25%;
-      transform-origin: center top;
-    }
-    .newtons-cradle__dot::after {
-      content: '';
-      display: block;
-      width: 100%;
-      height: 25%;
-      border-radius: 50%;
-      background-color: var(--uib-color);
-    }
-    .newtons-cradle__dot:first-child { animation: swing var(--uib-speed) linear infinite; }
-    .newtons-cradle__dot:last-child {  animation: swing2 var(--uib-speed) linear infinite; }
-    @keyframes swing {
-      0% { transform: rotate(0deg); animation-timing-function: ease-out; }
-      25% { transform: rotate(70deg); animation-timing-function: ease-in; }
-      50% { transform: rotate(0deg); animation-timing-function: linear; }
-    }
-    @keyframes swing2 {
-      0% { transform: rotate(0deg); animation-timing-function: linear; }
-      50% { transform: rotate(0deg); animation-timing-function: ease-out; }
-      75% { transform: rotate(-70deg); animation-timing-function: ease-in; }
-    }
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-zinc-900 text-white auth-locked">
@@ -285,17 +243,6 @@
               <button id="copyPreviewBtn" type="button" class="btn sm:w-40 py-3 font-semibold">คัดลอก</button>
             </div>
           </div>
-
-          <!-- Loader -->
-          <div id="previewLoading" class="hidden w-full flex items-center justify-center py-6">
-            <div class="newtons-cradle">
-              <div class="newtons-cradle__dot"></div>
-              <div class="newtons-cradle__dot"></div>
-              <div class="newtons-cradle__dot"></div>
-              <div class="newtons-cradle__dot"></div>
-            </div>
-          </div>
-
           <div class="mt-3">
             <textarea id="previewBox" class="input !bg-black/30 !border-white/20 font-mono text-[0.95rem] h-44" readonly placeholder="กด “สร้างข้อความเช็คอิน” เพื่อแสดงข้อความที่นี่"></textarea>
           </div>
@@ -620,15 +567,15 @@
               '<div id="ed-fullBox-'+rowId+'" class="'+(isSplit?'hidden':'')+'">'+
                 '<label class="block text-sm font-semibold mb-1">สถานที่ (ทั้งวัน)</label>'+
                 '<input type="text" id="ed-fullLoc-'+rowId+'" class="input" value="'+(loc||am)+'">'+
-              </div>'+
+              '</div>'+
               '<div id="ed-splitBox-'+rowId+'" class="'+(isSplit?'':'hidden')+' space-y-3">'+
                 '<div><label class="block text-sm font-semibold mb-1">🌅 AM</label><input type="text" id="ed-am-'+rowId+'" class="input" value="'+am+'"></div>'+
                 '<div><label class="block text-sm font-semibold mb-1">🌆 PM</label><input type="text" id="ed-pm-'+rowId+'" class="input" value="'+pm+'"></div>'+
-              </div>'+
+              '</div>'+
               '<div class="flex flex-col sm:flex-row gap-3 pt-2">'+
                 '<button type="button" class="btn flex-1 py-2" data-action="save" data-id="'+rowId+'">บันทึก</button>'+
                 '<button type="button" class="bg-white/10 hover:bg-white/20 flex-1 py-2 rounded-xl" data-action="cancel" data-id="'+rowId+'">ยกเลิก</button>'+
-                <button type="button" class="flex-1 py-2 rounded-xl border border-red-400/40 bg-red-500/15 hover:bg-red-500/25" data-action="delete" data-rowid="'+rowId+'">ลบ</button>'+
+                '<button type="button" class="flex-1 py-2 rounded-xl border border-red-400/40 bg-red-500/15 hover:bg-red-500/25" data-action="delete" data-rowid="'+rowId+'">ลบ</button>'+
               '</div>'+
             '</div>';
           removeClass(box,'hidden');
@@ -748,7 +695,6 @@
     var copyPreviewBtn = byId('copyPreviewBtn');
     var previewBox = byId('previewBox');
     var previewHint = byId('previewHint');
-    var previewLoading = byId('previewLoading');
 
     if(previewDate){ previewDate.min = today; previewDate.value = today; }
 
@@ -759,6 +705,7 @@
     }
 
     function buildMessageFromRows(items, iso) {
+      // สร้าง map { location: Set(names-พร้อม suffix) }
       var map = {};
       function add(loc, name){
         if(!loc) return;
@@ -784,31 +731,16 @@
         var names = map[loc] || [];
         if(names.length) lines.push(loc + ' ('+names.length+') : ' + names.join(' '));
       }
-      if(!lines.length) return '';
+      if(!lines.length) return ''; // ให้เหมือนฝั่ง GAS ที่ถ้าไม่มีข้อมูลจะคืน string ว่าง
       var header = TEAM_NAME + ' วันที่ ' + thaiLongDate(iso);
       return [header].concat(lines).join('\n');
-    }
-
-    function setPreviewLoading(state){
-      if(state){
-        show(previewLoading);
-        previewBox.value='';
-        text(previewHint,'กำลังสร้างข้อความ...');
-        buildPreviewBtn.disabled = true;
-        copyPreviewBtn.disabled = true;
-      }else{
-        hide(previewLoading);
-        buildPreviewBtn.disabled = false;
-        copyPreviewBtn.disabled = false;
-      }
     }
 
     function buildPreview(){
       var iso = previewDate ? previewDate.value : today;
       if(!iso){ toast('กรุณาเลือกวันที่','error'); return; }
-      setPreviewLoading(true);
+      // ใช้ listFuture แบบช่วงวันเดียว เพื่อดึงทุกคนในวันนั้น (ไม่กรอง name)
       callAPI('listFuture', { from: iso, to: iso }, function(r){
-        setPreviewLoading(false);
         if(!r.ok){ previewBox.value=''; text(previewHint, r.error || 'ไม่สามารถสร้างข้อความได้'); return; }
         var items = r.items || [];
         var msg = buildMessageFromRows(items, iso);
