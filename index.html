@@ -25,13 +25,43 @@
     .chip{ background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18) }
     .mini-btn{ background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); border-radius:.7rem }
     .tab-btn{ border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06) }
-    .tab-btn[aria-selected="true"]{ background:rgba(16,185,129,.18); border-color:rgba(16,185,129,.4) }
     .tab-panel{ display:none } .tab-panel.active{ display:block }
     .btn-equal{ padding:var(--input-padding-y) var(--input-padding-x); border-radius:var(--input-radius) }
     .row-card{ border-radius:1rem; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1) }
     body.auth-locked { overflow: hidden; }
     @keyframes shake {10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
     .shake { animation: shake .35s linear both; }
+
+    /* ===== Loader from Uiverse.io (andrew-manzyk) ===== */
+    .loader {
+      --color-one:#ffbf48; --color-two:#be4a1d; --color-three:#ffbf4780; --color-four:#bf4a1d80; --color-five:#ffbf4740;
+      --time-animation:2s; --size: .7; /* scaled a bit smaller for card */
+      position: relative; border-radius: 50%; transform: scale(var(--size));
+      box-shadow:0 0 25px 0 var(--color-three),0 20px 50px 0 var(--color-four);
+      animation: colorize calc(var(--time-animation) * 3) ease-in-out infinite;
+    }
+    .loader::before{ content:""; position:absolute; top:0; left:0; width:100px; height:100px; border-radius:50%;
+      border-top:solid 1px var(--color-one); border-bottom:solid 1px var(--color-two);
+      background:linear-gradient(180deg,var(--color-five),var(--color-four));
+      box-shadow:inset 0 10px 10px 0 var(--color-three), inset 0 -10px 10px 0 var(--color-four);
+    }
+    .loader .box{ width:100px; height:100px; background:linear-gradient(180deg,var(--color-one) 30%,var(--color-two) 70%);
+      mask:url(#clipping); -webkit-mask:url(#clipping);
+    }
+    .loader svg{ position:absolute; }
+    .loader svg #clipping{ filter:contrast(15); animation:roundness calc(var(--time-animation) / 2) linear infinite; }
+    .loader svg #clipping polygon{ filter:blur(7px); }
+    .loader svg #clipping polygon:nth-child(1){ transform-origin:75% 25%; transform:rotate(90deg); }
+    .loader svg #clipping polygon:nth-child(2){ transform-origin:50% 50%; animation:rotation var(--time-animation) linear infinite reverse; }
+    .loader svg #clipping polygon:nth-child(3){ transform-origin:50% 60%; animation:rotation var(--time-animation) linear infinite; animation-delay:calc(var(--time-animation) / -3); }
+    .loader svg #clipping polygon:nth-child(4){ transform-origin:40% 40%; animation:rotation var(--time-animation) linear infinite reverse; }
+    .loader svg #clipping polygon:nth-child(5){ transform-origin:40% 40%; animation:rotation var(--time-animation) linear infinite reverse; animation-delay:calc(var(--time-animation) / -2); }
+    .loader svg #clipping polygon:nth-child(6){ transform-origin:60% 40%; animation:rotation var(--time-animation) linear infinite; }
+    .loader svg #clipping polygon:nth-child(7){ transform-origin:60% 40%; animation:rotation var(--time-animation) linear infinite; animation-delay:calc(var(--time-animation) / -1.5); }
+    @keyframes rotation{ 0%{ transform:rotate(0deg);} 100%{ transform:rotate(360deg);} }
+    @keyframes roundness{ 0%{filter:contrast(15);}20%{filter:contrast(3);}40%{filter:contrast(3);}60%{filter:contrast(15);}100%{filter:contrast(15);} }
+    @keyframes colorize{ 0%{filter:hue-rotate(0deg);}20%{filter:hue-rotate(-30deg);}40%{filter:hue-rotate(-60deg);}60%{filter:hue-rotate(-90deg);}80%{filter:hue-rotate(-45deg);}100%{filter:hue-rotate(0deg);} }
+    /* ===== /Loader ===== */
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-zinc-900 text-white auth-locked">
@@ -243,6 +273,28 @@
               <button id="copyPreviewBtn" type="button" class="btn sm:w-40 py-3 font-semibold">คัดลอก</button>
             </div>
           </div>
+
+          <!-- Loader -->
+          <div id="previewLoader" class="hidden flex justify-center py-6">
+            <div class="loader" aria-label="กำลังสร้างข้อความ">
+              <svg width="100" height="100" viewBox="0 0 100 100">
+                <defs>
+                  <mask id="clipping">
+                    <polygon points="0,0 100,0 100,100 0,100" fill="black"></polygon>
+                    <polygon points="25,25 75,25 50,75" fill="white"></polygon>
+                    <polygon points="50,25 75,75 25,75" fill="white"></polygon>
+                    <polygon points="35,35 65,35 50,65" fill="white"></polygon>
+                    <polygon points="35,35 65,35 50,65" fill="white"></polygon>
+                    <polygon points="35,35 65,35 50,65" fill="white"></polygon>
+                    <polygon points="35,35 65,35 50,65" fill="white"></polygon>
+                  </mask>
+                </defs>
+              </svg>
+              <div class="box"></div>
+            </div>
+          </div>
+          <!-- /Loader -->
+
           <div class="mt-3">
             <textarea id="previewBox" class="input !bg-black/30 !border-white/20 font-mono text-[0.95rem] h-44" readonly placeholder="กด “สร้างข้อความเช็คอิน” เพื่อแสดงข้อความที่นี่"></textarea>
           </div>
@@ -576,7 +628,7 @@
                 '<button type="button" class="btn flex-1 py-2" data-action="save" data-id="'+rowId+'">บันทึก</button>'+
                 '<button type="button" class="bg-white/10 hover:bg-white/20 flex-1 py-2 rounded-xl" data-action="cancel" data-id="'+rowId+'">ยกเลิก</button>'+
                 '<button type="button" class="flex-1 py-2 rounded-xl border border-red-400/40 bg-red-500/15 hover:bg-red-500/25" data-action="delete" data-rowid="'+rowId+'">ลบ</button>'+
-              '</div>'+
+              </div>'+
             '</div>';
           removeClass(box,'hidden');
           return;
@@ -688,13 +740,14 @@
       });
     }
 
-    /* ===== NEW: Build & Copy preview message (Tab3) ===== */
+    /* ===== NEW: Build & Copy preview message (Tab3) + Loader ===== */
     var TEAM_NAME = 'Fin-ed';
     var previewDate = byId('previewDate');
     var buildPreviewBtn = byId('buildPreviewBtn');
     var copyPreviewBtn = byId('copyPreviewBtn');
     var previewBox = byId('previewBox');
     var previewHint = byId('previewHint');
+    var previewLoader = byId('previewLoader');
 
     if(previewDate){ previewDate.min = today; previewDate.value = today; }
 
@@ -705,7 +758,6 @@
     }
 
     function buildMessageFromRows(items, iso) {
-      // สร้าง map { location: Set(names-พร้อม suffix) }
       var map = {};
       function add(loc, name){
         if(!loc) return;
@@ -731,19 +783,39 @@
         var names = map[loc] || [];
         if(names.length) lines.push(loc + ' ('+names.length+') : ' + names.join(' '));
       }
-      if(!lines.length) return ''; // ให้เหมือนฝั่ง GAS ที่ถ้าไม่มีข้อมูลจะคืน string ว่าง
+      if(!lines.length) return '';
       var header = TEAM_NAME + ' วันที่ ' + thaiLongDate(iso);
       return [header].concat(lines).join('\n');
+    }
+
+    function setPreviewLoading(on){
+      if(on){
+        show(previewLoader);
+        previewBox.value = '';
+        text(previewHint, 'กำลังสร้างข้อความ…');
+        buildPreviewBtn.disabled = true;
+        copyPreviewBtn.disabled = true;
+      }else{
+        hide(previewLoader);
+        buildPreviewBtn.disabled = false;
+        copyPreviewBtn.disabled = false;
+      }
     }
 
     function buildPreview(){
       var iso = previewDate ? previewDate.value : today;
       if(!iso){ toast('กรุณาเลือกวันที่','error'); return; }
-      // ใช้ listFuture แบบช่วงวันเดียว เพื่อดึงทุกคนในวันนั้น (ไม่กรอง name)
+      setPreviewLoading(true);
       callAPI('listFuture', { from: iso, to: iso }, function(r){
-        if(!r.ok){ previewBox.value=''; text(previewHint, r.error || 'ไม่สามารถสร้างข้อความได้'); return; }
+        if(!r.ok){
+          setPreviewLoading(false);
+          previewBox.value='';
+          text(previewHint, r.error || 'ไม่สามารถสร้างข้อความได้');
+          return;
+        }
         var items = r.items || [];
         var msg = buildMessageFromRows(items, iso);
+        setPreviewLoading(false);
         if(!msg){
           previewBox.value = '';
           text(previewHint, 'ไม่มีข้อมูล check-in สำหรับวันที่เลือก');
