@@ -32,6 +32,47 @@
     body.auth-locked { overflow: hidden; }
     @keyframes shake {10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
     .shake { animation: shake .35s linear both; }
+
+    /* ===== Loader: Newton's Cradle (จาก snippet ที่ให้มา) ===== */
+    .newtons-cradle {
+      --uib-size: 50px;
+      --uib-speed: 1.2s;
+      --uib-color: #cbd5e1; /* อ่านง่ายบนพื้นหลังเข้ม */
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--uib-size);
+      height: var(--uib-size);
+    }
+    .newtons-cradle__dot {
+      position: relative;
+      display: flex;
+      align-items: center;
+      height: 100%;
+      width: 25%;
+      transform-origin: center top;
+    }
+    .newtons-cradle__dot::after {
+      content: '';
+      display: block;
+      width: 100%;
+      height: 25%;
+      border-radius: 50%;
+      background-color: var(--uib-color);
+    }
+    .newtons-cradle__dot:first-child { animation: swing var(--uib-speed) linear infinite; }
+    .newtons-cradle__dot:last-child  { animation: swing2 var(--uib-speed) linear infinite; }
+    @keyframes swing {
+      0%   { transform: rotate(0deg);   animation-timing-function: ease-out; }
+      25%  { transform: rotate(70deg);  animation-timing-function: ease-in;  }
+      50%  { transform: rotate(0deg);   animation-timing-function: linear;   }
+    }
+    @keyframes swing2 {
+      0%   { transform: rotate(0deg);    animation-timing-function: linear;  }
+      50%  { transform: rotate(0deg);    animation-timing-function: ease-out;}
+      75%  { transform: rotate(-70deg);  animation-timing-function: ease-in; }
+    }
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-zinc-900 text-white auth-locked">
@@ -243,6 +284,17 @@
               <button id="copyPreviewBtn" type="button" class="btn sm:w-40 py-3 font-semibold">คัดลอก</button>
             </div>
           </div>
+
+          <!-- Loader -->
+          <div id="previewLoader" class="mt-4 hidden flex items-center justify-center">
+            <div class="newtons-cradle">
+              <div class="newtons-cradle__dot"></div>
+              <div class="newtons-cradle__dot"></div>
+              <div class="newtons-cradle__dot"></div>
+              <div class="newtons-cradle__dot"></div>
+            </div>
+          </div>
+
           <div class="mt-3">
             <textarea id="previewBox" class="input !bg-black/30 !border-white/20 font-mono text-[0.95rem] h-44" readonly placeholder="กด “สร้างข้อความเช็คอิน” เพื่อแสดงข้อความที่นี่"></textarea>
           </div>
@@ -695,6 +747,7 @@
     var copyPreviewBtn = byId('copyPreviewBtn');
     var previewBox = byId('previewBox');
     var previewHint = byId('previewHint');
+    var previewLoader = byId('previewLoader');
 
     if(previewDate){ previewDate.min = today; previewDate.value = today; }
 
@@ -705,7 +758,6 @@
     }
 
     function buildMessageFromRows(items, iso) {
-      // สร้าง map { location: Set(names-พร้อม suffix) }
       var map = {};
       function add(loc, name){
         if(!loc) return;
@@ -731,16 +783,31 @@
         var names = map[loc] || [];
         if(names.length) lines.push(loc + ' ('+names.length+') : ' + names.join(' '));
       }
-      if(!lines.length) return ''; // ให้เหมือนฝั่ง GAS ที่ถ้าไม่มีข้อมูลจะคืน string ว่าง
+      if(!lines.length) return '';
       var header = TEAM_NAME + ' วันที่ ' + thaiLongDate(iso);
       return [header].concat(lines).join('\n');
+    }
+
+    function setPreviewLoading(state){
+      if(state){
+        show(previewLoader);
+        buildPreviewBtn && (buildPreviewBtn.disabled = true);
+        copyPreviewBtn && (copyPreviewBtn.disabled = true);
+        previewBox && (previewBox.value = '');
+        previewHint && text(previewHint,'กำลังสร้างข้อความ…');
+      }else{
+        hide(previewLoader);
+        buildPreviewBtn && (buildPreviewBtn.disabled = false);
+        copyPreviewBtn && (copyPreviewBtn.disabled = false);
+      }
     }
 
     function buildPreview(){
       var iso = previewDate ? previewDate.value : today;
       if(!iso){ toast('กรุณาเลือกวันที่','error'); return; }
-      // ใช้ listFuture แบบช่วงวันเดียว เพื่อดึงทุกคนในวันนั้น (ไม่กรอง name)
+      setPreviewLoading(true);
       callAPI('listFuture', { from: iso, to: iso }, function(r){
+        setPreviewLoading(false);
         if(!r.ok){ previewBox.value=''; text(previewHint, r.error || 'ไม่สามารถสร้างข้อความได้'); return; }
         var items = r.items || [];
         var msg = buildMessageFromRows(items, iso);
