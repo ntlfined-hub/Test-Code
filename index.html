@@ -33,12 +33,12 @@
     @keyframes shake {10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
     .shake { animation: shake .35s linear both; }
 
-    /* ===== Loader: Newton's Cradle (ตามที่แนบมา) ===== */
+    /* ==== Loader (Newton's Cradle) ==== */
     /* From Uiverse.io by dovatgabriel */
     .newtons-cradle {
       --uib-size: 50px;
       --uib-speed: 1.2s;
-      --uib-color: #474554;
+      --uib-color: #e5e7eb; /* ปรับเป็นโทนอ่อนให้เข้ากับธีมมืด */
       position: relative;
       display: flex;
       align-items: center;
@@ -63,16 +63,16 @@
       background-color: var(--uib-color);
     }
     .newtons-cradle__dot:first-child { animation: swing var(--uib-speed) linear infinite; }
-    .newtons-cradle__dot:last-child  { animation: swing2 var(--uib-speed) linear infinite; }
+    .newtons-cradle__dot:last-child {  animation: swing2 var(--uib-speed) linear infinite; }
     @keyframes swing {
-      0% { transform: rotate(0deg);   animation-timing-function: ease-out; }
-      25%{ transform: rotate(70deg);  animation-timing-function: ease-in;  }
-      50%{ transform: rotate(0deg);   animation-timing-function: linear;   }
+      0% { transform: rotate(0deg); animation-timing-function: ease-out; }
+      25% { transform: rotate(70deg); animation-timing-function: ease-in; }
+      50% { transform: rotate(0deg); animation-timing-function: linear; }
     }
     @keyframes swing2 {
-      0% { transform: rotate(0deg);   animation-timing-function: linear;   }
-      50%{ transform: rotate(0deg);   animation-timing-function: ease-out; }
-      75%{ transform: rotate(-70deg); animation-timing-function: ease-in;  }
+      0% { transform: rotate(0deg); animation-timing-function: linear; }
+      50% { transform: rotate(0deg); animation-timing-function: ease-out; }
+      75% { transform: rotate(-70deg); animation-timing-function: ease-in; }
     }
   </style>
 </head>
@@ -286,9 +286,9 @@
             </div>
           </div>
 
-          <!-- Loader + กล่องข้อความ -->
-          <div class="mt-4 flex items-center justify-center">
-            <div id="previewLoading" class="newtons-cradle hidden">
+          <!-- Loader -->
+          <div id="previewLoading" class="hidden w-full flex items-center justify-center py-6">
+            <div class="newtons-cradle">
               <div class="newtons-cradle__dot"></div>
               <div class="newtons-cradle__dot"></div>
               <div class="newtons-cradle__dot"></div>
@@ -621,14 +621,14 @@
                 '<label class="block text-sm font-semibold mb-1">สถานที่ (ทั้งวัน)</label>'+
                 '<input type="text" id="ed-fullLoc-'+rowId+'" class="input" value="'+(loc||am)+'">'+
               </div>'+
-              <div id="ed-splitBox-'+rowId+'" class="'+(isSplit?'':'hidden')+' space-y-3">'+
+              '<div id="ed-splitBox-'+rowId+'" class="'+(isSplit?'':'hidden')+' space-y-3">'+
                 '<div><label class="block text-sm font-semibold mb-1">🌅 AM</label><input type="text" id="ed-am-'+rowId+'" class="input" value="'+am+'"></div>'+
                 '<div><label class="block text-sm font-semibold mb-1">🌆 PM</label><input type="text" id="ed-pm-'+rowId+'" class="input" value="'+pm+'"></div>'+
-              '</div>'+
+              </div>'+
               '<div class="flex flex-col sm:flex-row gap-3 pt-2">'+
                 '<button type="button" class="btn flex-1 py-2" data-action="save" data-id="'+rowId+'">บันทึก</button>'+
                 '<button type="button" class="bg-white/10 hover:bg-white/20 flex-1 py-2 rounded-xl" data-action="cancel" data-id="'+rowId+'">ยกเลิก</button>'+
-                '<button type="button" class="flex-1 py-2 rounded-xl border border-red-400/40 bg-red-500/15 hover:bg-red-500/25" data-action="delete" data-rowid="'+rowId+'">ลบ</button>'+
+                <button type="button" class="flex-1 py-2 rounded-xl border border-red-400/40 bg-red-500/15 hover:bg-red-500/25" data-action="delete" data-rowid="'+rowId+'">ลบ</button>'+
               '</div>'+
             '</div>';
           removeClass(box,'hidden');
@@ -760,16 +760,28 @@
 
     function buildMessageFromRows(items, iso) {
       var map = {};
-      function add(loc, name){ if(!loc) return; if(!map[loc]) map[loc]=[]; map[loc].push(name); }
+      function add(loc, name){
+        if(!loc) return;
+        if(!map[loc]) map[loc]=[];
+        map[loc].push(name);
+      }
       for(var i=0;i<items.length;i++){
-        var row = items[i]; var name = row.name || ''; if(!name) continue;
-        if(row.split){ if(row.am) add(row.am, name+'(AM)'); if(row.pm) add(row.pm, name+'(PM)'); }
-        else{ var loc = row.location || row.am || ''; if(loc) add(loc, name); }
+        var row = items[i];
+        var name = row.name || '';
+        if(!name) continue;
+        if(row.split){
+          if(row.am) add(row.am, name + '(AM)');
+          if(row.pm) add(row.pm, name + '(PM)');
+        }else{
+          var loc = row.location || row.am || '';
+          if(loc) add(loc, name);
+        }
       }
       var locs = Object.keys(map).sort(function(a,b){ return a.localeCompare(b,'th'); });
       var lines = [];
       for(var j=0;j<locs.length;j++){
-        var loc = locs[j]; var names = map[loc] || [];
+        var loc = locs[j];
+        var names = map[loc] || [];
         if(names.length) lines.push(loc + ' ('+names.length+') : ' + names.join(' '));
       }
       if(!lines.length) return '';
@@ -777,24 +789,27 @@
       return [header].concat(lines).join('\n');
     }
 
+    function setPreviewLoading(state){
+      if(state){
+        show(previewLoading);
+        previewBox.value='';
+        text(previewHint,'กำลังสร้างข้อความ...');
+        buildPreviewBtn.disabled = true;
+        copyPreviewBtn.disabled = true;
+      }else{
+        hide(previewLoading);
+        buildPreviewBtn.disabled = false;
+        copyPreviewBtn.disabled = false;
+      }
+    }
+
     function buildPreview(){
       var iso = previewDate ? previewDate.value : today;
       if(!iso){ toast('กรุณาเลือกวันที่','error'); return; }
-
-      // UI: เริ่มโหลด
-      previewBox.value = '';
-      text(previewHint, 'กำลังสร้าง…');
-      show(previewLoading);
-
+      setPreviewLoading(true);
       callAPI('listFuture', { from: iso, to: iso }, function(r){
-        // UI: จบโหลด
-        hide(previewLoading);
-
-        if(!r.ok){
-          previewBox.value='';
-          text(previewHint, r.error || 'ไม่สามารถสร้างข้อความได้');
-          return;
-        }
+        setPreviewLoading(false);
+        if(!r.ok){ previewBox.value=''; text(previewHint, r.error || 'ไม่สามารถสร้างข้อความได้'); return; }
         var items = r.items || [];
         var msg = buildMessageFromRows(items, iso);
         if(!msg){
