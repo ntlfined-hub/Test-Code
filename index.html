@@ -1,880 +1,932 @@
+<!-- FIN-JOD · Hybrid Tabs + Mini Dashboard (Categories fix SWR+retry+safe-cache) -->
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"/>
-  <title>Check In Fin-ed</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>FIN-JOD · Hybrid Tabs + Mini Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600&display=swap" rel="stylesheet">
+
+  <link rel="dns-prefetch" href="https://static.line-scdn.net">
+  <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
+  <link rel="dns-prefetch" href="https://script.google.com">
+  <link rel="preconnect" href="https://script.google.com" crossorigin>
+
   <style>
-    /* ===== Mobile-first tuning ===== */
     :root{
-      --card-radius: 1.25rem;
-      --input-radius: .9rem;
-      --input-padding-y: .9rem;
-      --input-padding-x: 1rem;
-      --input-font-size: 1.05rem; /* >=16px ป้องกัน iOS ซูม */
-      --glass-bg: rgba(255,255,255,.07);
-      --glass-border: rgba(255,255,255,.12);
-      --glass-shadow: 0 6px 18px rgba(0,0,0,.25);
+      --bg:#1e1e1e; --panel:#242424; --line:#3a3a3a; --muted:#bfbfbf; --text:#f1f1f1;
+      --primary:#00c896; --danger:#ff4d4f; --blue:#6c8cff; --warn:#ffb020; --cyan:#2dd4bf;
+      --hue:170;
     }
-    @media (max-width: 480px){
-      :root{
-        --card-radius: 1rem;
-        --input-padding-y: .85rem;
-        --input-padding-x: .95rem;
-      }
-    }
-    body{ box-sizing:border-box; font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif }
-    .glass{
-      background: var(--glass-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border:1px solid var(--glass-border);
-      box-shadow: var(--glass-shadow);
-    }
-    @media (max-width: 480px){
-      .glass{ backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-    }
-    .card{ border-radius: var(--card-radius) }
-    .input{
-      width:100%; background:rgba(255,255,255,.06);
-      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-      border:1px solid rgba(255,255,255,.15); color:#fff;
-      padding:var(--input-padding-y) var(--input-padding-x);
-      border-radius:var(--input-radius); font-size:var(--input-font-size);
-      min-height: 48px; /* tap target */
-    }
-    .input:focus{
-      background:rgba(255,255,255,.1);
-      border-color:rgba(255,255,255,.3);
-      box-shadow:0 0 0 3px rgba(255,255,255,.08); outline:none
-    }
-    select.input option{ color:#111; background:#fff }
-    .input[type="date"], .input[type="time"]{ -webkit-appearance:none; appearance:none; line-height:1.65 }
-    .input[type="date"]::-webkit-calendar-picker-indicator,
-    .input[type="time"]::-webkit-calendar-picker-indicator{ padding-right:.5rem; filter:invert(1) opacity(.85) }
-
-    .btn{ background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); transition:.2s; border-radius:var(--input-radius); min-height:48px }
-    .btn:hover{ background:rgba(255,255,255,.18); transform:translateY(-1px) }
-    .btn-cta{ background:linear-gradient(135deg,#10b981,#16a34a); border:0; box-shadow:0 12px 24px rgba(16,185,129,.25) }
-    .btn-cta:hover{ transform:translateY(-1.5px) scale(1.01); box-shadow:0 16px 30px rgba(16,185,129,.32) }
-
-    .pill{ background:rgba(255,255,255,.1); border-radius:calc(var(--input-radius) + .4rem) }
-    .chip{ background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18) }
-    .mini-btn{ background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); border-radius:.7rem; min-height:40px }
-    .tab-btn{ border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06); min-height:44px; white-space:nowrap }
-    .tab-btn[aria-selected="true"]{ background:rgba(16,185,129,.18); border-color:rgba(16,185,129,.4) }
-    .tab-panel{ display:none } .tab-panel.active{ display:block }
-    .btn-equal{ padding:var(--input-padding-y) var(--input-padding-x); border-radius:var(--input-radius) }
-    .row-card{ border-radius:1rem; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1) }
-    body.auth-locked { overflow: hidden; }
-    @keyframes shake {10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
-    .shake { animation: shake .35s linear both; }
-
-    /* Safe-area padding for notches / home indicators */
-    .safe-px{ padding-left: max(1rem, env(safe-area-inset-left)); padding-right:max(1rem, env(safe-area-inset-right)); }
-    .safe-pt{ padding-top:  max(1rem, env(safe-area-inset-top)); }
-    .safe-pb{ padding-bottom:max(1rem, env(safe-area-inset-bottom)); }
-
-    /* Tabs: horizontal scroll on small screens */
-    .tabs-scroll{ display:grid; grid-auto-flow:column; grid-auto-columns:max-content; overflow-x:auto; gap:.5rem; padding-bottom:.25rem; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch }
-    .tabs-scroll > * { scroll-snap-align:start }
-
-    /* Reduce motion if user prefers */
-    @media (prefers-reduced-motion: reduce){
-      *{ animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
-    }
-
-    /* ===== Loader: Newton's Cradle (responsive) ===== */
-    .newtons-cradle {
-      --uib-size: clamp(36px, 7vw, 50px);
-      --uib-speed: 1.2s;
-      --uib-color: #cbd5e1;
-      position: relative; display:flex; align-items:center; justify-content:center;
-      width: var(--uib-size); height: var(--uib-size);
-    }
-    .newtons-cradle__dot { position:relative; display:flex; align-items:center; height:100%; width:25%; transform-origin:center top; }
-    .newtons-cradle__dot::after { content:''; display:block; width:100%; height:25%; border-radius:50%; background-color: var(--uib-color); }
-    .newtons-cradle__dot:first-child { animation: swing var(--uib-speed) linear infinite; }
-    .newtons-cradle__dot:last-child  { animation: swing2 var(--uib-speed) linear infinite; }
-    @keyframes swing {
-      0% { transform: rotate(0deg);   animation-timing-function:ease-out }
-      25%{ transform: rotate(70deg);  animation-timing-function:ease-in  }
-      50%{ transform: rotate(0deg);   animation-timing-function:linear   }
-    }
-    @keyframes swing2 {
-      0% { transform: rotate(0deg);   animation-timing-function:linear   }
-      50%{ transform: rotate(0deg);   animation-timing-function:ease-out }
-      75%{ transform: rotate(-70deg); animation-timing-function:ease-in  }
-    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;padding:clamp(.75rem,2vw,1.25rem);padding-bottom:calc(clamp(.75rem,2vw,1.25rem) + env(safe-area-inset-bottom,0px));
+      font-family:'Kanit',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{width:min(1140px,100%);margin:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:clamp(1rem,2.2vw,1.5rem)}
+    h1{margin:.25rem 0 1rem;font-size:clamp(1.25rem,4.5vw,1.8rem);color:var(--primary);text-align:center}
+    .head{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem}
+    .head .you{margin-left:auto;color:#9fe9d4;font-weight:600}
+    .tabs{display:flex;gap:.5rem;background:#1b1b1b;border:1px solid var(--line);border-radius:12px;padding:.25rem;margin-bottom:1rem}
+    .tab-btn{flex:1;padding:.7rem 1rem;border-radius:10px;border:1px solid transparent;background:transparent;color:#ddd;font-weight:700;cursor:pointer}
+    .tab-btn.active{background:#2a2a2a;border-color:#3a3a3a;color:#fff}
+    .tab-pane{display:none}.tab-pane.active{display:block}
+    .card{background:#1f1f1f;border:1px solid var(--line);border-radius:16px;padding:1rem;margin-bottom:1rem}
+    .row{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem}
+    .col{flex:1 1 46%;min-width:230px;display:flex;flex-direction:column;gap:.35rem}
+    label{color:var(--muted);display:flex;align-items:center;gap:.5rem}
+    input,select,button{border-radius:12px;border:1px solid var(--line);background:#1d1d1d;color:#fff;min-height:44px;padding:.9rem 1rem;font-size:16px}
+    input[type=number]{text-align:right;-moz-appearance:textfield}
+    input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+    button{background:var(--primary);border:none;font-weight:700;cursor:pointer;position:relative}
+    button:disabled{opacity:.65;cursor:not-allowed}
+    button[aria-busy="true"]{pointer-events:none}
+    button[aria-busy="true"]::after{content:"";position:absolute;right:10px;top:50%;transform:translateY(-50%);width:18px;height:18px;border-radius:50%;
+      border:3px solid #3a3a3a;border-top-color:#fff;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .btn-ghost{background:#333}.btn-blue{background:var(--blue)}.btn-warn{background:var(--warn);color:#222}
+    .btn-danger{background:var(--danger)}.btn-cyan{background:var(--cyan);color:#052a27}.btn-mini{min-height:auto;padding:.25rem .5rem;font-size:.85rem;border-radius:8px}
+    .seg{display:flex;gap:.5rem;flex-wrap:wrap}.seg button{background:#333}.seg button.active{background:var(--primary);color:#052a27}
+    .muted{color:var(--muted)} .right{text-align:right}
+    table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:.98rem}
+    th,td{border-bottom:1px solid var(--line);padding:.8rem .5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+    th{color:var(--muted);font-weight:600;text-align:left;position:sticky;top:0;background:#1f1f1f;z-index:1}
+    .table-viewport{max-height:72vh;overflow:auto;border-radius:12px;border:1px solid var(--line)}
+    .table-viewport tbody tr:hover{background:#2a2a2a}
+    td:last-child .actions{display:flex;gap:.5rem;flex-wrap:wrap}
+    .badge{padding:.25rem .5rem;border-radius:999px;font-size:.85rem}
+    .badge-inc{background:rgba(0,200,150,.18);color:#9ff3df;border:1px solid rgba(0,200,150,.35)}
+    .badge-exp{background:rgba(233,30,99,.15);color:#ffb6cc;border:1px solid rgba(233,30,99,.35)}
+    .badge-sav{background:rgba(45,212,191,.16);color:#a7fff0;border:1px solid rgba(45,212,191,.35)}
+    .badge-debt{background:rgba(108,140,255,.16);color:#c8d2ff;border:1px solid rgba(108,140,255,.35)}
+    #toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#333;color:#fff;padding:.6rem .9rem;border-radius:10px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:120}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:150}
+    .modal-backdrop.show{display:flex}
+    .modal{width:min(640px,96vw);background:#242424;border:1px solid var(--line);border-radius:16px;padding:1rem 1rem 1.25rem}
+    .modal .title{font-weight:700;margin-bottom:.75rem}
+    .modal .actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:.75rem}
+    .help{font-size:.9rem;color:var(--muted)} .hide{display:none}
+    .stats-head{color:#e7eceb;font-weight:600;margin-bottom:.6rem}
+    .stats-grid{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:.75rem}
+    @media (max-width:780px){.stats-grid{grid-template-columns:repeat(2,minmax(140px,1fr))}}
+    .stat{background:#1b1b1b;border:1px solid var(--line);border-radius:14px;padding:.75rem .9rem}
+    .stat .lbl{font-size:.95rem;color:#cfd9d6;display:flex;align-items:center;gap:.5rem}
+    .stat .val{font-weight:700;font-size:1.35rem;margin-top:.35rem}
+    .stat .bar{height:3px;border-radius:3px;margin-top:.5rem;opacity:.8}
+    .inc{color:#9ff3df}.inc .bar{background:#2dd4bf}
+    .exp{color:#ffb6cc}.exp .bar{background:#ff5c8a}
+    .sav{color:#a7fff0}.sav .bar{background:#58e6d6}
+    .bal{color:#ffe19a}.bal .bar{background:#ffc74d}
+    .neg{color:#ff9da5 !important}
+    #overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.28);z-index:110;transition:opacity .2s}
+    #overlay.hide{opacity:0;pointer-events:none}
   </style>
+
+  <script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
-<body class="min-h-screen bg-gradient-to-b from-slate-950 via-gray-900 to-zinc-900 text-white auth-locked">
+<body>
+  <div class="wrap">
+    <div class="head">
+      <h1 style="margin:0">FIN-JOD · บันทึกรายการ</h1>
+      <div class="you" id="who"></div>
+    </div>
 
-  <!-- AUTH GATE -->
-  <div id="authGate" class="fixed inset-0 z-[60] flex items-center justify-center safe-px safe-pt safe-pb">
-    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
-    <div id="authCard" class="relative glass card w-full max-w-sm p-5 sm:p-6">
-      <div class="text-center mb-4">
-        <div class="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-white/10 border border-white/20 mb-3">
-          <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c1.657 0 3-1.567 3-3.5S13.657 4 12 4 9 5.567 9 7.5 10.343 11 12 11zM19 21a7 7 0 00-14 0h14z"/>
-          </svg>
+    <div id="linkBox" class="card hide" role="region" aria-label="ผูกบัญชี">
+      <div class="muted" style="margin-bottom:.5rem">ผูกบัญชีครั้งเดียวเพื่อใช้งานผ่าน LINE ได้อัตโนมัติ</div>
+      <div class="row">
+        <div class="col"><label for="inpUser">User ID</label><input id="inpUser" placeholder="ของคุณ"/></div>
+        <div class="col"><label for="inpPin">PIN</label><input id="inpPin" type="password" placeholder="รหัส"/></div>
+      </div>
+      <div style="display:flex; gap:.5rem; justify-content:flex-end">
+        <button id="btnLink" class="btn-ghost">ผูกบัญชี</button>
+      </div>
+    </div>
+
+    <div id="app" class="hide">
+      <div class="card" role="region" aria-label="ภาพรวมเดือนนี้">
+        <div class="stats-head">ภาพรวมเดือนนี้</div>
+        <div class="stats-grid">
+          <div class="stat inc"><div class="lbl">รายรับ</div><div class="val" id="statIncome">—</div><div class="bar"></div></div>
+          <div class="stat exp"><div class="lbl">รายจ่าย</div><div class="val" id="statExpense">—</div><div class="bar"></div></div>
+          <div class="stat sav"><div class="lbl">ออม (สุทธิ)</div><div class="val" id="statSaving">—</div><div class="bar"></div></div>
+          <div class="stat bal"><div class="lbl">คงเหลือ</div><div class="val" id="statBalance">—</div><div class="bar"></div></div>
         </div>
-        <h2 class="text-lg sm:text-xl font-semibold">ใส่รหัสเพื่อเข้าใช้งาน</h2>
-        <p class="text-white/70 text-xs sm:text-sm mt-1">ระบบจะปลดล็อกเมื่อกรอกรหัสถูกต้อง</p>
       </div>
-      <label class="block text-sm font-medium mb-2">รหัสผ่าน</label>
-      <div class="flex gap-2">
-        <input id="authInput" type="password" class="input flex-1" placeholder="ใส่รหัสผ่าน"/>
-        <button id="authToggle" type="button" class="btn px-3">แสดง</button>
+
+      <div class="tabs" role="tablist" aria-label="เมนูหลัก">
+        <button id="tab-create" class="tab-btn active" role="tab" aria-selected="true" aria-controls="pane-create">บันทึก</button>
+        <button id="tab-list"   class="tab-btn"        role="tab" aria-selected="false" aria-controls="pane-list">รายการ</button>
       </div>
-      <p id="authError" class="text-red-300 text-sm mt-2 hidden">รหัสผ่านไม่ถูกต้อง</p>
-      <button id="authBtn" type="button" class="btn btn-cta w-full py-3 font-semibold mt-4">เข้าสู่ระบบ</button>
-      <p class="text-xs text-white/60 mt-3">* จะจำสถานะปลดล็อกเฉพาะแท็บนี้จนกว่าจะปิดแท็บ</p>
-    </div>
-  </div>
 
-  <!-- background glow (lighter on mobile) -->
-  <div class="fixed inset-0 pointer-events-none">
-    <div class="absolute -top-40 -right-40 w-72 h-72 sm:w-80 sm:h-80 rounded-full blur-3xl bg-white/10"></div>
-    <div class="absolute -bottom-40 -left-40 w-72 h-72 sm:w-80 sm:h-80 rounded-full blur-3xl bg-white/10"></div>
-  </div>
-
-  <div class="relative z-10 mx-auto max-w-[720px] lg:max-w-4xl safe-px safe-pt safe-pb pt-6 sm:pt-10">
-    <!-- header -->
-    <div class="text-center mb-6 sm:mb-8">
-      <div class="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 border border-white/20 mb-4">
-        <svg class="w-7 h-7 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-        </svg>
-      </div>
-      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Check In Fin-ed</h1>
-    </div>
-
-    <!-- Tabs (horizontal scroll on mobile) -->
-    <div class="glass card p-2 mb-4 sm:mb-6">
-      <div role="tablist" class="tabs-scroll sm:grid sm:grid-cols-3 sm:gap-2">
-        <button id="tab-1" type="button" role="tab" class="tab-btn rounded-xl px-4 py-2 sm:py-3 font-semibold" aria-selected="true">Check In</button>
-        <button id="tab-2" type="button" role="tab" class="tab-btn rounded-xl px-4 py-2 sm:py-3 font-semibold" aria-selected="false">ตารางงานในอนาคต</button>
-        <button id="tab-3" type="button" role="tab" class="tab-btn rounded-xl px-4 py-2 sm:py-3 font-semibold" aria-selected="false">ตั้งเวลา Check-in</button>
-      </div>
-    </div>
-
-    <!-- ===== TAB 1: ฟอร์ม ===== -->
-    <section id="panel-1" class="tab-panel active">
-      <div class="glass card p-4 sm:p-6 mb-6 sm:mb-8">
-        <form id="checkinForm" class="space-y-5 sm:space-y-6">
-          <div class="grid sm:grid-cols-2 gap-3 sm:gap-4">
-            <div>
-              <label class="block text-sm font-semibold mb-2">ผู้ใช้งาน</label>
-              <select id="nameSelect" class="input" required>
-                <option value="">เลือกชื่อผู้ใช้</option>
-                <option>Tow</option><option>Kwan</option><option>Noi</option><option>Ray</option><option>Cap</option>
+      <section id="pane-create" class="tab-pane active" role="tabpanel" aria-labelledby="tab-create">
+        <div class="card" role="region" aria-label="บันทึกธุรกรรม">
+          <div class="row">
+            <div class="col"><label for="txDate">วันที่</label><input id="txDate" type="date" /></div>
+            <div class="col">
+              <label>ประเภท</label>
+              <div class="seg">
+                <button class="segbtn" data-type="expense">รายจ่าย</button>
+                <button class="segbtn" data-type="income">รายรับ</button>
+                <button class="segbtn" data-type="saving">ออมเงิน</button>
+                <span class="muted" style="align-self:center">|</span>
+                <button class="segbtn" data-type="debt_repay" title="จ่ายหนี้">จ่ายหนี้</button>
+                <button class="segbtn" data-type="debt_borrow" title="กู้หนี้">กู้หนี้</button>
+              </div>
+              <select id="txType" class="hide" aria-hidden="true">
+                <option value="expense" selected>รายจ่าย</option>
+                <option value="income">รายรับ</option>
+                <option value="saving">ออมเงิน</option>
+                <option value="debt_repay">จ่ายหนี้</option>
+                <option value="debt_borrow">กู้หนี้</option>
               </select>
             </div>
-            <div>
-              <label class="block text-sm font-semibold mb-2">วันที่</label>
-              <input id="dateInput" type="date" class="input" required>
-              <p class="text-xs text-white/70 mt-2">เลือกได้เฉพาะวันปัจจุบันขึ้นไป</p>
-            </div>
-          </div>
 
-          <div>
-            <label class="block text-sm font-semibold mb-2">ช่วงเวลา</label>
-            <div class="flex pill p-1 gap-1">
-              <button id="fullBtn"  type="button" class="flex-1 py-2 rounded-xl bg-white/20 font-medium">เต็มวัน</button>
-              <button id="splitBtn" type="button" class="flex-1 py-2 rounded-xl text-white/90 font-medium">แยก AM/PM</button>
-            </div>
-          </div>
-
-          <div id="fullBox">
-            <label class="block text-sm font-semibold mb-2">สถานที่ (ทั้งวัน)</label>
-            <input id="fullLocation" type="text" value="Ari" class="input" placeholder="เช่น Ari">
-            <p class="text-xs text-white/70 mt-2">* เมื่อเลือกเต็มวัน ระบบจะตั้ง AM และ PM เป็นสถานที่เดียวกัน</p>
-          </div>
-
-          <div id="splitBox" class="hidden space-y-4">
-            <div>
-              <label class="block text-sm font-semibold mb-2">🌅 AM</label>
-              <input id="amLocation" type="text" value="Ari" class="input" placeholder="สถานที่ช่วงเช้า">
-            </div>
-            <div>
-              <label class="block text-sm font-semibold mb-2">🌆 PM</label>
-              <input id="pmLocation" type="text" value="Ari" class="input" placeholder="สถานที่ช่วงบ่าย">
-            </div>
-          </div>
-
-          <div>
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-sm font-semibold">ตัวช่วยจากเพื่อนในวันที่เลือก</span>
-              <span id="suggestLoading" class="text-xs text-white/70 hidden">กำลังโหลด…</span>
-            </div>
-            <div id="suggestWrap" class="grid grid-cols-1 gap-2"></div>
-            <p id="suggestEmpty" class="text-xs text-white/60 hidden">ยังไม่มีใครบันทึกในวันนี้</p>
-          </div>
-
-          <button id="checkinBtn" type="submit" class="btn btn-cta w-full py-3 font-semibold flex items-center justify-center gap-2">
-            <span>Check In</span>
-          </button>
-        </form>
-      </div>
-
-      <!-- Bulk -->
-      <div class="glass card p-4 sm:p-6 mb-6 sm:mb-8">
-        <h2 class="text-base sm:text-lg font-semibold mb-2">สร้างหลายวัน (โหมดขี้เกียจ)</h2>
-        <p class="text-white/70 text-sm mb-4">ใช้ข้อมูล “ผู้ใช้งาน” และ “ช่วงเวลา/สถานที่” จากฟอร์มด้านบน</p>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 mb-4">
-          <button id="bulkThisWeek" type="button" class="btn px-4 py-3 font-semibold">สร้าง จ–ศ สัปดาห์นี้</button>
-          <button id="bulkNextWeek" type="button" class="btn px-4 py-3 font-semibold">สร้าง จ–ศ สัปดาห์หน้า</button>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 items-end">
-          <div><label class="block text-sm font-semibold mb-2">เริ่มวันที่</label><input id="rangeStart" type="date" class="input"></div>
-          <div><label class="block text-sm font-semibold mb-2">ถึงวันที่</label><input id="rangeEnd" type="date" class="input"></div>
-        </div>
-        <div class="mt-3"><button id="bulkRange" type="button" class="btn px-5 py-3 font-semibold w-full md:w-auto">บันทึกแบบช่วงวันที่</button></div>
-        <p class="text-xs text-white/70 mt-3">* โหมด จ–ศ จะข้ามเสาร์–อาทิตย์อัตโนมัติ | โหมดช่วงวันที่จะบันทึกทุกวันในช่วงนั้น</p>
-      </div>
-    </section>
-
-    <!-- TAB 2 -->
-    <section id="panel-2" class="tab-panel">
-      <div class="glass card p-4 sm:p-6">
-        <h2 class="text-base sm:text-xl font-semibold mb-3 sm:mb-4">ตารางงานในอนาคต</h2>
-        <div class="w-full max-w-md">
-          <select id="viewName" class="input w-full mb-3">
-            <option value="">เลือกชื่อผู้ใช้</option>
-            <option>Tow</option><option>Kwan</option><option>Noi</option><option>Ray</option><option>Cap</option>
-          </select>
-          <button id="viewBtn" type="button" class="btn btn-equal w-full font-semibold">ดูตาราง</button>
-        </div>
-        <div id="scheduleWrap" class="hidden mt-5 sm:mt-6">
-          <div id="scheduleList" class="space-y-3"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 3 -->
-    <section id="panel-3" class="tab-panel">
-      <div class="glass card p-4 sm:p-6">
-        <h2 class="text-base sm:text-xl font-semibold mb-3 sm:mb-4">ส่ง Check-in เข้าไลน์</h2>
-        <div class="grid lg:grid-cols-2 gap-4 sm:gap-6">
-          <div class="rounded-2xl p-4 sm:p-5 bg-white/5 border border-white/10">
-            <h3 class="font-semibold mb-3">ส่งทันที</h3>
-            <div class="grid sm:grid-cols-2 gap-3 sm:gap-4">
-              <div>
-                <label class="block text-sm font-semibold mb-2">เลือกวันที่</label>
-                <input id="sendDateInput" type="date" class="input">
-              </div>
-              <div class="sm:pt-7">
-                <button id="sendNowBtn" type="button" class="btn w-full py-3 font-semibold">ห้ามกดเด็ดขาด</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="rounded-2xl p-4 sm:p-5 bg-white/5 border border-white/10">
-            <h3 class="font-semibold mb-3">ตั้งเวลาส่งอัตโนมัติ</h3>
-            <div class="grid sm:grid-cols-3 gap-2 sm:gap-3 items-end mb-4">
-              <label class="flex items-center gap-2 sm:col-span-1">
-                <input type="checkbox" id="schedEnabled" class="accent-emerald-400">
-                <span>เปิดใช้งาน</span>
+            <div class="col" id="colCat">
+              <label for="txCat">หมวดหมู่
+                <button id="btnAddCatOpen" class="btn-mini btn-cyan" title="เพิ่มหมวดใหม่">เพิ่มหมวด</button>
               </label>
-              <div class="sm:col-span-2">
-                <label class="block text-sm font-semibold mb-2">เวลา (HH:mm)</label>
-                <input type="time" id="schedTime" class="input" value="08:30">
+              <select id="txCat" disabled><option>กำลังโหลด…</option></select>
+            </div>
+
+            <div class="col" id="colAmount">
+              <label for="txAmount">จำนวนเงิน (บาท)</label>
+              <input id="txAmount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" />
+            </div>
+
+            <div class="col hide" id="colDebt">
+              <label for="txDebt">เลือกเจ้าหนี้</label>
+              <div class="row" style="margin:0; gap:.5rem">
+                <div class="col" style="min-width:200px"><select id="txDebt" disabled><option>กำลังโหลด…</option></select></div>
               </div>
+              <div class="help">* รายการนี้ดึงจากรายชื่อเจ้าหนี้ที่มีอยู่</div>
             </div>
 
-            <div class="mb-3">
-              <div class="text-sm mb-2 font-medium">เลือกวันในสัปดาห์</div>
-              <div id="weekdayWrap" class="grid grid-cols-7 gap-1 text-center"></div>
+            <div class="col hide" id="colDebtRepayFields" style="flex:1 1 100%">
+              <label>รายละเอียดการจ่ายหนี้</label>
+              <div class="row" style="gap:.5rem; margin:0">
+                <div class="col"><input id="txInt" type="number" step="0.01" placeholder="จ่ายดอก (บาท)"/></div>
+                <div class="col"><input id="txPrin" type="number" step="0.01" placeholder="จ่ายต้น (บาท)"/></div>
+              </div>
+              <div class="help">* ระบบจะบันทึกยอดรวม = จ่ายดอก + จ่ายต้น</div>
             </div>
+          </div>
 
-            <label class="flex items-center gap-2 mb-4">
-              <input type="checkbox" id="schedSkipHolidays" class="accent-emerald-400" checked>
-              <span class="text-sm">ข้ามวันหยุด (ชีต Holidays)</span>
-            </label>
-
-            <div class="flex flex-col sm:flex-row gap-3">
-              <button id="saveSchedBtn" type="button" class="btn flex-1 py-3 font-semibold">บันทึกตารางส่ง</button>
-              <button id="reloadSchedBtn" type="button" class="btn sm:w-32 py-3 font-semibold">รีเฟรช</button>
+          <div class="row" style="align-items:flex-end; gap:1rem">
+            <div class="col" style="flex:1 1 0">
+              <label for="txNote">หมายเหตุ</label>
+              <input id="txNote" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)" maxlength="500" />
             </div>
-
-            <div id="schedStatus" class="text-xs text-white/70 mt-3"></div>
+            <div class="col" style="flex:0 0 auto; display:flex; gap:.5rem">
+              <button id="btnPrefetchCreate" class="btn-cyan" title="รีเฟรชหมวด/เจ้าหนี้">รีเฟรชข้อมูลฟอร์ม</button>
+              <button id="btnSave" class="btn-green" style="min-width:180px">บันทึกรายการ</button>
+            </div>
           </div>
         </div>
 
-        <!-- สร้างข้อความเช็คอิน -->
-        <div class="mt-5 sm:mt-6 rounded-2xl p-4 sm:p-5 bg-white/5 border border-white/10">
-          <h3 class="font-semibold mb-3">สร้างข้อความเช็คอิน (สำหรับคัดลอกไปส่งเอง)</h3>
-          <div class="grid sm:grid-cols-3 gap-3 sm:gap-4 items-end">
-            <div class="sm:col-span-1">
-              <label class="block text-sm font-semibold mb-2">เลือกวันที่</label>
-              <input id="previewDate" type="date" class="input">
-            </div>
-            <div class="sm:col-span-2 flex gap-2">
-              <button id="buildPreviewBtn" type="button" class="btn flex-1 py-3 font-semibold">สร้างข้อความเช็คอิน</button>
-              <button id="copyPreviewBtn" type="button" class="btn sm:w-40 py-3 font-semibold">คัดลอก</button>
-            </div>
+        <div class="card" role="region" aria-label="ล่าสุด 5 รายการ">
+          <div class="muted" style="margin-bottom:.5rem">ล่าสุด 5 รายการ</div>
+          <div class="table-viewport" id="recentBox">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:110px">วันที่</th>
+                  <th style="width:140px">ประเภท</th>
+                  <th>หมวด/เจ้าหนี้</th>
+                  <th class="right" style="width:130px">จำนวน</th>
+                  <th>หมายเหตุ</th>
+                  <th style="width:160px">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="recentBody">
+                <tr><td colspan="6" class="muted">ยังไม่มีรายการ</td></tr>
+              </tbody>
+            </table>
           </div>
-
-          <!-- Loader -->
-          <div id="previewLoader" class="mt-4 hidden flex items-center justify-center">
-            <div class="newtons-cradle">
-              <div class="newtons-cradle__dot"></div>
-              <div class="newtons-cradle__dot"></div>
-              <div class="newtons-cradle__dot"></div>
-              <div class="newtons-cradle__dot"></div>
-            </div>
-          </div>
-
-          <div class="mt-3">
-            <textarea id="previewBox" class="input !bg-black/30 !border-white/20 font-mono text-[0.95rem] h-44" readonly placeholder="กด “สร้างข้อความเช็คอิน” เพื่อแสดงข้อความที่นี่"></textarea>
-          </div>
-          <p id="previewHint" class="text-xs text-white/60 mt-2"></p>
         </div>
+      </section>
+
+      <section id="pane-list" class="tab-pane" role="tabpanel" aria-labelledby="tab-list">
+        <div class="card" role="region" aria-label="รายการย้อนหลัง">
+          <div class="row">
+            <div class="col"><label for="fFrom">จาก</label><input id="fFrom" type="date" /></div>
+            <div class="col"><label for="fTo">ถึง</label><input id="fTo" type="date" /></div>
+            <div class="col">
+              <label>&nbsp;</label>
+              <div class="seg">
+                <button class="chip" data-range="today">วันนี้</button>
+                <button class="chip" data-range="7">7 วัน</button>
+                <button class="chip" data-range="30">30 วัน</button>
+                <button class="chip" data-range="month">เดือนนี้</button>
+                <button class="chip" data-range="year">ปีนี้</button>
+                <button id="btnRefresh" class="btn-blue" style="margin-left:auto">รีเฟรช</button>
+              </div>
+              <div class="muted" style="margin-top:.4rem">กำลังดู: <b id="rangeBadge">กำหนดเอง</b></div>
+            </div>
+          </div>
+
+          <div class="table-viewport">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:110px">วันที่</th>
+                  <th style="width:140px">ประเภท</th>
+                  <th>หมวด/เจ้าหนี้</th>
+                  <th class="right" style="width:130px">จำนวน</th>
+                  <th>หมายเหตุ</th>
+                  <th style="width:160px">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="tblBody">
+                <tr><td colspan="6" class="muted">ยังไม่โหลดข้อมูล</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="emptyList" class="muted" style="margin-top:.5rem; display:none">ยังไม่มีรายการ</div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- โมดัลแก้ไข -->
+  <div id="editBackdrop" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+      <div id="editTitle" class="title">แก้ไขรายการ</div>
+      <input id="editTxId" type="hidden">
+      <div class="row">
+        <div class="col"><label for="editDate">วันที่</label><input id="editDate" type="date"></div>
+        <div class="col" id="editColType"><label for="editType">ประเภท</label>
+          <select id="editType"><option value="expense">รายจ่าย</option><option value="income">รายรับ</option><option value="saving">ออมเงิน</option></select>
+        </div>
+        <div class="col" id="editColCat"><label for="editCat">หมวดหมู่</label><select id="editCat"></select></div>
+        <div class="col" id="editColAmount"><label for="editAmount">จำนวนเงิน (บาท)</label><input id="editAmount" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="col hide" id="editColDebtRepayFields" style="flex:1 1 100%">
+          <label>รายละเอียดการจ่ายหนี้</label>
+          <div class="row" style="gap:.5rem; margin:0">
+            <div class="col"><input id="editInt" type="number" step="0.01" placeholder="จ่ายดอก (บาท)"></div>
+            <div class="col"><input id="editPrin" type="number" step="0.01" placeholder="จ่ายต้น (บาท)"></div>
+          </div>
+          <div class="help">* ยอดรวม = จ่ายดอก + จ่ายต้น (อัปเดตรวมให้อัตโนมัติ)</div>
+        </div>
+        <div class="col" style="flex:1 1 100%"><label for="editNote">หมายเหตุ</label><input id="editNote" maxlength="500" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"></div>
       </div>
-    </section>
-
-    <!-- status & popup -->
-    <div id="status" class="hidden mt-5 sm:mt-6 p-4 rounded-2xl"></div>
-    <div id="popup" class="hidden fixed inset-0 z-50 items-center justify-center p-4 sm:p-6">
-      <div class="absolute inset-0 bg-black/50"></div>
-      <div class="relative glass card p-5 sm:p-6 max-w-sm w-full text-center">
-        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-green-500/20 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
-          <svg class="w-7 h-7 sm:w-8 sm:h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-        </div>
-        <h3 class="text-lg sm:text-xl font-semibold mb-2">สำเร็จ</h3>
-        <p id="popupMsg" class="text-white/90 mb-4"></p>
-        <button id="popupOk" type="button" class="btn w-full py-2 font-semibold">ตกลง</button>
+      <div class="actions">
+        <button id="btnDelete" class="btn-danger">ลบ</button>
+        <button id="btnCancel" class="btn-ghost">ยกเลิก</button>
+        <button id="btnUpdate" class="btn-warn">บันทึกการแก้ไข</button>
       </div>
     </div>
   </div>
 
-  <script>
-  (function(){
-    /* ===== SAFE HELPERS (ES5) ===== */
-    function byId(id){ return document.getElementById(id); }
-    function text(el, t){ if(el) el.textContent = t; }
-    function show(el){ if(el){ el.classList.remove('hidden'); } }
-    function hide(el){ if(el){ el.classList.add('hidden'); } }
-    function addClass(el, c){ if(el){ el.classList.add(c); } }
-    function removeClass(el, c){ if(el){ el.classList.remove(c); } }
+  <!-- โมดัลเพิ่มหมวด -->
+  <div id="addCatBackdrop" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addCatTitle">
+      <div id="addCatTitle" class="title">เพิ่มหมวดใหม่</div>
+      <div class="row">
+        <div class="col">
+          <label for="addCatType">ประเภท</label>
+          <select id="addCatType"><option value="expense">รายจ่าย</option><option value="income">รายรับ</option><option value="saving">ออมเงิน</option></select>
+        </div>
+        <div class="col" style="flex:1 1 100%">
+          <label for="addCatName">ชื่อหมวด</label>
+          <input id="addCatName" maxlength="100" placeholder="เช่น อาหาร, โบนัส, ฝากบัญชี"/>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="btnAddCatCancel" class="btn-ghost">ยกเลิก</button>
+        <button id="btnAddCatSave" class="btn-warn">บันทึกหมวด</button>
+      </div>
+    </div>
+  </div>
 
-    /* ===== AUTH ===== */
-    var PASSWORD = '1150';
-    var AUTH_KEY = 'auth_ok';
+  <div id="toast">แจ้งเตือน</div>
 
-    function unlockApp(silent){
-      document.body.classList.remove('auth-locked');
-      var gate = byId('authGate');
-      if(gate && gate.parentNode){ gate.parentNode.removeChild(gate); }
-      try{ sessionStorage.setItem(AUTH_KEY,'1'); }catch(e){}
-      if(!silent){
-        var h1 = document.querySelector('h1');
-        if(h1 && h1.scrollIntoView){ h1.scrollIntoView({behavior:'smooth', block:'start'}); }
+  <div id="overlay" class="hide" aria-live="polite" aria-busy="true">
+    <svg aria-label="loader" role="img" height="56" width="56" viewBox="0 0 56 56" class="loader">
+      <g transform="translate(2,2)"><circle r="24.5" cy="26" cx="26" stroke-width="2.5" stroke="#fff" fill="none" style="opacity:.25"></circle>
+      <circle r="24.5" cy="26" cx="26" stroke-width="3" stroke="#fff" fill="none" style="stroke-dasharray:80 100;animation:spin 1s linear infinite"></circle></g>
+    </svg>
+  </div>
+
+<script>
+/** ===== CONFIG ===== */
+const LIFF_ID = '2008276151-Oyp12d62';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxV3xOU1kQM86jUJtfer8hW_HgYkcLfpH942saPVbCZ1RDmN_4LYjpk72OxdKKLQAFt/exec';
+
+/** ===== STATE ===== */
+let token = localStorage.getItem('fin_token') || '';
+let displayName = localStorage.getItem('fin_name') || '';
+let lastItems = [];
+let cats = { income:[], expense:[], saving:[] };
+let debtsCache = [];
+const loaded = { create:false, list:false };
+const THB = new Intl.NumberFormat('th-TH',{minimumFractionDigits:2, maximumFractionDigits:2});
+let recentItems = [];
+const cacheTTL = { catsOk: 24*60*60*1000, catsEmpty: 10*60*1000, debts: 10*60*1000 };
+let listDirty = false;
+let catsLoadingPromise = null; // lock prevent races
+
+/** ===== HELPERS ===== */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const fmt = n => THB.format(Number(n||0));
+const esc = s => String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const toast = (msg, ok=true)=>{ const el=$('#toast'); el.textContent=msg; el.style.background= ok?'#00c896':'#ff4d4f'; el.style.opacity='1'; setTimeout(()=> el.style.opacity='0', 2400); };
+const toYMD = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const todayISO = ()=> toYMD(new Date());
+const monthBounds = d => ({ start: toYMD(new Date(d.getFullYear(), d.getMonth(), 1)), end: toYMD(new Date(d.getFullYear(), d.getMonth()+1, 0)) });
+const debounce = (fn,ms=300)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+const log = (...a)=>{ try{ console.debug('[FIN-JOD]', ...a); }catch{} };
+const catKey = () => `fin_cats_v2_${(token||'anon').slice(0,8)}`;
+const debtKey = () => `fin_debts_v1_${(token||'anon').slice(0,8)}`;
+
+function setBusy(btn, on, tempText){
+  if (!btn) return;
+  if (on){
+    btn.dataset._text = btn.textContent;
+    if (tempText) btn.textContent = tempText;
+    btn.setAttribute('aria-busy','true'); btn.disabled = true;
+  }else{
+    btn.disabled = false; btn.removeAttribute('aria-busy');
+    if (btn.dataset._text){ btn.textContent = btn.dataset._text; delete btn.dataset._text; }
+  }
+}
+async function withBusy(btn, fn, textWhile='กำลังโหลด…'){
+  setBusy(btn, true, textWhile);
+  try{ return await fn(); } finally{ setBusy(btn, false); }
+}
+
+function cacheGet(k){
+  const raw = localStorage.getItem(k); if(!raw) return null;
+  try{ const {exp,data} = JSON.parse(raw); if (Date.now()>exp){ localStorage.removeItem(k); return null; } return data; }catch{ return null; }
+}
+function cacheSet(k,data,ttl){ localStorage.setItem(k, JSON.stringify({exp:Date.now()+ttl, data})); }
+
+/** fetch helpers with timeout + retry */
+function fetchWithTimeout(url, options={}, ms=7000){
+  const ctl = new AbortController(); const id = setTimeout(()=>ctl.abort(), ms);
+  return fetch(url, {...options, signal: ctl.signal}).finally(()=>clearTimeout(id));
+}
+async function fetchJSON(url, options={}) {
+  try{
+    const res = await fetchWithTimeout(url, { ...options, headers:{'Content-Type':'text/plain;charset=utf-8', ...(options.headers||{})} });
+    const text = await res.text(); try { return JSON.parse(text); } catch{ return { ok:false, error:'NON_JSON', raw:text }; }
+  }catch(e){ return { ok:false, error:'NETWORK', message:String(e&&e.message||e) }; }
+}
+async function retry(fn, times=3, baseDelay=400){
+  let last; for (let i=0;i<times;i++){ last = await fn(); if (last && last.ok) return last; await new Promise(r=>setTimeout(r, baseDelay*Math.pow(2,i))); }
+  return last;
+}
+async function api(path, payload={}, useToken=true){
+  const body = { path, payload }; if (useToken && token) body.token = token;
+  return retry(()=> fetchJSON(API_URL, { method:'POST', body: JSON.stringify(body) }), 3, 350);
+}
+
+/** ===== LIFF / Auth ===== */
+function waitForLiffReady(timeoutMs=5000){
+  return new Promise(res=>{
+    if (window.liff){ return res(true); }
+    const t0=Date.now(), iv=setInterval(()=>{ if (window.liff){ clearInterval(iv); res(true); } else if(Date.now()-t0>timeoutMs){ clearInterval(iv); res(false); } },30);
+  });
+}
+async function ensureTokenViaLIFF(){
+  const okReady = await waitForLiffReady();
+  if (!okReady){ return !!token; }
+  try{ await liff.init({ liffId: LIFF_ID }); }catch(e){ return !!token; }
+  if (!liff.isLoggedIn()){
+    try{ liff.login({ redirectUri: location.href }); }catch(_){}
+    return !!token;
+  }
+  let prof; try{ prof = await liff.getProfile(); }catch(_){ return !!token; }
+  const r = await api('liff/link_or_login', { line_user_id: prof.userId, display_name: prof.displayName||'' }, false);
+  if (!r.ok){ return !!token; }
+  if (r.need_verification){
+    $('#who').textContent = prof.displayName || '';
+    $('#linkBox').classList.remove('hide'); $('#app').classList.add('hide');
+    return false;
+  }
+  const oldKey = catKey(); // based on old token (before swap)
+  token = r.token; displayName = r.display_name || prof.displayName || '';
+  localStorage.setItem('fin_token', token); localStorage.setItem('fin_name', displayName);
+  // purge previous-user cache if key changed
+  if (oldKey !== catKey()){ localStorage.removeItem(oldKey); }
+  $('#who').textContent = displayName;
+  $('#linkBox').classList.add('hide'); $('#app').classList.remove('hide');
+  return true;
+}
+$('#btnLink')?.addEventListener('click', async (e)=>{
+  const btn=e.currentTarget;
+  const user_id=$('#inpUser').value.trim(); const pin=$('#inpPin').value.trim();
+  if (!user_id || !pin){ toast('กรอก User และ PIN ให้ครบ', false); return; }
+  let prof=null; try{ if (window.liff) prof = await liff.getProfile(); }catch(_){}
+  const r = await withBusy(btn, async ()=>{
+    if (prof){ return api('liff/link_or_login',{ line_user_id:prof.userId, display_name:prof.displayName||'', user_id, pin }, false); }
+    return api('auth/login', { user_id, pin }, false);
+  }, 'กำลังผูกบัญชี…');
+  if (!r.ok){ toast(r.message||'ผูกบัญชีไม่สำเร็จ', false); return; }
+  const oldKey = catKey();
+  token=r.token; displayName=r.display_name||user_id;
+  localStorage.setItem('fin_token', token); localStorage.setItem('fin_name', displayName);
+  if (oldKey !== catKey()){ localStorage.removeItem(oldKey); }
+  $('#who').textContent = displayName; $('#linkBox').classList.add('hide'); $('#app').classList.remove('hide');
+});
+
+/** ===== Categories / Debts (FIXED) ===== */
+function validCats(obj){
+  return obj && typeof obj==='object'
+    && ['income','expense','saving'].every(k => Array.isArray(obj[k]));
+}
+function nonEmptyCats(obj){
+  return ['income','expense','saving'].some(k => (obj[k]||[]).length>0);
+}
+function fillSelect(el, items, getVal, getText){
+  const frag=document.createDocumentFragment();
+  for(const it of items){ const o=document.createElement('option'); o.value=getVal(it); o.textContent=getText(it); frag.appendChild(o); }
+  el.innerHTML=''; el.appendChild(frag);
+}
+function populateCatSelect(){
+  const t=$('#txType').value; const list=(cats[t]||[]);
+  if (!list.length) $('#txCat').innerHTML='<option value="">— ไม่มีหมวด —</option>';
+  else fillSelect($('#txCat'), list, c=>c.category_id, c=>c.name_th||c.category_id);
+}
+async function fetchCategoriesSafe(){
+  const types=['income','expense','saving'];
+  const [ri,re,rs]=await Promise.all(types.map(t=> api('categories/list',{type:t},true)));
+  const next={ income: ri.ok?(ri.items||[]):[], expense: re.ok?(re.items||[]):[], saving: rs.ok?(rs.items||[]):[] };
+  const allReqOk = ri.ok && re.ok && rs.ok;
+  return { ok: allReqOk, data: next };
+}
+async function loadCategoriesAll(force=false){
+  // prevent concurrent fetches
+  if (catsLoadingPromise && !force) return catsLoadingPromise;
+
+  const key = catKey();
+  const cached = !force ? cacheGet(key) : null;
+
+  if (cached && validCats(cached)){
+    cats = cached;
+    $('#txCat').disabled = false;
+    populateCatSelect();
+    // SWR: refresh in background
+    catsLoadingPromise = (async ()=>{
+      const r = await fetchCategoriesSafe();
+      if (r.ok){
+        cats = r.data;
+        populateCatSelect();
+        const ttl = nonEmptyCats(cats) ? cacheTTL.catsOk : cacheTTL.catsEmpty;
+        cacheSet(key, cats, ttl);
       }
-    }
-    function shakeCard(){
-      var card = byId('authCard');
-      var err = byId('authError');
-      if(err) err.classList.remove('hidden');
-      if(!card) return;
-      card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
-    }
-    function tryAuth(){
-      var input = byId('authInput');
-      var v = (input && input.value) ? input.value.replace(/^\s+|\s+$/g,'') : '';
-      if(v === PASSWORD){
-        if(byId('authError')) addClass(byId('authError'),'hidden');
-        unlockApp(false);
+      catsLoadingPromise = null;
+    })();
+    return catsLoadingPromise;
+  }
+
+  // No usable cache or force: show loading and fetch with retry
+  $('#txCat').disabled = true; $('#txCat').innerHTML = '<option>กำลังโหลด…</option>';
+
+  catsLoadingPromise = (async ()=>{
+    const r = await fetchCategoriesSafe();
+    if (r.ok){
+      cats = r.data;
+      $('#txCat').disabled = false; populateCatSelect();
+      const ttl = nonEmptyCats(cats) ? cacheTTL.catsOk : cacheTTL.catsEmpty;
+      cacheSet(key, cats, ttl); // only cache OK (empty -> short TTL)
+    }else{
+      // keep old cats if any; do NOT write empty cache
+      const fallback = cacheGet(key);
+      if (fallback && validCats(fallback)){
+        cats = fallback; $('#txCat').disabled=false; populateCatSelect();
       }else{
-        shakeCard();
+        $('#txCat').innerHTML = '<option value="">โหลดหมวดไม่สำเร็จ</option>';
+        toast('โหลดหมวดไม่สำเร็จ (เครือข่าย/สิทธิ์). ลองกด "รีเฟรชข้อมูลฟอร์ม"', false);
       }
     }
-    var btnLogin = byId('authBtn'); if(btnLogin){ btnLogin.addEventListener('click', tryAuth); }
-    var inputPwd = byId('authInput');
-    if(inputPwd){
-      inputPwd.addEventListener('keydown', function(e){ if(e && e.key === 'Enter'){ e.preventDefault(); tryAuth(); } });
-    }
-    var btnToggle = byId('authToggle');
-    if(btnToggle){
-      btnToggle.addEventListener('click', function(){
-        var i = byId('authInput'); if(!i) return;
-        i.type = (i.type === 'password') ? 'text' : 'password';
-        text(byId('authToggle'), i.type === 'password' ? 'แสดง' : 'ซ่อน');
-        try{ i.focus(); i.selectionStart = i.value.length; i.selectionEnd = i.value.length; }catch(e){}
-      });
-    }
-    try{
-      if(sessionStorage.getItem('auth_ok') === '1'){ unlockApp(true); }
-      else{ setTimeout(function(){ var el = byId('authInput'); if(el) el.focus(); }, 30); }
-    }catch(e){}
-
-    /* ===== POPUP ===== */
-    function openPopup(msg){ text(byId('popupMsg'), msg || ''); var p = byId('popup'); if(!p) return; p.classList.remove('hidden'); p.classList.add('flex'); }
-    function closePopup(){ var p = byId('popup'); if(!p) return; p.classList.add('hidden'); p.classList.remove('flex'); }
-    var popupOk = byId('popupOk'); if(popupOk){ popupOk.addEventListener('click', closePopup); }
-
-    /* ===== CONFIG & UTILS ===== */
-    var APP_SCRIPT_WEBAPP_URL='https://script.google.com/macros/s/AKfycbxKmlulJgGnv8pUqbbOYlK5mRn6jZ_DdQQCKoJ3dExHWl62mDOPhDR5usWbSpC38gzH/exec';
-    function toLocalISO(d){ var y=d.getFullYear(), m=('0'+(d.getMonth()+1)).slice(-2), da=('0'+d.getDate()).slice(-2); return y+'-'+m+'-'+da; }
-    function getWeekRange(offset){ offset = offset||0; var now=new Date(); now.setHours(0,0,0,0); var diffToMon=(now.getDay()===0?-6:1-now.getDay())+offset*7; var mon=new Date(now); mon.setDate(now.getDate()+diffToMon); var fri=new Date(mon); fri.setDate(mon.getDate()+4); return {start:toLocalISO(mon), end:toLocalISO(fri)}; }
-    function toast(msg,type){ type = type||'info'; var el=byId('status'); if(!el) return; el.className='mt-6 p-4 rounded-2xl '+(type==='error'?'bg-red-500/20 border border-red-500/40':'bg-white/10 border border-white/20'); el.textContent=msg||''; el.classList.remove('hidden'); setTimeout(function(){ el.classList.add('hidden'); },4500); }
-    function setBtnLoading(btn,loading,done,label){ if(!btn) return; done = done||'เสร็จ'; label = label||'กำลังทำงาน...'; if(loading){ btn.disabled=true; btn.setAttribute('data-prev', btn.innerHTML); btn.innerHTML='<span class="inline-flex items-center gap-2"><svg class="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>'+label+'</span>'; } else { btn.disabled=false; btn.innerHTML=btn.getAttribute('data-prev')||done; } }
-
-    /* ===== Tabs ===== */
-    var tabs=[{btn:'tab-1',panel:'panel-1'},{btn:'tab-2',panel:'panel-2'},{btn:'tab-3',panel:'panel-3'}];
-    function activateTab(i){
-      for(var k=0;k<tabs.length;k++){
-        var t=tabs[k]; var b=byId(t.btn), p=byId(t.panel);
-        if(b) b.setAttribute('aria-selected', i===k?'true':'false');
-        if(p){ if(i===k) addClass(p,'active'); else removeClass(p,'active'); }
-      }
-      try{ localStorage.setItem('activeTab', String(i)); }catch(e){}
-    }
-    for(var iTab=0;iTab<tabs.length;iTab++){
-      (function(idx){ var b=byId(tabs[idx].btn); if(b) b.addEventListener('click', function(){ activateTab(idx); }); })(iTab);
-    }
-    try{ var savedTab = Number(localStorage.getItem('activeTab')); if(!isNaN(savedTab)) activateTab(savedTab); }catch(e){}
-
-    /* ===== UI init ===== */
-    var today = toLocalISO(new Date());
-    var dateInput = byId('dateInput'); if(dateInput){ dateInput.min=today; dateInput.value=today; }
-    var rs=byId('rangeStart'), re=byId('rangeEnd'); if(rs){ rs.min=today; } if(re){ re.min=today; }
-    var sendDateInput = byId('sendDateInput'); if(sendDateInput){ sendDateInput.min=today; sendDateInput.value=today; }
-
-    /* ===== Toggle AM/PM (Tab1) ===== */
-    var splitMode=false;
-    var fullBtn=byId('fullBtn'), splitBtn=byId('splitBtn');
-    var fullBox=byId('fullBox'),  splitBox=byId('splitBox');
-    if(fullBtn) fullBtn.addEventListener('click', function(){ splitMode=false; if(fullBtn) addClass(fullBtn,'bg-white/20'); if(splitBtn) removeClass(splitBtn,'bg-white/20'); show(fullBox); hide(splitBox); });
-    if(splitBtn) splitBtn.addEventListener('click', function(){ splitMode=true;  if(splitBtn) addClass(splitBtn,'bg-white/20'); if(fullBtn) removeClass(fullBtn,'bg-white/20'); show(splitBox); hide(fullBox); });
-
-    /* ===== API helper ===== */
-    function callAPI(action,payload,cb){
-      var fd=new FormData(); fd.append('action', action);
-      try{ fd.append('payload', JSON.stringify(payload||{})); }catch(e){ fd.append('payload','{}'); }
-      fetch(APP_SCRIPT_WEBAPP_URL,{method:'POST',body:fd})
-        .then(function(res){ return res.text(); })
-        .then(function(t){ var r; try{ r=JSON.parse(t); }catch(e){ r={ok:false,error:'Invalid JSON',raw:t}; } cb(r); })
-        .catch(function(){ cb({ok:false,error:'NETWORK'}); });
-    }
-
-    /* ===== Suggestions (Tab1) ===== */
-    var suggestWrap=byId('suggestWrap'), suggestEmpty=byId('suggestEmpty'), suggestLoading=byId('suggestLoading');
-    function parsePart(s){ s=s||''; var m=/(.*)\s+\((AM|PM)\)$/i.exec(s); return m ? [m[1].replace(/\s+$/,''), '('+m[2].toUpperCase()+')'] : [s,'']; }
-    function escapeHTML(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-    function renderSuggestItem(it){
-      var p = parsePart(it.location||''); var loc=p[0], part=p[1]; var names=(it.names||[]).join(' ');
-      var partSpan = part ? '<span class="text-xs text-white/70">'+part+'</span>' : '';
-      return '<div class="chip rounded-xl p-3"><div class="flex items-center justify-between gap-3"><div><div class="font-medium">'+loc+' '+partSpan+'</div><div class="text-xs text-white/70">เพื่อน ('+(it.count||0)+'): '+names+'</div></div><div class="flex gap-2"><button type="button" class="mini-btn text-xs px-2 py-1" data-action="sugg" data-mode="both" data-loc="'+escapeHTML(loc)+'">ทั้งวัน</button><button type="button" class="mini-btn text-xs px-2 py-1" data-action="sugg" data-mode="am" data-loc="'+escapeHTML(loc)+'">AM</button><button type="button" class="mini-btn text-xs px-2 py-1" data-action="sugg" data-mode="pm" data-loc="'+escapeHTML(loc)+'">PM</button></div></div></div>';
-    }
-    function refreshSuggestions(){
-      var dEl = byId('dateInput'); var nEl = byId('nameSelect');
-      var date = dEl ? dEl.value : ''; var name = nEl ? (nEl.value||'').replace(/^\s+|\s+$/g,'') : '';
-      if(!date) return;
-      if(suggestWrap) suggestWrap.innerHTML='';
-      if(suggestEmpty) addClass(suggestEmpty,'hidden');
-      if(suggestLoading) removeClass(suggestLoading,'hidden');
-      callAPI('suggest', {date:date, excludeName:name||''}, function(res){
-        if(suggestLoading) addClass(suggestLoading,'hidden');
-        if(!res.ok){ if(suggestWrap) suggestWrap.innerHTML='<div class="text-red-300 text-sm">'+(res.error||'โหลดคำแนะนำไม่สำเร็จ')+'</div>'; return; }
-        var items = res.items||[];
-        if(!items.length){ if(suggestEmpty) removeClass(suggestEmpty,'hidden'); return; }
-        var html=''; for(var i=0;i<items.length;i++){ html+=renderSuggestItem(items[i]); }
-        if(suggestWrap) suggestWrap.innerHTML=html;
-      });
-    }
-    if(byId('dateInput')) byId('dateInput').addEventListener('change', refreshSuggestions);
-    if(byId('nameSelect')) byId('nameSelect').addEventListener('change', refreshSuggestions);
-    refreshSuggestions();
-
-    if(suggestWrap){
-      suggestWrap.addEventListener('click', function(ev){
-        var btn = ev.target.closest ? ev.target.closest('[data-action="sugg"]') : null;
-        if(!btn) return;
-        var loc = btn.getAttribute('data-loc')||'';
-        var mode = btn.getAttribute('data-mode')||'both';
-        if(mode==='both'){
-          if(!splitMode){ var fl=byId('fullLocation'); if(fl) fl.value=loc; }
-          else { var am=byId('amLocation'), pm=byId('pmLocation'); if(am) am.value=loc; if(pm) pm.value=loc; }
-        }else if(mode==='am'){
-          splitMode=true; if(splitBtn) splitBtn.click(); var am2=byId('amLocation'); if(am2) am2.value=loc;
-        }else{
-          splitMode=true; if(splitBtn) splitBtn.click(); var pm2=byId('pmLocation'); if(pm2) pm2.value=loc;
-        }
-        toast('ใส่สถานที่: '+loc+' ('+(mode==='both'?'ทั้งวัน':mode.toUpperCase())+')');
-      });
-    }
-
-    /* ===== Submit single day ===== */
-    var checkinBtn = byId('checkinBtn');
-    if(byId('checkinForm')) byId('checkinForm').addEventListener('submit', function(e){
-      e.preventDefault();
-      var name=(byId('nameSelect').value||'').replace(/^\s+|\s+$/g,'');
-      var date=byId('dateInput').value;
-      if(!name||!date) return toast('กรุณากรอกข้อมูลให้ครบถ้วน','error');
-      if(date<today)    return toast('ไม่อนุญาตให้บันทึกย้อนหลัง','error');
-
-      var payload;
-      if(!splitMode){
-        var loc=(byId('fullLocation').value||'').replace(/^\s+|\s+$/g,'');
-        if(!loc) return toast('กรุณากรอกสถานที่ (เต็มวัน)','error');
-        payload={name:name, date:date, split:false, location:loc};
-      }else{
-        var am=(byId('amLocation').value||'').replace(/^\s+|\s+$/g,'');
-        var pm=(byId('pmLocation').value||'').replace(/^\s+|\s+$/g,'');
-        if(!am||!pm) return toast('กรุณากรอกสถานที่ทั้ง AM และ PM','error');
-        payload={name:name, date:date, split:true, amLoc:am, pmLoc:pm};
-      }
-
-      setBtnLoading(checkinBtn,true,'Check In','กำลังบันทึก...');
-      callAPI('create', payload, function(r){
-        setBtnLoading(checkinBtn,false,'Check In');
-        if(!r.ok) return toast(r.error||'บันทึกไม่สำเร็จ','error');
-        openPopup(r.upsert ? 'อัปเดตข้อมูลของวันนี้เรียบร้อย' : 'บันทึกเรียบร้อย');
-        refreshSuggestions();
-      });
-    });
-
-    /* ===== Bulk ===== */
-    function commonBulk(){
-      var name=(byId('nameSelect').value||'').replace(/^\s+|\s+$/g,'');
-      if(!name){ toast('กรุณาเลือกผู้ใช้งานก่อน','error'); return null; }
-      if(!splitMode){
-        var loc=(byId('fullLocation').value||'').replace(/^\s+|\s+$/g,'');
-        if(!loc){ toast('กรุณากรอกสถานที่ (เต็มวัน)','error'); return null; }
-        return {name:name, split:false, location:loc};
-      }
-      var am=(byId('amLocation').value||'').replace(/^\s+|\s+$/g,'');
-      var pm=(byId('pmLocation').value||'').replace(/^\s+|\s+$/g,'');
-      if(!am||!pm){ toast('กรุณากรอกสถานที่ทั้ง AM และ PM','error'); return null; }
-      return {name:name, split:true, amLoc:am, pmLoc:pm};
-    }
-    var bulkThisWeekBtn=byId('bulkThisWeek'),
-        bulkNextWeekBtn=byId('bulkNextWeek'),
-        bulkRangeBtn=byId('bulkRange');
-
-    if(bulkThisWeekBtn) bulkThisWeekBtn.addEventListener('click', function(){
-      var base=commonBulk(); if(!base) return;
-      var we=getWeekRange(0);
-      var payload={}; for(var k in base){ payload[k]=base[k]; }
-      payload.startDate=we.start; payload.endDate=we.end; payload.weekdaysOnly=true;
-      setBtnLoading(bulkThisWeekBtn,true,'สร้าง จ–ศ สัปดาห์นี้','กำลังสร้าง...');
-      callAPI('bulkCreate', payload, function(r){
-        setBtnLoading(bulkThisWeekBtn,false,'สร้าง จ–ศ สัปดาห์นี้');
-        if(!r.ok) return toast(r.error||'บันทึกไม่สำเร็จ','error');
-        var msg='สร้างสำเร็จ: เพิ่ม '+r.created+' · อัปเดต '+r.updated+(r.skippedPast?(' · ข้ามย้อนหลัง '+r.skippedPast):'');
-        openPopup(msg);
-      });
-    });
-
-    if(bulkNextWeekBtn) bulkNextWeekBtn.addEventListener('click', function(){
-      var base=commonBulk(); if(!base) return;
-      var we=getWeekRange(1);
-      var payload={}; for(var k in base){ payload[k]=base[k]; }
-      payload.startDate=we.start; payload.endDate=we.end; payload.weekdaysOnly=true;
-      setBtnLoading(bulkNextWeekBtn,true,'สร้าง จ–ศ สัปดาห์หน้า','กำลังสร้าง...');
-      callAPI('bulkCreate', payload, function(r){
-        setBtnLoading(bulkNextWeekBtn,false,'สร้าง จ–ศ สัปดาห์หน้า');
-        if(!r.ok) return toast(r.error||'บันทึกไม่สำเร็จ','error');
-        openPopup('สร้างสำเร็จ: เพิ่ม '+r.created+' · อัปเดต '+r.updated);
-      });
-    });
-
-    if(bulkRangeBtn) bulkRangeBtn.addEventListener('click', function(){
-      var base=commonBulk(); if(!base) return;
-      var s=byId('rangeStart').value, e=byId('rangeEnd').value;
-      if(!s||!e) return toast('กรุณาเลือกช่วงวันที่ให้ครบ','error');
-      if(e<s)    return toast('วันสิ้นสุดต้องมากกว่าหรือเท่ากับวันเริ่ม','error');
-      var payload={}; for(var k in base){ payload[k]=base[k]; }
-      payload.startDate=s; payload.endDate=e; payload.weekdaysOnly=false;
-      setBtnLoading(bulkRangeBtn,true,'บันทึกแบบช่วงวันที่','กำลังสร้าง...');
-      callAPI('bulkCreate', payload, function(r){
-        setBtnLoading(bulkRangeBtn,false,'บันทึกแบบช่วงวันที่');
-        if(!r.ok) return toast(r.error||'บันทึกไม่สำเร็จ','error');
-        openPopup('สร้างสำเร็จ: เพิ่ม '+r.created+' · อัปเดต '+r.updated);
-      });
-    });
-
-    /* ===== Future schedule (Tab2) ===== */
-    function formatThai(iso){ var d=new Date(iso); var m=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']; return d.getDate()+' '+m[d.getMonth()]+' '+(d.getFullYear()+543); }
-    function renderItem(e){
-      var detail = e.split ? '<div class="text-sm text-white/90">🌅 AM: '+(e.am||'-')+'</div><div class="text-sm text-white/90">🌆 PM: '+(e.pm||'-')+'</div>' : '<div class="text-sm text-white/90">'+(e.location || e.am || '-')+'</div>';
-      return '<div class="row-card p-4"><div class="flex items-center"><div class="flex-1 min-w-0"><div class="font-semibold">'+formatThai(e.date)+'</div>'+detail+'</div><button type="button" class="ml-4 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 edit-btn" data-rowid="'+e.rowId+'" data-split="'+(e.split?'1':'0')+'" data-date="'+e.date+'" data-am="'+escapeHTML(e.am||'')+'" data-pm="'+escapeHTML(e.pm||'')+'" data-loc="'+escapeHTML(e.location||'')+'">แก้ไข</button></div><div id="edit-'+e.rowId+'" class="hidden mt-4 pt-4 border-t border-white/10"></div></div>';
-    }
-    function renderSchedule(name){
-      var wrap=byId('scheduleWrap'), list=byId('scheduleList');
-      if(wrap) removeClass(wrap,'hidden');
-      if(list) list.innerHTML='<div class="text-white/80">กำลังโหลด...</div>';
-      callAPI('listFuture',{name:name,from:today}, function(r){
-        if(!byId('scheduleList')) return;
-        if(!r.ok){ byId('scheduleList').innerHTML='<div class="text-red-300">'+(r.error||'โหลดไม่สำเร็จ')+'</div>'; return; }
-        var items=r.items||[];
-        if(!items.length){ byId('scheduleList').innerHTML='<div class="text-white/80">ไม่มีตารางงานในอนาคต</div>'; return; }
-        var html=''; for(var i=0;i<items.length;i++){ html+=renderItem(items[i]); }
-        byId('scheduleList').innerHTML=html;
-      });
-    }
-    var viewBtn=byId('viewBtn');
-    if(viewBtn){ viewBtn.addEventListener('click', function(){ var name=(byId('viewName').value||'').replace(/^\s+|\s+$/g,''); if(!name) return toast('กรุณาเลือกชื่อผู้ใช้','error'); setBtnLoading(viewBtn,true,'ดูตาราง','กำลังโหลด...'); renderSchedule(name); setTimeout(function(){ setBtnLoading(viewBtn,false,'ดูตาราง'); }, 400); }); }
-
-    // delegation: edit/toggle/delete/save/cancel
-    var scheduleList = byId('scheduleList');
-    if(scheduleList){
-      scheduleList.addEventListener('click', function(ev){
-        var btn = ev.target.closest ? ev.target.closest('.edit-btn,[data-action="delete"],[data-action="save"],[data-action="cancel"],[data-action="toggle-full"],[data-action="toggle-split"]') : null;
-        if(!btn) return;
-
-        if(btn.classList.contains('edit-btn')){
-          var rowId=btn.getAttribute('data-rowid');
-          var isSplit=btn.getAttribute('data-split')==='1';
-          var date=btn.getAttribute('data-date');
-          var am=btn.getAttribute('data-am')||'';
-          var pm=btn.getAttribute('data-pm')||'';
-          var loc=btn.getAttribute('data-loc')||'';
-          var box=byId('edit-'+rowId);
-          if(!box) return;
-
-          box.innerHTML=
-            '<div class="space-y-3">'+
-              '<div><label class="block text-sm font-semibold mb-1">วันที่</label><input type="date" id="ed-date-'+rowId+'" class="input" value="'+date+'" min="'+today+'"></div>'+
-              '<div><label class="block text-sm font-semibold mb-1">ช่วงเวลา</label>'+
-                '<div class="flex pill p-1">'+
-                  '<button type="button" id="ed-full-'+rowId+'"  class="flex-1 py-2 rounded-xl '+(!isSplit?'bg-white/20':'')+'" data-action="toggle-full" data-id="'+rowId+'">เต็มวัน</button>'+
-                  '<button type="button" id="ed-split-'+rowId+'" class="flex-1 py-2 rounded-xl '+(isSplit?'bg-white/20':'')+'" data-action="toggle-split" data-id="'+rowId+'">แยก AM/PM</button>'+
-                '</div>'+
-              '</div>'+
-              '<div id="ed-fullBox-'+rowId+'" class="'+(isSplit?'hidden':'')+'">'+
-                '<label class="block text-sm font-semibold mb-1">สถานที่ (ทั้งวัน)</label>'+
-                '<input type="text" id="ed-fullLoc-'+rowId+'" class="input" value="'+(loc||am)+'">'+
-              '</div>'+
-              '<div id="ed-splitBox-'+rowId+'" class="'+(isSplit?'':'hidden')+' space-y-3">'+
-                '<div><label class="block text-sm font-semibold mb-1">🌅 AM</label><input type="text" id="ed-am-'+rowId+'" class="input" value="'+am+'"></div>'+
-                '<div><label class="block text-sm font-semibold mb-1">🌆 PM</label><input type="text" id="ed-pm-'+rowId+'" class="input" value="'+pm+'"></div>'+
-              '</div>'+
-              '<div class="flex flex-col sm:flex-row gap-3 pt-2">'+
-                '<button type="button" class="btn flex-1 py-2" data-action="save" data-id="'+rowId+'">บันทึก</button>'+
-                '<button type="button" class="bg-white/10 hover:bg-white/20 flex-1 py-2 rounded-xl" data-action="cancel" data-id="'+rowId+'">ยกเลิก</button>'+
-                '<button type="button" class="flex-1 py-2 rounded-xl border border-red-400/40 bg-red-500/15 hover:bg-red-500/25" data-action="delete" data-rowid="'+rowId+'">ลบ</button>'+
-              '</div>'+
-            '</div>';
-          removeClass(box,'hidden');
-          return;
-        }
-
-        var action = btn.getAttribute('data-action');
-        if(!action) return;
-
-        if(action==='toggle-full' || action==='toggle-split'){
-          var id = btn.getAttribute('data-id');
-          var fullB=byId('ed-full-'+id), splitB=byId('ed-split-'+id);
-          var fb=byId('ed-fullBox-'+id), sb=byId('ed-splitBox-'+id);
-          var toSplit = (action==='toggle-split');
-          if(toSplit){ if(splitB) addClass(splitB,'bg-white/20'); if(fullB) removeClass(fullB,'bg-white/20'); if(sb) removeClass(sb,'hidden'); if(fb) addClass(fb,'hidden'); }
-          else{ if(fullB) addClass(fullB,'bg-white/20'); if(splitB) removeClass(splitB,'bg-white/20'); if(fb) removeClass(fb,'hidden'); if(sb) addClass(sb,'hidden'); }
-          return;
-        }
-
-        if(action==='cancel'){ var idc=btn.getAttribute('data-id'); var box2=byId('edit-'+idc); if(box2) addClass(box2,'hidden'); return; }
-
-        if(action==='delete'){
-          var rowIdDel=btn.getAttribute('data-rowid');
-          if(!confirm('ต้องการลบรายการนี้ใช่หรือไม่?')) return;
-          setBtnLoading(btn,true,'ลบ','กำลังลบ...');
-          callAPI('delete',{rowId:rowIdDel}, function(r){
-            setBtnLoading(btn,false,'ลบ');
-            if(!r.ok) return toast(r.error||'ลบไม่สำเร็จ','error');
-            toast('ลบเรียบร้อย');
-            var name=(byId('viewName')&&byId('viewName').value)||''; if(name) renderSchedule(name);
-          });
-          return;
-        }
-
-        if(action==='save'){
-          var idS=btn.getAttribute('data-id');
-          var dateS=byId('ed-date-'+idS).value;
-          if(!dateS) return toast('กรุณาเลือกวันที่','error');
-          if(dateS<today) return toast('ไม่สามารถตั้งย้อนหลังได้','error');
-          var isFull = !byId('ed-fullBox-'+idS).classList.contains('hidden');
-          var payload={rowId:idS, date:dateS};
-          if(isFull){
-            var loc2=(byId('ed-fullLoc-'+idS).value||'').replace(/^\s+|\s+$/g,'');
-            if(!loc2) return toast('กรุณากรอกสถานที่ (เต็มวัน)','error');
-            payload.split=false; payload.location=loc2;
-          }else{
-            var am2=(byId('ed-am-'+idS).value||'').replace(/^\s+|\s+$/g,'');
-            var pm2=(byId('ed-pm-'+idS).value||'').replace(/^\s+|\s+$/g,'');
-            if(!am2||!pm2) return toast('กรุณากรอกสถานที่ทั้ง AM และ PM','error');
-            payload.split=true; payload.amLoc=am2; payload.pmLoc=pm2;
-          }
-          setBtnLoading(btn,true,'บันทึก','กำลังบันทึก...');
-          callAPI('update',payload,function(r){
-            setBtnLoading(btn,false,'บันทึก');
-            if(!r.ok) return toast(r.error||'แก้ไขไม่สำเร็จ','error');
-            openPopup('แก้ไขข้อมูลเรียบร้อยแล้ว');
-            var name2=(byId('viewName')&&byId('viewName').value)||''; if(name2) renderSchedule(name2);
-          });
-          return;
-        }
-      });
-    }
-
-    /* ===== Scheduler ===== */
-    var weekdayWrap=byId('weekdayWrap'), labels=['อา','จ','อ','พ','พฤ','ศ','ส']; var dayButtons=[];
-    if(weekdayWrap){
-      for(var di=0;di<7;di++){
-        var b=document.createElement('button'); b.type='button'; b.className='px-2 py-2 rounded-lg bg-white/10 hover:bg-white/20 min-h-[42px]'; b.textContent=labels[di]; b.setAttribute('data-active', (di>=1&&di<=5)?'1':'0'); toggleDay(b);
-        b.addEventListener('click', (function(bb){ return function(){ bb.setAttribute('data-active', bb.getAttribute('data-active')==='1'?'0':'1'); toggleDay(bb); }; })(b));
-        weekdayWrap.appendChild(b); dayButtons.push(b);
-      }
-    }
-    function toggleDay(b){ if(b.getAttribute('data-active')==='1'){ b.classList.add('bg-emerald-500/20','border','border-emerald-400/40'); }else{ b.classList.remove('bg-emerald-500/20','border','border-emerald-400/40'); } }
-    function isoToJs(d){ return (d%7); } function jsToIso(i){ return (i===0?7:i); }
-
-    function loadSchedule(){
-      callAPI('getSchedule',{}, function(r){
-        if(!r.ok){ var st=byId('schedStatus'); if(st) st.textContent=r.error||'โหลดตารางส่งไม่สำเร็จ'; return; }
-        var cfg=r.config||{}; var en=byId('schedEnabled'); if(en) en.checked=!!cfg.enabled; var tm=byId('schedTime'); if(tm) tm.value=cfg.time||'08:30'; var sk=byId('schedSkipHolidays'); if(sk) sk.checked=!!cfg.skipHolidays;
-        for(var i=0;i<dayButtons.length;i++){ dayButtons[i].setAttribute('data-active','0'); toggleDay(dayButtons[i]); }
-        var days=cfg.days||[1,2,3,4,5]; for(var j=0;j<days.length;j++){ var idx=isoToJs(days[j]); if(dayButtons[idx]){ dayButtons[idx].setAttribute('data-active','1'); toggleDay(dayButtons[idx]); } }
-        var stEl=byId('schedStatus'); if(stEl) stEl.textContent = cfg.enabled ? ('จะส่งอัตโนมัติทุกวันเวลา '+(cfg.time||'')+' (วัน: '+days.join(',')+')') : 'ปิดการส่งอัตโนมัติอยู่';
-      });
-    }
-    loadSchedule();
-    var reloadBtn=byId('reloadSchedBtn'); if(reloadBtn){ reloadBtn.addEventListener('click', loadSchedule); }
-
-    var saveSchedBtn=byId('saveSchedBtn');
-    if(saveSchedBtn){
-      saveSchedBtn.addEventListener('click', function(){
-        var enabled=byId('schedEnabled').checked; var time=byId('schedTime').value; var skipHolidays=byId('schedSkipHolidays').checked;
-        var days=[], i; for(i=0;i<dayButtons.length;i++){ if(dayButtons[i].getAttribute('data-active')==='1'){ days.push(jsToIso(i)); } }
-        if(!/^\d{2}:\d{2}$/.test(time)) return toast('รูปแบบเวลาไม่ถูกต้อง (HH:mm)','error');
-        if(enabled && !days.length) return toast('กรุณาเลือกอย่างน้อย 1 วัน','error');
-        setBtnLoading(saveSchedBtn,true,'บันทึกตารางส่ง','กำลังบันทึก...');
-        callAPI('saveSchedule',{enabled:enabled,time:time,days:days,skipHolidays:skipHolidays}, function(r){
-          setBtnLoading(saveSchedBtn,false,'บันทึกตารางส่ง'); if(!r.ok) return toast(r.error||'บันทึกไม่สำเร็จ','error'); toast('บันทึกตารางส่งเรียบร้อย'); loadSchedule();
-        });
-      });
-    }
-
-    var sendNowBtn=byId('sendNowBtn');
-    if(sendNowBtn){
-      sendNowBtn.addEventListener('click', function(){
-        var date=byId('sendDateInput').value; if(!date) return toast('กรุณาเลือกวันที่ก่อน','error');
-        setBtnLoading(sendNowBtn,true,'ส่งเข้าไลน์เดี๋ยวนี้','กำลังส่ง...');
-        callAPI('pushNow',{date:date}, function(r){
-          setBtnLoading(sendNowBtn,false,'ส่งเข้าไลน์เดี๋ยวนี้'); if(!r.ok) return toast(r.error||'ส่งไม่สำเร็จ','error'); openPopup('ส่งเข้าไลน์เรียบร้อย');
-        });
-      });
-    }
-
-    /* ===== Build & Copy preview message (Tab3) ===== */
-    var TEAM_NAME = 'Fin-ed';
-    var previewDate = byId('previewDate');
-    var buildPreviewBtn = byId('buildPreviewBtn');
-    var copyPreviewBtn = byId('copyPreviewBtn');
-    var previewBox = byId('previewBox');
-    var previewHint = byId('previewHint');
-    var previewLoader = byId('previewLoader');
-
-    if(previewDate){ previewDate.min = today; previewDate.value = today; }
-
-    function thaiLongDate(iso){
-      var d=new Date(iso);
-      var months=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-      return d.getDate()+' '+months[d.getMonth()]+' '+(d.getFullYear()+543);
-    }
-
-    function buildMessageFromRows(items, iso) {
-      var map = {};
-      function add(loc, name){
-        if(!loc) return;
-        if(!map[loc]) map[loc]=[];
-        map[loc].push(name);
-      }
-      for(var i=0;i<items.length;i++){
-        var row = items[i];
-        var name = row.name || '';
-        if(!name) continue;
-        if(row.split){
-          if(row.am) add(row.am, name + '(AM)');
-          if(row.pm) add(row.pm, name + '(PM)');
-        }else{
-          var loc = row.location || row.am || '';
-          if(loc) add(loc, name);
-        }
-      }
-      var locs = Object.keys(map).sort(function(a,b){ return a.localeCompare(b,'th'); });
-      var lines = [];
-      for(var j=0;j<locs.length;j++){
-        var loc = locs[j];
-        var names = map[loc] || [];
-        if(names.length) lines.push(loc + ' ('+names.length+') : ' + names.join(' '));
-      }
-      if(!lines.length) return '';
-      var header = TEAM_NAME + ' วันที่ ' + thaiLongDate(iso);
-      return [header].concat(lines).join('\n');
-    }
-
-    function setPreviewLoading(state){
-      if(state){
-        show(previewLoader);
-        buildPreviewBtn && (buildPreviewBtn.disabled = true);
-        copyPreviewBtn && (copyPreviewBtn.disabled = true);
-        previewBox && (previewBox.value = '');
-        previewHint && text(previewHint,'กำลังสร้างข้อความ…');
-      }else{
-        hide(previewLoader);
-        buildPreviewBtn && (buildPreviewBtn.disabled = false);
-        copyPreviewBtn && (copyPreviewBtn.disabled = false);
-      }
-    }
-
-    function buildPreview(){
-      var iso = previewDate ? previewDate.value : today;
-      if(!iso){ toast('กรุณาเลือกวันที่','error'); return; }
-      setPreviewLoading(true);
-      callAPI('listFuture', { from: iso, to: iso }, function(r){
-        setPreviewLoading(false);
-        if(!r.ok){ previewBox.value=''; text(previewHint, r.error || 'ไม่สามารถสร้างข้อความได้'); return; }
-        var items = r.items || [];
-        var msg = buildMessageFromRows(items, iso);
-        if(!msg){
-          previewBox.value = '';
-          text(previewHint, 'ไม่มีข้อมูล check-in สำหรับวันที่เลือก');
-        }else{
-          previewBox.value = msg;
-          text(previewHint, 'สร้างสำเร็จ คุณสามารถกด “คัดลอก” แล้วนำไปวางในไลน์ได้เลย');
-        }
-      });
-    }
-
-    function copyPreview(){
-      var t = (previewBox && previewBox.value) ? previewBox.value : '';
-      if(!t){ toast('ยังไม่มีข้อความให้คัดลอก','error'); return; }
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(t).then(function(){ toast('คัดลอกแล้ว'); })
-          .catch(function(){ fallbackCopy(); });
-      } else { fallbackCopy(); }
-      function fallbackCopy(){
-        try{
-          previewBox.removeAttribute('readonly');
-          previewBox.select(); document.execCommand('copy');
-          previewBox.setAttribute('readonly','');
-          toast('คัดลอกแล้ว');
-        }catch(_){ toast('คัดลอกไม่สำเร็จ','error'); }
-      }
-    }
-
-    if(buildPreviewBtn){ buildPreviewBtn.addEventListener('click', buildPreview); }
-    if(copyPreviewBtn){ copyPreviewBtn.addEventListener('click', copyPreview); }
+    catsLoadingPromise = null;
   })();
-  </script>
+
+  return catsLoadingPromise;
+}
+async function loadDebtsList(){
+  const key = debtKey();
+  const cache = cacheGet(key);
+  if (cache){ debtsCache = cache; fillSelect($('#txDebt'), debtsCache, d=>d.debt_id, d=>d.lender_name||d.debt_id); $('#txDebt').disabled=false; return; }
+  $('#txDebt').disabled=true; $('#txDebt').innerHTML='<option>กำลังโหลด…</option>';
+  const r=await api('debts/list', {}, true);
+  debtsCache = r.ok?(r.items||[]):[];
+  cacheSet(key, debtsCache, cacheTTL.debts);
+  fillSelect($('#txDebt'), debtsCache, d=>d.debt_id, d=>d.lender_name||d.debt_id);
+  $('#txDebt').disabled=false;
+}
+
+/** ===== Type Switch ===== */
+function setType(type){
+  $('#txType').value = type;
+  $$('.segbtn').forEach(b=> b.classList.toggle('active', b.dataset.type===type));
+  const debtMode = (type==='debt_repay' || type==='debt_borrow');
+  const isRepay = (type==='debt_repay');
+  $('#colCat').classList.toggle('hide', debtMode);
+  $('#colAmount').classList.toggle('hide', isRepay && debtMode);
+  $('#colDebt').classList.toggle('hide', !debtMode);
+  $('#colDebtRepayFields').classList.toggle('hide', !isRepay);
+  $('#btnAddCatOpen').classList.toggle('hide', debtMode);
+  if (!debtMode) populateCatSelect();
+}
+
+/** ===== Display helpers / Mini dashboard / Recent ===== */
+function truthy(v){ return String(v||'').toLowerCase()==='true'; }
+function catIsWithdraw(catId){
+  const c = (cats.income||[]).find(x=> String(x.category_id)===String(catId));
+  return c ? truthy(c.is_saving_withdraw) : false;
+}
+async function updateMiniDashboard(){
+  if (!token) return;
+  if (!(cats.income.length || cats.expense.length || cats.saving.length)){
+    await loadCategoriesAll();
+  }
+  const {start,end} = monthBounds(new Date());
+  const r = await api('transactions/list', { from:start, to:end, type:'all' }, true);
+  let inc=0, exp=0, sav=0, wd=0;
+  if (r.ok){
+    for (const it of (r.items||[])){
+      const amt = +it.amount || 0;
+      if (it.type==='income'){
+        if (catIsWithdraw(it.category_id)) wd += amt; else inc += amt;
+      } else if (it.type==='expense'){ exp += amt; }
+      else if (it.type==='saving'){ sav += amt; }
+    }
+  }
+  const savNet = Math.max(0, sav - wd);
+  const bal = inc - exp - savNet;
+  $('#statIncome').textContent  = fmt(inc);
+  $('#statExpense').textContent = fmt(exp);
+  $('#statSaving').textContent  = fmt(savNet);
+  $('#statBalance').textContent = fmt(bal);
+  $('#statBalance').classList.toggle('neg', bal < 0);
+}
+function getDisplayMeta(x){
+  const isDebtTx = (x.debt_tx_id || x.type==='debt' || (x.category_name||'').includes('หนี้'));
+  const isRepay  = isDebtTx && (String(x.sub_type || 'repay').includes('repay') || (x.note||'').includes('จ่ายหนี้'));
+  let badge='badge-exp', text='รายจ่าย';
+  if (isDebtTx){ badge='badge-debt'; text= isRepay?'จ่ายหนี้':'กู้หนี้'; }
+  else if (x.type==='income'){ badge='badge-inc'; text='รายรับ'; }
+  else if (x.type==='saving'){ badge='badge-sav'; text='ออมเงิน'; }
+  const catMap = {};
+  [...(cats.expense||[]), ...(cats.income||[]), ...(cats.saving||[])]
+    .forEach(c=> catMap[c.category_id]=c.name_th);
+  const catName = isDebtTx ? (x.lender_name || x.category_name || 'เจ้าหนี้')
+                            : (catMap[x.category_id] || x.category_name || x.cat_name || x.category_id || '');
+  return { badge, text, catName };
+}
+function renderRecent(){
+  const tb = $('#recentBody'); tb.innerHTML='';
+  if (!recentItems.length){ tb.innerHTML='<tr><td colspan="6" class="muted">ยังไม่มีรายการ</td></tr>'; return; }
+  const frag=document.createDocumentFragment();
+  for (const x of recentItems.slice(0,5)){
+    const { badge, text, catName } = getDisplayMeta(x);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${esc((x.date||'').slice(0,10))}</td>
+      <td><span class="badge ${badge}">${text}</span></td>
+      <td>${esc(catName)}</td>
+      <td class="right">${fmt(+x.amount||0)}</td>
+      <td>${esc(x.note||'')}</td>
+      <td><div class="actions">
+        <button class="btn-ghost" data-recent-act="edit" data-id="${esc(x.tx_id||'')}" data-date="${esc((x.date||'').slice(0,10))}">แก้ไข</button>
+        <button class="btn-danger" data-recent-act="del"  data-id="${esc(x.tx_id||'')}">ลบ</button></div></td>`;
+    frag.appendChild(tr);
+  }
+  tb.appendChild(frag);
+}
+async function loadRecentFromAPI(){
+  const to=todayISO();
+  const d=new Date(); d.setDate(d.getDate()-13);
+  const from=toYMD(d);
+  const r = await api('transactions/list', { from, to, type:'all' }, true);
+  if (!r.ok){ renderRecent(); return; }
+  const arr = (r.items||[]).map(it=>({ ...it, amount:+it.amount }));
+  arr.sort((a,b)=> (String(b.date||'')+String(b.time||'')).localeCompare(String(a.date||'')+String(a.time||'')));
+  recentItems = arr.slice(0,5);
+  renderRecent();
+}
+
+/** ===== Add Category ===== */
+function openAddCat(){
+  const t = $('#txType').value;
+  $('#addCatType').value = (t==='debt_repay' || t==='debt_borrow') ? 'expense' : t;
+  $('#addCatName').value = '';
+  $('#addCatBackdrop').classList.add('show');
+  $('#addCatBackdrop').setAttribute('aria-hidden','false');
+  setTimeout(()=> $('#addCatName').focus(), 10);
+}
+function closeAddCat(){ $('#addCatBackdrop').classList.remove('show'); $('#addCatBackdrop').setAttribute('aria-hidden','true'); }
+async function saveAddCat(ev){
+  const btn = ev.currentTarget;
+  const type = $('#addCatType').value;
+  const name = $('#addCatName').value.trim();
+  if (!name){ toast('กรุณากรอกชื่อหมวด', false); return; }
+  await withBusy(btn, async ()=>{
+    const r = await api('categories/create', { type, name_th:name }, true);
+    if (!r.ok){ toast(r.message||'เพิ่มหมวดไม่สำเร็จ', false); return; }
+    const newObj = { category_id: r.category_id, name_th: name, type };
+    cats[type] = [ ...(cats[type]||[]), newObj ];
+    cacheSet(catKey(), cats, cacheTTL.catsOk);
+    setType(type);
+    populateCatSelect();
+    $('#txCat').value = newObj.category_id;
+    closeAddCat();
+    toast('เพิ่มหมวดสำเร็จ');
+    updateMiniDashboard();
+  }, 'กำลังบันทึก…');
+}
+$('#btnAddCatOpen').addEventListener('click', openAddCat);
+$('#btnAddCatCancel').addEventListener('click', closeAddCat);
+$('#btnAddCatSave').addEventListener('click', saveAddCat);
+$('#addCatName').addEventListener('keydown', (e)=>{ if (e.key==='Enter') $('#btnAddCatSave').click(); });
+
+/** ===== Save Transaction ===== */
+function normalizeAmount(v){ const n=Number(v); return (isFinite(n) && n>0) ? Math.round(n*100)/100 : NaN; }
+function clearFormKeepDate(){ $('#txAmount').value=''; $('#txNote').value=''; $('#txInt').value=''; $('#txPrin').value=''; }
+$('#btnSave').addEventListener('click', saveTx);
+
+async function saveTx(ev){
+  const btn = ev.currentTarget;
+  const type = $('#txType').value;
+  const date = $('#txDate').value;
+  const note = $('#txNote').value.trim();
+  if (!date){ toast('กรุณาเลือกวันที่', false); return; }
+  if (!token){ toast('ยังไม่ได้รับสิทธิ์เข้าใช้งาน (LIFF/เว็บ)', false); return; }
+
+  await withBusy(btn, async ()=>{
+    if (type==='debt_repay' || type==='debt_borrow'){
+      const debt_id = $('#txDebt').value;
+      if (!debt_id){ toast('กรุณาเลือกเจ้าหนี้', false); return; }
+      if (type==='debt_repay'){
+        const interest = Number($('#txInt').value||0);
+        const principal = Number($('#txPrin').value||0);
+        const amount = Math.round((interest + principal) * 100)/100;
+        if (!(isFinite(amount) && amount>0)){ toast('ใส่ยอดจ่ายดอก/จ่ายต้นให้ถูกต้อง', false); return; }
+        const r = await api('debts/repay', { debt_id, date, amount, interest_paid:interest, principal_paid:principal, note }, true);
+        if (r.ok){ toast('บันทึกจ่ายหนี้สำเร็จ'); await loadRecentFromAPI(); listDirty = true; clearFormKeepDate(); $('#txAmount').focus(); updateMiniDashboard(); }
+        else toast(r.message||'บันทึกไม่สำเร็จ', false);
+        return;
+      }else{
+        const amount = normalizeAmount($('#txAmount').value);
+        if (isNaN(amount)){ toast('จำนวนเงินไม่ถูกต้อง', false); return; }
+        const r = await api('debts/borrow', { debt_id, date, amount, note }, true);
+        if (r.ok){ toast('บันทึกกู้หนี้สำเร็จ'); await loadRecentFromAPI(); listDirty = true; clearFormKeepDate(); $('#txAmount').focus(); updateMiniDashboard(); }
+        else toast(r.message||'บันทึกไม่สำเร็จ', false);
+        return;
+      }
+    }
+
+    const amount = normalizeAmount($('#txAmount').value);
+    const category_id = $('#txCat').value;
+    if (isNaN(amount)){ toast('จำนวนเงินไม่ถูกต้อง', false); return; }
+    if (!category_id){ toast('กรุณาเลือกหมวด', false); return; }
+    const r = await api('transactions/create', { date, type, category_id, amount, note }, true);
+    if (r.ok){ toast('บันทึกสำเร็จ'); await loadRecentFromAPI(); listDirty = true; clearFormKeepDate(); $('#txAmount').focus(); updateMiniDashboard(); }
+    else toast('บันทึกไม่สำเร็จ', false);
+  }, 'กำลังบันทึก…');
+}
+
+/** ===== รายการย้อนหลัง ===== */
+function safeKey(x){ return `${(x.date||'').slice(0,10)}T${(x.time||'00:00:00').slice(0,8)}`; }
+function renderTable(items){
+  const tb = $('#tblBody'); tb.innerHTML='';
+  const sorted = items.slice().sort((a,b)=> safeKey(b).localeCompare(safeKey(a)));
+  $('#emptyList').style.display = sorted.length? 'none':'block';
+  const frag = document.createDocumentFragment();
+  for (const x of sorted){
+    const { badge, text, catName } = getDisplayMeta(x);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td title="${esc((x.date||'').slice(0,10))}">${esc((x.date||'').slice(0,10))}</td>
+      <td><span class="badge ${badge}">${text}</span></td>
+      <td>${esc(catName)}</td>
+      <td class="right">${fmt(+x.amount||0)}</td>
+      <td>${esc(x.note||'')}</td>
+      <td><div class="actions">
+          <button class="btn-ghost" data-act="edit" data-id="${esc(x.tx_id||'')}">แก้ไข</button>
+          <button class="btn-danger" data-act="del"  data-id="${esc(x.tx_id||'')}">ลบ</button>
+      </div></td>`;
+    frag.appendChild(tr);
+  }
+  tb.appendChild(frag);
+}
+async function refreshList(btn){
+  if (!token) return;
+  const from=$('#fFrom').value, to=$('#fTo').value;
+  if (btn) setBusy(btn, true, 'กำลังโหลด…'); else $('#tblBody').innerHTML = '<tr><td colspan="6" class="muted">กำลังโหลด…</td></tr>';
+  const r = await api('transactions/list', { from, to, type:'all' }, true);
+  if (btn) setBusy(btn, false);
+  if (!r.ok){ toast('โหลดรายการไม่สำเร็จ', false); return; }
+  lastItems = (r.items||[]).map(x=> ({...x, amount:+x.amount}));
+  renderTable(lastItems);
+}
+
+/** ===== Edit/Delete ===== */
+document.addEventListener('click', (e)=>{
+  const btn1 = e.target.closest('#tblBody button[data-act]');
+  const btn2 = e.target.closest('#recentBody button[data-recent-act]');
+  if (btn1){
+    const id = btn1.getAttribute('data-id');
+    const act = btn1.getAttribute('data-act');
+    if (act==='edit'){ setBusy(btn1, true, 'กำลังเปิด…'); openEditById(id).finally(()=> setBusy(btn1,false)); }
+    if (act==='del')  confirmDelete(id, btn1);
+  }
+  if (btn2){
+    const id = btn2.getAttribute('data-id');
+    const act = btn2.getAttribute('data-recent-act');
+    const dateHint = btn2.getAttribute('data-date') || todayISO();
+    if (act==='edit'){ setBusy(btn2, true, 'กำลังเปิด…'); openEditById(id, dateHint).finally(()=> setBusy(btn2,false)); }
+    if (act==='del')  confirmDelete(id, btn2);
+  }
+});
+async function openEditById(txId, dateHint){
+  if (!txId){ toast('ไม่พบรหัสรายการ', false); return; }
+  let it = lastItems.find(x=> String(x.tx_id)===String(txId));
+  if (!it){
+    if (!loaded.list && dateHint){
+      const from = (()=>{ const [y,m,d]=dateHint.split('-').map(Number); return toYMD(new Date(y, m-1, d-20)); })();
+      const to   = dateHint;
+      const r = await api('transactions/list', { from, to, type:'all' }, true);
+      if (r.ok){ lastItems = (r.items||[]); }
+    }else{
+      const r = await api('transactions/list', { from: $('#fFrom').value, to: $('#fTo').value, type:'all' }, true);
+      if (r.ok){ lastItems = (r.items||[]); }
+    }
+    it = lastItems.find(x=> String(x.tx_id)===String(txId));
+    if (!it){ toast('รายการหายไปแล้ว', false); return; }
+  }
+  const isDebtRepay = !!it.debt_tx_id && (String(it.debt_type||'repay').includes('repay') || (it.category_name||'').includes('จ่ายหนี้'));
+  $('#editTxId').value = it.tx_id;
+  $('#editDate').value = (it.date||'').slice(0,10);
+  $('#editNote').value = it.note||'';
+  if (isDebtRepay){
+    $('#editColType').classList.add('hide');
+    $('#editColCat').classList.add('hide');
+    $('#editColAmount').classList.remove('hide');
+    $('#editColDebtRepayFields').classList.remove('hide');
+    $('#editAmount').readOnly = true;
+    $('#editType').disabled = true; $('#editCat').disabled = true;
+    const debtDetails = await api('debts/tx/get', { tx_id: it.debt_tx_id }, true);
+    const prin = debtDetails.ok ? Number(debtDetails.item?.principal_paid||0) : 0;
+    const intr = debtDetails.ok ? Number(debtDetails.item?.interest_paid||0)  : 0;
+    $('#editPrin').value = prin ? prin : '';
+    $('#editInt').value  = intr ? intr : '';
+    $('#editAmount').value = (Math.round((prin+intr)*100)/100).toFixed(2);
+    const updateTotal = ()=>{ const p=Number($('#editPrin').value||0), i=Number($('#editInt').value||0); $('#editAmount').value = (Math.round((p+i)*100)/100).toFixed(2); };
+    $('#editPrin').oninput = updateTotal; $('#editInt').oninput  = updateTotal;
+    $('#editBackdrop').dataset.isDebtRepay = 'true';
+  }else{
+    $('#editColType').classList.remove('hide');
+    $('#editColCat').classList.remove('hide');
+    $('#editColAmount').classList.remove('hide');
+    $('#editColDebtRepayFields').classList.add('hide');
+    $('#editType').disabled = false; $('#editCat').disabled = false;
+    $('#editAmount').readOnly = false;
+    $('#editType').value = it.type;
+    if (!(cats.expense.length || cats.income.length || cats.saving.length)){ await loadCategoriesAll(); }
+    fillSelect($('#editCat'), (cats[$('#editType').value]||[]), c=>c.category_id, c=>c.name_th||c.category_id);
+    $('#editCat').value = it.category_id;
+    $('#editAmount').value = String(it.amount||0);
+    $('#editBackdrop').dataset.isDebtRepay = 'false';
+  }
+  $('#editBackdrop').classList.add('show'); $('#editBackdrop').setAttribute('aria-hidden','false');
+}
+function closeEdit(){ $('#editBackdrop').classList.remove('show'); $('#editBackdrop').setAttribute('aria-hidden','true'); }
+$('#btnCancel').addEventListener('click', closeEdit);
+$('#editType').addEventListener('change', ()=>{ fillSelect($('#editCat'), (cats[$('#editType').value]||[]), c=>c.category_id, c=>c.name_th||c.category_id); });
+$('#btnUpdate').addEventListener('click', async (e)=>{
+  const btn = e.currentTarget;
+  const tx_id = $('#editTxId').value;
+  const isDebtRepay = $('#editBackdrop').dataset.isDebtRepay === 'true';
+  await withBusy(btn, async ()=>{
+    let r;
+    if (isDebtRepay){
+      const it = lastItems.find(x=> String(x.tx_id)===String(tx_id));
+      const debt_tx_id = it ? it.debt_tx_id : '';
+      if (!debt_tx_id){ toast('ไม่พบรหัสธุรกรรมหนี้', false); return; }
+      const principal_paid = Number($('#editPrin').value||0);
+      const interest_paid  = Number($('#editInt').value||0);
+      r = await api('debts/tx/update', { debt_tx_id, date: $('#editDate').value, note: $('#editNote').value.trim(),
+        principal_paid: Math.round(principal_paid*100)/100, interest_paid:  Math.round(interest_paid*100)/100 }, true);
+    }else{
+      const amount = Number($('#editAmount').value);
+      const payload = { tx_id, date: $('#editDate').value, type: $('#editType').value, category_id: $('#editCat').value,
+        amount: Math.round(amount*100)/100, note: $('#editNote').value.trim() };
+      if (!(payload.date && payload.category_id && isFinite(payload.amount) && payload.amount>0)){
+        toast('ข้อมูลไม่ครบหรือจำนวนเงินไม่ถูกต้อง', false); return;
+      }
+      r = await api('transactions/update', payload, true);
+    }
+    if (r.ok){ toast('บันทึกแก้ไขสำเร็จ'); closeEdit(); await loadRecentFromAPI(); refreshList(); updateMiniDashboard(); }
+    else toast(r.message||'อัปเดตไม่สำเร็จ', false);
+  }, 'กำลังบันทึก…');
+});
+async function confirmDelete(tx_id, btn){
+  if (!tx_id) return;
+  if (!confirm('ยืนยันการลบรายการนี้?')) return;
+  const r = await withBusy(btn, ()=> api('transactions/delete', { tx_id }, true), 'กำลังลบ…');
+  if (r.ok){ toast('ลบสำเร็จ'); await loadRecentFromAPI(); refreshList(); updateMiniDashboard(); }
+  else toast(r.message||'ลบไม่สำเร็จ', false);
+}
+
+/** ===== Range shortcuts ===== */
+const debouncedRefresh = debounce(()=> refreshList(), 350);
+function addDays(ymd, delta){ const [y,m,d]=ymd.split('-').map(Number); const nd=new Date(y, m-1, d+delta); return toYMD(nd); }
+function setRange(from, to){ $('#fFrom').value = from; $('#fTo').value = to; updateRangeUI(); debouncedRefresh(); }
+function setRangeDaysBack(days){ const now=new Date(); const from=toYMD(new Date(now.getFullYear(), now.getMonth(), now.getDate()-days+1)); const to=toYMD(now); setRange(from,to); }
+function updateRangeUI(){
+  const f=$('#fFrom').value, t=$('#fTo').value;
+  const today=todayISO(); const mb=monthBounds(new Date()); const y=new Date().getFullYear();
+  const flags={ today:(f===today && t===today),
+    d7:(f===toYMD(new Date(new Date().setDate(new Date().getDate()-6))) && t===today),
+    d30:(f===toYMD(new Date(new Date().setDate(new Date().getDate()-29))) && t===today),
+    month:(f===mb.start && t===mb.end),
+    year:(f===`${y}-01-01` && t===`${y}-12-31`) };
+  document.querySelectorAll('.chip[data-range]').forEach(ch=>{
+    const k=ch.dataset.range;
+    const on=(k==='today'&&flags.today)||(k==='7'&&flags.d7)||(k==='30'&&flags.d30)||(k==='month'&&flags.month)||(k==='year'&&flags.year);
+    ch.classList.toggle('active',on);
+  });
+  let txt='กำหนดเอง'; if(flags.today)txt='วันนี้'; else if(flags.d7)txt='7 วันล่าสุด'; else if(flags.d30)txt='30 วันล่าสุด'; else if(flags.month)txt='เดือนนี้'; else if(flags.year)txt='ปีนี้';
+  $('#rangeBadge').textContent=txt;
+}
+document.querySelectorAll('.chip[data-range]').forEach(ch=>{
+  ch.addEventListener('click', ()=>{
+    const k=ch.dataset.range;
+    if (k==='today'){ const d=todayISO(); setRange(d,d); }
+    if (k==='7') setRangeDaysBack(7);
+    if (k==='30') setRangeDaysBack(30);
+    if (k==='month'){ const mb=monthBounds(new Date()); setRange(mb.start, mb.end); }
+    if (k==='year'){ const y=new Date().getFullYear(); setRange(`${y}-01-01`, `${y}-12-31`); }
+  });
+});
+$('#fFrom').addEventListener('change', ()=>{ updateRangeUI(); debouncedRefresh(); });
+$('#fTo').addEventListener('change',   ()=>{ updateRangeUI(); debouncedRefresh(); });
+
+/** ===== Tabs & Prefetch ===== */
+function activateTab(tab){
+  const isCreate = (tab==='create');
+  $('#tab-create').classList.toggle('active', isCreate);
+  $('#tab-list').classList.toggle('active', !isCreate);
+  $('#tab-create').setAttribute('aria-selected', String(isCreate));
+  '#tab-list' && $('#tab-list').setAttribute('aria-selected', String(!isCreate));
+  $('#pane-create').classList.toggle('active', isCreate);
+  $('#pane-list').classList.toggle('active', !isCreate);
+
+  if (isCreate && !loaded.create){
+    $('#txDate').value = todayISO();
+    setType('expense');
+    Promise.all([loadCategoriesAll(true), loadDebtsList()]).then(()=> {
+      populateCatSelect();
+      loadRecentFromAPI();
+      updateMiniDashboard();
+    }).finally(()=> loaded.create = true);
+  }
+  if (!isCreate){
+    if (!loaded.list){
+      const mb = monthBounds(new Date());
+      $('#fFrom').value = mb.start; $('#fTo').value = mb.end; updateRangeUI();
+      refreshList().then(()=> loaded.list = true);
+    } else if (listDirty){
+      refreshList().finally(()=> { listDirty = false; });
+    }
+  }
+}
+$('#tab-create').addEventListener('click', ()=> activateTab('create'));
+$('#tab-list').addEventListener('click',   ()=> activateTab('list'));
+$('#btnPrefetchCreate').addEventListener('click', async (e)=>{
+  await withBusy(e.currentTarget, async ()=>{
+    await Promise.all([loadCategoriesAll(true), loadDebtsList()]);
+    populateCatSelect();
+    updateMiniDashboard();
+  }, 'กำลังรีเฟรช…');
+});
+$('#btnRefresh').addEventListener('click', (e)=> refreshList(e.currentTarget));
+
+/** Auto recover when back online */
+window.addEventListener('online', ()=> { if ($('#app') && !$('#colCat').classList.contains('hide')) loadCategoriesAll(true); });
+
+/** ===== INIT ===== */
+(async function init(){
+  if (displayName) $('#who').textContent = displayName;
+  const overlay = $('#overlay'); overlay.classList.remove('hide');
+  let ok=false; try{ ok = await ensureTokenViaLIFF(); }catch(e){ log('init error', e); }
+  overlay.classList.add('hide');
+
+  if (ok || token){
+    $('#app').classList.remove('hide');
+    activateTab('create');
+  } else {
+    $('#linkBox').classList.remove('hide');
+    toast('เริ่มต้นผ่าน LIFF ไม่สำเร็จ — เข้าสู่ระบบด้วย User/PIN ได้', false);
+  }
+})();
+
+/** ===== UI listeners ===== */
+$$('.segbtn').forEach(b=> b.addEventListener('click', ()=> setType(b.dataset.type)));
+$('#btnCancel').addEventListener('click', ()=>{ $('#editBackdrop').classList.remove('show'); $('#editBackdrop').setAttribute('aria-hidden','true'); });
+</script>
 </body>
 </html>
