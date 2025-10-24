@@ -521,7 +521,8 @@ let listDirty = false;
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const fmt = n => THB.format(Number(n||0));
-const esc = s => String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+// ⬇️ ใช้ nullish เพื่อไม่ทิ้งค่า 0
+const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const toast = (msg, ok=true)=>{ const el=$('#toast'); el.textContent=msg; el.style.background= ok?'#00c896':'#ff4d4f'; el.style.opacity='1'; setTimeout(()=> el.style.opacity='0', 2400); };
 const toYMD = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const todayISO = ()=> toYMD(new Date());
@@ -560,17 +561,24 @@ function cacheGet(k){
   try{ const {exp,data} = JSON.parse(raw); if (Date.now()>exp){ localStorage.removeItem(k); return null; } return data; }catch{ return null; }
 }
 function cacheSet(k,data,ttl){ localStorage.setItem(k, JSON.stringify({exp:Date.now()+ttl, data})); }
-  function clearFinCache() {
-  // ล้าง cache หมวดหมู่และเจ้าหนี้
-  localStorage.removeItem('fin_cats_v1');
+
+// ⬇️ คีย์แคชแบบ per-user+token และตัวตรวจความสมบูรณ์
+const catsKey = () => {
+  const uid = (displayName || '').toLowerCase().replace(/\s+/g,'') || 'anon';
+  const tk  = (token || '').slice(0,8) || 'noTk';
+  return `fin_cats_v2_${uid}_${tk}`;
+};
+function catsValid(c){
+  if (!c) return false;
+  const total = (c.income?.length||0)+(c.expense?.length||0)+(c.saving?.length||0);
+  return total > 0;
+}
+// ⬇️ ปุ่มรีเฟรชให้ล้างแคชได้จริง
+function clearFinCache(){
+  localStorage.removeItem(catsKey());
   localStorage.removeItem('fin_debts_v1');
-  // ล้างข้อมูลอื่นที่อาจเกี่ยวข้อง (ถ้ามี)
-  // localStorage.removeItem('fin_token'); // ← ถ้าไม่ต้องการ logout อย่าแตะบรรทัดนี้
-  // localStorage.removeItem('fin_name');
   toast('เคลียร์แคชเรียบร้อย ✅', true);
 }
-
-  
 
 /** ====== LIFF ====== */
 function waitForLiffReady(timeoutMs=5000){
@@ -617,49 +625,30 @@ $('#btnLink')?.addEventListener('click', async (e)=>{
 });
 
 /** ====== Categories / Debts ====== */
-async function loadCategoriesAll(opts = { force:false }) {
-  const key = 'fin_cats_v1';
-
-  // 1) ใช้แคชถ้ามี และไม่ได้ force แต่ "ปฏิเสธแคชที่ว่างสนิท"
-  if (!opts.force) {
+// ⬇️ แก้ loadCategoriesAll: ไม่ใช้แคชที่ว่าง, รองรับ force, ไม่แคชตอนล้มเหลว
+async function loadCategoriesAll(opts={force:false}){
+  const key = catsKey();
+  if (!opts.force){
     const cache = cacheGet(key);
-    const validCache = cache &&
-      ( (cache.income?.length||0) + (cache.expense?.length||0) + (cache.saving?.length||0) > 0 );
-    if (validCache) {
+    if (catsValid(cache)){
       cats = cache;
       $('#txCat').disabled = false;
       populateCatSelect();
       return;
     }
   }
-
-  // 2) ดึงสดจากเซิร์ฟเวอร์
   $('#txCat').disabled = true; $('#txCat').innerHTML = '<option>กำลังโหลด…</option>';
-  const [ri, re, rs] = await Promise.all([
-    api('categories/list', { type:'income'  }, true),
-    api('categories/list', { type:'expense' }, true),
-    api('categories/list', { type:'saving'  }, true),
-  ]);
-
-  // 3) ถ้าเรียกสำเร็จครบทุกตัว ค่อยอัปเดตสถานะ + เซฟแคช
+  const types=['income','expense','saving'];
+  const [ri,re,rs]=await Promise.all(types.map(t=> api('categories/list',{type:t},true)));
   const allOk = ri.ok && re.ok && rs.ok;
   const next = {
-    income:  allOk ? (ri.items || []) : (cats.income  || []),
-    expense: allOk ? (re.items || []) : (cats.expense || []),
-    saving:  allOk ? (rs.items || []) : (cats.saving  || []),
+    income:  allOk ? (ri.items||[]) : (cats.income||[]),
+    expense: allOk ? (re.items||[]) : (cats.expense||[]),
+    saving:  allOk ? (rs.items||[]) : (cats.saving||[]),
   };
-
-  // ป้องกันกรณีกลุ่มใดกลุ่มหนึ่งว่าง **จริง ๆ** (ผู้ใช้ยังไม่มีหมวดเลย)
-  // ให้ยอมว่างเฉพาะเมื่อ allOk = true
   cats = next;
-
-  // แคชเฉพาะเมื่อ allOk (ไม่แคชตอนเน็ตพลาด/โทเคนหมด)
-  if (allOk) {
-    cacheSet(key, cats, cacheTTL.cats);
-  }
-
-  $('#txCat').disabled = false;
-  populateCatSelect();
+  if (allOk && catsValid(next)){ cacheSet(key, cats, cacheTTL.cats); } // ✅ แคชเฉพาะเมื่อดีจริง
+  $('#txCat').disabled = false; populateCatSelect();
 }
 async function loadDebtsList(){
   const cache = cacheGet('fin_debts_v1');
@@ -697,19 +686,28 @@ function setType(type){
 }
 
 /** ====== Display helper ====== */
+// ⬇️ รองรับหลายชื่อฟิลด์ + ใช้ catMap เสมอ + กรณีหนี้
 function getDisplayMeta(x){
-  const isDebtTx = (x.debt_tx_id || x.type==='debt' || (x.category_name||'').includes('หนี้'));
-  const isRepay  = isDebtTx && (String(x.sub_type || 'repay').includes('repay') || (x.note||'').includes('จ่ายหนี้'));
+  const isDebtTx = !!x.debt_tx_id || x.type==='debt_repay' || x.type==='debt_borrow' ||
+                   (x.type==='debt') || String(x.debt_type||x.sub_type||'').includes('repay') ||
+                   (x.category_name||'').includes('หนี้');
   let badge='badge-exp', text='รายจ่าย';
-  if (isDebtTx){ badge='badge-debt'; text= isRepay?'จ่ายหนี้':'กู้หนี้'; }
+  if (isDebtTx){ badge='badge-debt'; text = String(x.debt_type||x.sub_type||'').includes('repay') ? 'จ่ายหนี้' : 'กู้หนี้'; }
   else if (x.type==='income'){ badge='badge-inc'; text='รายรับ'; }
   else if (x.type==='saving'){ badge='badge-sav'; text='ออมเงิน'; }
 
   const catMap = {};
-  [...(cats.expense||[]), ...(cats.income||[]), ...(cats.saving||[])]
-    .forEach(c=> catMap[c.category_id]=c.name_th);
-  const catName = isDebtTx ? (x.lender_name || x.category_name || 'เจ้าหนี้')
-                            : (catMap[x.category_id] || x.category_name || x.cat_name || x.category_id || '');
+  ['expense','income','saving'].forEach(t => (cats[t]||[]).forEach(c=>{
+    catMap[String(c.category_id)] = c.name_th || c.name || c.title || c.label || String(c.category_id);
+  }));
+
+  const id = String(x.category_id ?? x.cat_id ?? x.categoryId ?? '');
+  const possibleNames = [x.category_name, x.cat_name, x.categoryName, x.category_name_th, x.categoryTh].filter(Boolean);
+
+  const catName = isDebtTx
+    ? (x.lender_name || x.lenderName || 'เจ้าหนี้')
+    : (catMap[id] || possibleNames[0] || id || '-');
+
   return { badge, text, catName };
 }
 
@@ -803,7 +801,7 @@ async function saveAddCat(ev){
     if (!r.ok){ toast(r.message||'เพิ่มหมวดไม่สำเร็จ', false); return; }
     const newObj = { category_id: r.category_id, name_th: name, type };
     cats[type] = [ ...(cats[type]||[]), newObj ];
-    cacheSet('fin_cats_v1', cats, cacheTTL.cats);
+    cacheSet(catsKey(), cats, cacheTTL.cats); // ⬅️ เซฟลงคีย์ใหม่ต่อผู้ใช้
     setType(type);
     populateCatSelect();
     $('#txCat').value = newObj.category_id;
@@ -912,6 +910,15 @@ function renderTable(items){
   }
   tb.appendChild(frag);
 }
+// ⬇️ self-heal: ถ้าช่องหมวดยังว่าง ให้ force โหลดหมวดแล้วเรนเดอร์ซ้ำ
+async function safeRenderList(items){
+  renderTable(items);
+  const hasBlank = items.some(it => !String(getDisplayMeta(it).catName||'').trim());
+  if (hasBlank){
+    await loadCategoriesAll({ force:true });
+    renderTable(items);
+  }
+}
 async function refreshList(btn){
   if (!token) return;
   const from=$('#fFrom').value, to=$('#fTo').value;
@@ -920,7 +927,7 @@ async function refreshList(btn){
   if (btn) setBusy(btn, false);
   if (!r.ok){ toast('โหลดรายการไม่สำเร็จ', false); return; }
   lastItems = (r.items||[]).map(x=> ({...x, amount:+x.amount}));
-  renderTable(lastItems);
+  await safeRenderList(lastItems);
 }
 
 // ปุ่มแก้ไขของ 2 ตาราง
@@ -1095,7 +1102,8 @@ $('#fFrom').addEventListener('change', ()=>{ updateRangeUI(); debouncedRefresh()
 $('#fTo').addEventListener('change',   ()=>{ updateRangeUI(); debouncedRefresh(); });
 
 /** ====== Tabs & Prefetch ====== */
-function activateTab(tab){
+// ⬇️ ทำให้รอโหลดหมวดก่อน refreshList (กัน race)
+async function activateTab(tab){
   const isCreate = (tab==='create');
   $('#tab-create').classList.toggle('active', isCreate);
   $('#tab-list').classList.toggle('active', !isCreate);
@@ -1105,41 +1113,37 @@ function activateTab(tab){
   $('#pane-list').classList.toggle('active', !isCreate);
 
   if (isCreate && !loaded.create){
-  $('#txDate').value = todayISO();
-  setType('expense');
-  Promise.all([
-    loadCategoriesAll({ force:false }),  // ใช้แคชได้ แต่จะไม่ยอมแคชว่าง
-    loadDebtsList()
-  ]).then(()=> {
-    populateCatSelect();
-    loadRecentFromAPI();
-    updateMiniDashboard();
-  }).finally(()=> loaded.create = true);
-}
+    $('#txDate').value = todayISO();
+    setType('expense');
+    Promise.all([loadCategoriesAll(), loadDebtsList()]).then(()=> {
+      populateCatSelect();
+      loadRecentFromAPI();
+      updateMiniDashboard();
+    }).finally(()=> loaded.create = true);
+  }
   if (!isCreate){
     if (!loaded.list){
       const mb = monthBounds(new Date());
       $('#fFrom').value = mb.start; $('#fTo').value = mb.end; updateRangeUI();
+      await loadCategoriesAll({force:false});   // ✅ ให้ cats พร้อมก่อน
       refreshList().then(()=> loaded.list = true);
     } else if (listDirty){
+      await loadCategoriesAll({force:false});
       refreshList().finally(()=> { listDirty = false; });
     }
   }
 }
 $('#tab-create').addEventListener('click', ()=> activateTab('create'));
 $('#tab-list').addEventListener('click',   ()=> activateTab('list'));
+// ⬇️ รีเฟรชแบบล้างแคช + force ดึงใหม่
 $('#btnPrefetchCreate').addEventListener('click', async (e)=>{
   await withBusy(e.currentTarget, async ()=>{
-    clearFinCache(); // 🧹 เคลียร์แคชก่อนทุกครั้ง
-    await Promise.all([
-      loadCategoriesAll({ force:true }),
-      loadDebtsList()
-    ]);
+    clearFinCache();
+    await Promise.all([loadCategoriesAll({force:true}), loadDebtsList()]);
     populateCatSelect();
     updateMiniDashboard();
   }, 'กำลังรีเฟรช…');
 });
-
 $('#btnRefresh').addEventListener('click', (e)=> refreshList(e.currentTarget));
 
 /** ====== INIT ====== */
