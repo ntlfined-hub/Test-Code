@@ -560,6 +560,17 @@ function cacheGet(k){
   try{ const {exp,data} = JSON.parse(raw); if (Date.now()>exp){ localStorage.removeItem(k); return null; } return data; }catch{ return null; }
 }
 function cacheSet(k,data,ttl){ localStorage.setItem(k, JSON.stringify({exp:Date.now()+ttl, data})); }
+  function clearFinCache() {
+  // ล้าง cache หมวดหมู่และเจ้าหนี้
+  localStorage.removeItem('fin_cats_v1');
+  localStorage.removeItem('fin_debts_v1');
+  // ล้างข้อมูลอื่นที่อาจเกี่ยวข้อง (ถ้ามี)
+  // localStorage.removeItem('fin_token'); // ← ถ้าไม่ต้องการ logout อย่าแตะบรรทัดนี้
+  // localStorage.removeItem('fin_name');
+  toast('เคลียร์แคชเรียบร้อย ✅', true);
+}
+
+  
 
 /** ====== LIFF ====== */
 function waitForLiffReady(timeoutMs=5000){
@@ -1119,8 +1130,9 @@ $('#tab-create').addEventListener('click', ()=> activateTab('create'));
 $('#tab-list').addEventListener('click',   ()=> activateTab('list'));
 $('#btnPrefetchCreate').addEventListener('click', async (e)=>{
   await withBusy(e.currentTarget, async ()=>{
+    clearFinCache(); // 🧹 เคลียร์แคชก่อนทุกครั้ง
     await Promise.all([
-      loadCategoriesAll({ force:true }),  // <-- บังคับดึงสด
+      loadCategoriesAll({ force:true }),
       loadDebtsList()
     ]);
     populateCatSelect();
