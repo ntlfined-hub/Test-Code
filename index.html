@@ -502,7 +502,7 @@
 
 <script>
 /** ====== CONFIG ====== */
-const LIFF_ID = '2008276151-Oyp12d62';
+const LIFF_ID = '2008276151-610PgRqg';
 const API_URL = 'https://script.google.com/macros/s/AKfycbxV3xOU1kQM86jUJtfer8hW_HgYkcLfpH942saPVbCZ1RDmN_4LYjpk72OxdKKLQAFt/exec';
 
 /** ====== STATE ====== */
@@ -538,31 +538,7 @@ function rerenderAllTables(){
     if (loaded.list && lastItems && lastItems.length) renderTable(lastItems);
   }catch(_){}
 }
-async function loadCategoriesAll(){
-  const cache = cacheGet('fin_cats_v1');
-  if (cache){
-    cats = cache;
-    $('#txCat').disabled = false;
-    populateCatSelect();
-    rerenderAllTables();               // <- เพิ่ม
-    return;
-  }
-  $('#txCat').disabled = true; $('#txCat').innerHTML = '<option>กำลังโหลด…</option>';
-  const types=['income','expense','saving'];
-  const [ri,re,rs]=await Promise.all(types.map(t=> api('categories/list',{type:t},true)));
-  cats={ income:ri.ok?(ri.items||[]):[], expense:re.ok?(re.items||[]):[], saving:rs.ok?(rs.items||[]):[] };
-  cacheSet('fin_cats_v1', cats, cacheTTL.cats);
-  $('#txCat').disabled = false; populateCatSelect();
-  rerenderAllTables();                 // <- เพิ่ม
-}
-$('#btnPrefetchCreate').addEventListener('click', async (e)=>{
-  await withBusy(e.currentTarget, async ()=>{
-    await Promise.all([loadCategoriesAll(), loadDebtsList()]);
-    populateCatSelect();
-    updateMiniDashboard();
-    rerenderAllTables();               // <- เพิ่ม
-  }, 'กำลังรีเฟรช…');
-});  
+  
 
 function setBusy(btn, on, tempText){
   if (!btn) return;
@@ -667,6 +643,7 @@ async function loadCategoriesAll(opts={force:false}){
       cats = cache;
       $('#txCat').disabled = false;
       populateCatSelect();
+      rerenderAllTables(); 
       return;
     }
   }
@@ -682,6 +659,7 @@ async function loadCategoriesAll(opts={force:false}){
   cats = next;
   if (allOk && catsValid(next)){ cacheSet(key, cats, cacheTTL.cats); } // ✅ แคชเฉพาะเมื่อดีจริง
   $('#txCat').disabled = false; populateCatSelect();
+  rerenderAllTables(); 
 }
 async function loadDebtsList(){
   const cache = cacheGet('fin_debts_v1');
@@ -841,6 +819,7 @@ async function saveAddCat(ev){
     closeAddCat();
     toast('เพิ่มหมวดสำเร็จ');
     updateMiniDashboard();
+    rerenderAllTables();
   }, 'กำลังบันทึก…');
 }
 $('#btnAddCatOpen').addEventListener('click', openAddCat);
@@ -1175,6 +1154,7 @@ $('#btnPrefetchCreate').addEventListener('click', async (e)=>{
     await Promise.all([loadCategoriesAll({force:true}), loadDebtsList()]);
     populateCatSelect();
     updateMiniDashboard();
+    rerenderAllTables(); 
   }, 'กำลังรีเฟรช…');
 });
 $('#btnRefresh').addEventListener('click', (e)=> refreshList(e.currentTarget));
