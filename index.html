@@ -20,8 +20,7 @@
     :root{
       --bg:#1e1e1e; --panel:#242424; --line:#3a3a3a; --muted:#bfbfbf; --text:#f1f1f1;
       --primary:#00c896; --danger:#ff4d4f; --blue:#6c8cff; --warn:#ffb020; --cyan:#2dd4bf;
-      --hue: 170;
-      --table-min: 1020px; /* ✅ กว้างขั้นต่ำของตารางเพื่อให้มี h-scroll บนจอแคบ */
+      --hue: 170; /* โทนเขียวมิ้นต์ของแบรนด์ (ใช้กับ loader ตัวใหม่) */
     }
     *{ box-sizing:border-box } html,body{ height:100% }
     body{
@@ -77,30 +76,33 @@
     .muted{ color:var(--muted) }
     .right{ text-align:right }
 
-    /* ===== ตาราง (แก้ให้เห็นคอลัมน์ครบ) ===== */
-    table{ width:100%; border-collapse:collapse; table-layout:fixed; font-size:.98rem }
+    /* ===== TABLE: base ===== */
+    table{
+      width:100%;
+      border-collapse:collapse;
+      table-layout:fixed;
+      font-size:.98rem;
+      /* ✅ FIX 1: บังคับความกว้างขั้นต่ำให้ล้นกรอบบนจอแคบ เพื่อให้ h-scroll โผล่แน่นอน */
+      min-width:960px;
+    }
     th,td{ border-bottom:1px solid var(--line); padding:.8rem .5rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle }
     th{ color:var(--muted); font-weight:600; text-align:left; position:sticky; top:0; background:#1f1f1f; z-index:1 }
 
     .table-viewport{
       max-height:72vh;
-      overflow:auto;                       /* ✅ ทั้งแกน X/Y */
-      border-radius:12px; border:1px solid var(--line);
-      -webkit-overflow-scrolling:touch;    /* ✅ ลื่นบน iOS/WKWebView */
-      overscroll-behavior:contain;         /* ✅ กันสโครลทะลุ */
+      overflow:auto;
+      border-radius:12px;
+      border:1px solid var(--line);
+      /* ✅ FIX 2: โมเมนตัมสกอร์ลบน iOS + ลดอาการหน่วงใน WKWebView */
+      -webkit-overflow-scrolling: touch;
     }
-    /* ✅ บังคับให้ตารางล้นบนจอแคบ เพื่อให้ h-scroll แสดงแน่ ๆ */
-    .table-viewport > table{ min-width: var(--table-min); }
-
-    /* ✅ กันคอลัมน์สำคัญโดนบีบจนเป็นศูนย์ */
-    /* 1=วันที่(110), 2=ประเภท(140), 3=หมวด/เจ้าหนี้, 4=จำนวน(130), 5=หมายเหตุ, 6=จัดการ(160) */
-    .table-viewport th:nth-child(3),
-    .table-viewport td:nth-child(3){ min-width:220px; }  /* หมวด/เจ้าหนี้ */
-    .table-viewport th:nth-child(5),
-    .table-viewport td:nth-child(5){ min-width:240px; }  /* หมายเหตุ */
-
     .table-viewport tbody tr:hover{ background:#2a2a2a }
     td:last-child .actions{ display:flex; gap:.5rem; flex-wrap:wrap }
+
+    /* ✅ FIX 3: กันคอลัมภ์สำคัญถูกบีบเป็นศูนย์บนจอแคบ */
+    /* หมวด/เจ้าหนี้ = คอลัมภ์ที่ 3, หมายเหตุ = คอลัมภ์ที่ 5 */
+    thead th:nth-child(3), tbody td:nth-child(3){ min-width:200px }
+    thead th:nth-child(5), tbody td:nth-child(5){ min-width:220px }
 
     .badge{ padding:.25rem .5rem; border-radius:999px; font-size:.85rem }
     .badge-inc{ background:rgba(0,200,150,.18); color:#9ff3df; border:1px solid rgba(0,200,150,.35) }
@@ -115,9 +117,22 @@
     #overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.28); z-index:110; transition:opacity .2s }
     #overlay.hide{ opacity:0; pointer-events:none }
 
-    /* Loader base (คงเดิม) */
+    /* Loader base */
     .loader { --dur: 2s; display:block; margin:auto; width:14em; height:auto; }
-    .loader__glare-top,.loader__glare-bottom,.loader__model,.loader__motion-thick,.loader__motion-medium,.loader__motion-thin,.loader__sand-drop,.loader__sand-fill,.loader__sand-grain-left,.loader__sand-grain-right,.loader__sand-line-left,.loader__sand-line-right,.loader__sand-mound-top,.loader__sand-mound-bottom{
+    .loader__glare-top,
+    .loader__glare-bottom,
+    .loader__model,
+    .loader__motion-thick,
+    .loader__motion-medium,
+    .loader__motion-thin,
+    .loader__sand-drop,
+    .loader__sand-fill,
+    .loader__sand-grain-left,
+    .loader__sand-grain-right,
+    .loader__sand-line-left,
+    .loader__sand-line-right,
+    .loader__sand-mound-top,
+    .loader__sand-mound-bottom{
       animation-duration:var(--dur);
       animation-timing-function:cubic-bezier(0.83,0,0.17,1);
       animation-iteration-count:infinite;
@@ -141,6 +156,7 @@
     @media (prefers-color-scheme: dark){
       :root{ --bg:#1e1e1e; --fg:hsl(var(--hue),90%,90%) }
     }
+    /* Animations */
     @keyframes loader-flip{ from{ transform:translate(13.75px,9.25px) rotate(-180deg) } 24%,to{ transform:translate(13.75px,9.25px) rotate(0) } }
     @keyframes glare-top{ from{ stroke:rgba(255,255,255,0) } 24%,to{ stroke:white } }
     @keyframes glare-bottom{ from{ stroke:white } 24%,to{ stroke:rgba(255,255,255,0) } }
@@ -366,7 +382,7 @@
             </div>
           </div>
 
-          <div class="table-viewport" id="listViewport">
+          <div class="table-viewport">
             <table>
               <thead>
                 <tr>
@@ -461,18 +477,53 @@
 
   <div id="toast">แจ้งเตือน</div>
 
-  <!-- Overlay -->
+  <!-- Overlay: ใช้ Loader รุ่น hourglass -->
   <div id="overlay" class="hide" aria-live="polite" aria-busy="true">
-    <!-- (loader svg คงเดิม) -->
+    <!-- From Uiverse.io by nima-mollazadeh -->
     <svg aria-label="loader being flipped clockwise and circled by three white curves fading in and out"
          role="img" height="56" width="56" viewBox="0 0 56 56" class="loader">
-      <!-- ... loader paths (unchanged) ... -->
+      <clipPath id="sand-mound-top">
+        <path d="M 14.613 13.087 C 15.814 12.059 19.3 8.039 20.3 6.539 C 21.5 4.789 21.5 2.039 21.5 2.039 L 3 2.039 C 3 2.039 3 4.789 4.2 6.539 C 5.2 8.039 8.686 12.059 9.887 13.087 C 11 14.039 12.25 14.039 12.25 14.039 C 12.25 14.039 13.5 14.039 14.613 13.087 Z" class="loader__sand-mound-top"></path>
+      </clipPath>
+      <clipPath id="sand-mound-bottom">
+        <path d="M 14.613 20.452 C 15.814 21.48 19.3 25.5 20.3 27 C 21.5 28.75 21.5 31.5 21.5 31.5 L 3 31.5 C 3 31.5 3 28.75 4.2 27 C 5.2 25.5 8.686 21.48 9.887 20.452 C 11 19.5 12.25 19.5 12.25 19.5 C 12.25 19.5 13.5 19.5 14.613 20.452 Z" class="loader__sand-mound-bottom"></path>
+      </clipPath>
+      <g transform="translate(2,2)">
+        <g transform="rotate(-90,26,26)" stroke-linecap="round" stroke-dashoffset="153.94" stroke-dasharray="153.94 153.94" stroke="hsl(0,0%,100%)" fill="none">
+          <circle transform="rotate(0,26,26)" r="24.5" cy="26" cx="26" stroke-width="2.5" class="loader__motion-thick"></circle>
+          <circle transform="rotate(90,26,26)" r="24.5" cy="26" cx="26" stroke-width="1.75" class="loader__motion-medium"></circle>
+          <circle transform="rotate(180,26,26)" r="24.5" cy="26" cx="26" stroke-width="1" class="loader__motion-thin"></circle>
+        </g>
+        <g transform="translate(13.75,9.25)" class="loader__model">
+          <path d="M 1.5 2 L 23 2 C 23 2 22.5 8.5 19 12 C 16 15.5 13.5 13.5 13.5 16.75 C 13.5 20 16 18 19 21.5 C 22.5 25 23 31.5 23 31.5 L 1.5 31.5 C 1.5 31.5 2 25 5.5 21.5 C 8.5 18 11 20 11 16.75 C 11 13.5 8.5 15.5 5.5 12 C 2 8.5 1.5 2 1.5 2 Z" fill="hsl(var(--hue),90%,85%)"></path>
+          <g stroke-linecap="round" stroke="hsl(35,90%,90%)">
+            <line y2="20.75" x2="12" y1="15.75" x1="12" stroke-dasharray="0.25 33.75" stroke-width="1" class="loader__sand-grain-left"></line>
+            <line y2="21.75" x2="12.5" y1="16.75" x1="12.5" stroke-dasharray="0.25 33.75" stroke-width="1" class="loader__sand-grain-right"></line>
+            <line y2="31.5" x2="12.25" y1="18" x1="12.25" stroke-dasharray="0.5 107.5" stroke-width="1" class="loader__sand-drop"></line>
+            <line y2="31.5" x2="12.25" y1="14.75" x1="12.25" stroke-dasharray="54 54" stroke-width="1.5" class="loader__sand-fill"></line>
+            <line y2="31.5" x2="12" y1="16" x1="12" stroke-dasharray="1 107" stroke-width="1" stroke="hsl(35,90%,83%)" class="loader__sand-line-left"></line>
+            <line y2="31.5" x2="12.5" y1="16" x1="12.5" stroke-dasharray="12 96" stroke-width="1" stroke="hsl(35,90%,83%)" class="loader__sand-line-right"></line>
+            <g stroke-width="0" fill="hsl(35,90%,90%)">
+              <path d="M 12.25 15 L 15.392 13.486 C 21.737 11.168 22.5 2 22.5 2 L 2 2.013 C 2 2.013 2.753 11.046 9.009 13.438 L 12.25 15 Z" clip-path="url(#sand-mound-top)"></path>
+              <path d="M 12.25 18.5 L 15.392 20.014 C 21.737 22.332 22.5 31.5 22.5 31.5 L 2 31.487 C 2 31.487 2.753 22.454 9.009 20.062 Z" clip-path="url(#sand-mound-bottom)"></path>
+            </g>
+          </g>
+          <g stroke-width="2" stroke-linecap="round" opacity="0.7" fill="none">
+            <path d="M 19.437 3.421 C 19.437 3.421 19.671 6.454 17.914 8.846 C 16.157 11.238 14.5 11.5 14.5 11.5" stroke="hsl(0,0%,100%)" class="loader__glare-top"></path>
+            <path transform="rotate(180,12.25,16.75)" d="M 19.437 3.421 C 19.437 3.421 19.671 6.454 17.914 8.846 C 16.157 11.238 14.5 11.5 14.5 11.5" stroke="hsla(0,0%,100%,0)" class="loader__glare-bottom"></path>
+          </g>
+          <rect height="2" width="24.5" fill="hsl(var(--hue),90%,50%)"></rect>
+          <rect height="1" width="19.5" y="0.5" x="2.5" ry="0.5" rx="0.5" fill="hsl(var(--hue),90%,57.5%)"></rect>
+          <rect height="2" width="24.5" y="31.5" fill="hsl(var(--hue),90%,50%)"></rect>
+          <rect height="1" width="19.5" y="32" x="2.5" ry="0.5" rx="0.5" fill="hsl(var(--hue),90%,57.5%)"></rect>
+        </g>
+      </g>
     </svg>
   </div>
 
 <script>
 /** ====== CONFIG ====== */
-const LIFF_ID = '2008276151-610PgRqg';
+const LIFF_ID = '2008276151-Oyp12d62';
 const API_URL = 'https://script.google.com/macros/s/AKfycbxV3xOU1kQM86jUJtfer8hW_HgYkcLfpH942saPVbCZ1RDmN_4LYjpk72OxdKKLQAFt/exec';
 
 /** ====== STATE ====== */
@@ -491,7 +542,7 @@ let listDirty = false;
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const fmt = n => THB.format(Number(n||0));
-// ใช้ nullish เพื่อไม่ทิ้งค่า 0
+// ⬇️ ใช้ nullish เพื่อไม่ทิ้งค่า 0
 const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const toast = (msg, ok=true)=>{ const el=$('#toast'); el.textContent=msg; el.style.background= ok?'#00c896':'#ff4d4f'; el.style.opacity='1'; setTimeout(()=> el.style.opacity='0', 2400); };
 const toYMD = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -532,7 +583,7 @@ function cacheGet(k){
 }
 function cacheSet(k,data,ttl){ localStorage.setItem(k, JSON.stringify({exp:Date.now()+ttl, data})); }
 
-/* คีย์แคชแบบ per-user+token และตัวตรวจความสมบูรณ์ */
+// ⬇️ คีย์แคชแบบ per-user+token และตัวตรวจความสมบูรณ์
 const catsKey = () => {
   const uid = (displayName || '').toLowerCase().replace(/\s+/g,'') || 'anon';
   const tk  = (token || '').slice(0,8) || 'noTk';
@@ -543,23 +594,11 @@ function catsValid(c){
   const total = (c.income?.length||0)+(c.expense?.length||0)+(c.saving?.length||0);
   return total > 0;
 }
-/* ปุ่มรีเฟรชให้ล้างแคชได้จริง */
+// ⬇️ ปุ่มรีเฟรชให้ล้างแคชได้จริง
 function clearFinCache(){
   localStorage.removeItem(catsKey());
   localStorage.removeItem('fin_debts_v1');
   toast('เคลียร์แคชเรียบร้อย ✅', true);
-}
-
-/** ====== ตาราง: รีเซ็ตแนวนอน (กันคอลัมน์ซ้ายหาย/จำ scrollLeft) ====== */
-function resetHScroll(){
-  $$('.table-viewport').forEach(vp=>{
-    // รีเซ็ตตำแหน่งและกระตุก reflow แก้บั๊ก WKWebView
-    vp.scrollLeft = 0;
-    const prev = vp.style.webkitOverflowScrolling;
-    vp.style.webkitOverflowScrolling = 'auto';
-    void vp.offsetHeight;                       // force reflow
-    vp.style.webkitOverflowScrolling = prev || 'touch';
-  });
 }
 
 /** ====== LIFF ====== */
@@ -607,6 +646,7 @@ $('#btnLink')?.addEventListener('click', async (e)=>{
 });
 
 /** ====== Categories / Debts ====== */
+// ⬇️ แก้ loadCategoriesAll: ไม่ใช้แคชที่ว่าง, รองรับ force, ไม่แคชตอนล้มเหลว
 async function loadCategoriesAll(opts={force:false}){
   const key = catsKey();
   if (!opts.force){
@@ -628,7 +668,7 @@ async function loadCategoriesAll(opts={force:false}){
     saving:  allOk ? (rs.items||[]) : (cats.saving||[]),
   };
   cats = next;
-  if (allOk && catsValid(next)){ cacheSet(key, cats, cacheTTL.cats); }
+  if (allOk && catsValid(next)){ cacheSet(key, cats, cacheTTL.cats); } // ✅ แคชเฉพาะเมื่อดีจริง
   $('#txCat').disabled = false; populateCatSelect();
 }
 async function loadDebtsList(){
@@ -667,6 +707,7 @@ function setType(type){
 }
 
 /** ====== Display helper ====== */
+// ⬇️ รองรับหลายชื่อฟิลด์ + ใช้ catMap เสมอ + กรณีหนี้
 function getDisplayMeta(x){
   const isDebtTx = !!x.debt_tx_id || x.type==='debt_repay' || x.type==='debt_borrow' ||
                    (x.type==='debt') || String(x.debt_type||x.sub_type||'').includes('repay') ||
@@ -728,7 +769,7 @@ async function updateMiniDashboard(){
 /** ====== ล่าสุด 5 รายการ ====== */
 function renderRecent(){
   const tb = $('#recentBody'); tb.innerHTML='';
-  if (!recentItems.length){ tb.innerHTML='<tr><td colspan="6" class="muted">ยังไม่มีรายการ</td></tr>'; resetHScroll(); return; }
+  if (!recentItems.length){ tb.innerHTML='<tr><td colspan="6" class="muted">ยังไม่มีรายการ</td></tr>'; return; }
   const frag=document.createDocumentFragment();
   for (const x of recentItems.slice(0,5)){
     const { badge, text, catName } = getDisplayMeta(x);
@@ -748,7 +789,8 @@ function renderRecent(){
     frag.appendChild(tr);
   }
   tb.appendChild(frag);
-  resetHScroll(); // ✅ ให้แน่ใจว่าคอลัมน์ซ้ายไม่หลุดวิวนอกกล่อง
+  // ✅ FIX 4: กัน scrollLeft ค้างใน WKWebView
+  tb.closest('.table-viewport')?.scrollTo({ left: 0, behavior: 'instant' });
 }
 async function loadRecentFromAPI(){
   const to=todayISO();
@@ -782,7 +824,7 @@ async function saveAddCat(ev){
     if (!r.ok){ toast(r.message||'เพิ่มหมวดไม่สำเร็จ', false); return; }
     const newObj = { category_id: r.category_id, name_th: name, type };
     cats[type] = [ ...(cats[type]||[]), newObj ];
-    cacheSet(catsKey(), cats, cacheTTL.cats);
+    cacheSet(catsKey(), cats, cacheTTL.cats); // ⬅️ เซฟลงคีย์ใหม่ต่อผู้ใช้
     setType(type);
     populateCatSelect();
     $('#txCat').value = newObj.category_id;
@@ -890,9 +932,10 @@ function renderTable(items){
     frag.appendChild(tr);
   }
   tb.appendChild(frag);
-  resetHScroll(); // ✅ แก้เคสคอลัมน์ต้น ๆ หลุดวิวนอกกรอบหลังรีเฟรช
+  // ✅ FIX 4: กัน scrollLeft ค้างใน WKWebView
+  tb.closest('.table-viewport')?.scrollTo({ left: 0, behavior: 'instant' });
 }
-// self-heal: ถ้าช่องหมวดยังว่าง ให้ force โหลดหมวดแล้วเรนเดอร์ซ้ำ
+// ⬇️ self-heal: ถ้าช่องหมวดยังว่าง ให้ force โหลดหมวดแล้วเรนเดอร์ซ้ำ
 async function safeRenderList(items){
   renderTable(items);
   const hasBlank = items.some(it => !String(getDisplayMeta(it).catName||'').trim());
@@ -1084,6 +1127,7 @@ $('#fFrom').addEventListener('change', ()=>{ updateRangeUI(); debouncedRefresh()
 $('#fTo').addEventListener('change',   ()=>{ updateRangeUI(); debouncedRefresh(); });
 
 /** ====== Tabs & Prefetch ====== */
+// ⬇️ ทำให้รอโหลดหมวดก่อน refreshList (กัน race)
 async function activateTab(tab){
   const isCreate = (tab==='create');
   $('#tab-create').classList.toggle('active', isCreate);
@@ -1093,46 +1137,39 @@ async function activateTab(tab){
   $('#pane-create').classList.toggle('active', isCreate);
   $('#pane-list').classList.toggle('active', !isCreate);
 
+  // ✅ FIX 5: รีเซ็ตตำแหน่งเลื่อนแนวนอนเมื่อสลับแท็บ
+  setTimeout(()=> $$('.table-viewport').forEach(v=> v.scrollLeft = 0), 0);
+
   if (isCreate && !loaded.create){
     $('#txDate').value = todayISO();
     setType('expense');
-    Promise.all([loadCategoriesAll(), loadDebtsList()]).then(()=>{
+    Promise.all([loadCategoriesAll(), loadDebtsList()]).then(()=> {
       populateCatSelect();
       loadRecentFromAPI();
       updateMiniDashboard();
-    }).finally(()=> {
-      loaded.create = true;
-      resetHScroll(); // กันคอลัมน์ซ้ายหลุดวิวนอกกรอบล่าสุด
-    });
+    }).finally(()=> loaded.create = true);
   }
   if (!isCreate){
     if (!loaded.list){
       const mb = monthBounds(new Date());
       $('#fFrom').value = mb.start; $('#fTo').value = mb.end; updateRangeUI();
-      await loadCategoriesAll({force:false});   // ให้ cats พร้อมก่อน
-      refreshList().then(()=> {
-        loaded.list = true;
-        resetHScroll();
-      });
+      await loadCategoriesAll({force:false});   // ✅ ให้ cats พร้อมก่อน
+      refreshList().then(()=> loaded.list = true);
     } else if (listDirty){
       await loadCategoriesAll({force:false});
-      refreshList().finally(()=> { listDirty = false; resetHScroll(); });
-    } else {
-      resetHScroll();
+      refreshList().finally(()=> { listDirty = false; });
     }
   }
 }
 $('#tab-create').addEventListener('click', ()=> activateTab('create'));
 $('#tab-list').addEventListener('click',   ()=> activateTab('list'));
-
-/* รีเฟรชแบบล้างแคช + force ดึงใหม่ */
+// ⬇️ รีเฟรชแบบล้างแคช + force ดึงใหม่
 $('#btnPrefetchCreate').addEventListener('click', async (e)=>{
   await withBusy(e.currentTarget, async ()=>{
     clearFinCache();
     await Promise.all([loadCategoriesAll({force:true}), loadDebtsList()]);
     populateCatSelect();
     updateMiniDashboard();
-    resetHScroll();
   }, 'กำลังรีเฟรช…');
 });
 $('#btnRefresh').addEventListener('click', (e)=> refreshList(e.currentTarget));
@@ -1153,13 +1190,13 @@ $('#btnRefresh').addEventListener('click', (e)=> refreshList(e.currentTarget));
   }
 })();
 
-/* ฟังการหมุนจอ/ย่อขยาย เพื่อให้ h-scroll recalibrate */
-window.addEventListener('orientationchange', ()=> setTimeout(resetHScroll, 60));
-window.addEventListener('resize', debounce(()=> resetHScroll(), 120));
-
 /** ====== UI listeners ====== */
 $$('.segbtn').forEach(b=> b.addEventListener('click', ()=> setType(b.dataset.type)));
 $('#btnCancel').addEventListener('click', ()=>{ $('#editBackdrop').classList.remove('show'); $('#editBackdrop').setAttribute('aria-hidden','true'); });
+
+// ✅ FIX 6: กันเคสหมุนจอ/resize แล้ว scrollLeft ค้าง
+window.addEventListener('orientationchange', ()=> $$('.table-viewport').forEach(v=> v.scrollLeft = 0));
+window.addEventListener('resize', debounce(()=> $$('.table-viewport').forEach(v=> v.scrollLeft = 0), 150));
 </script>
 </body>
 </html>
