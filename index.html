@@ -79,12 +79,8 @@
     table{ width:100%; border-collapse:collapse; table-layout:fixed; font-size:.98rem }
     th,td{ border-bottom:1px solid var(--line); padding:.8rem .5rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle }
     th{ color:var(--muted); font-weight:600; text-align:left; position:sticky; top:0; background:#1f1f1f; z-index:1 }
-    /* ===== [เพิ่ม] ป้องกัน h-scroll ค้าง + กันคอลัมน์หมวดถูกบีบ ===== */
-    .table-viewport{ max-height:72vh; overflow-x:auto; overflow-y:auto; border-radius:12px; border:1px solid var(--line) }
+    .table-viewport{ max-height:72vh; overflow:auto; border-radius:12px; border:1px solid var(--line) }
     .table-viewport tbody tr:hover{ background:#2a2a2a }
-    th:nth-child(3), td:nth-child(3){ min-width:180px; } /* หมวด/เจ้าหนี้ ต้องมีพื้นที่ขั้นต่ำ */
-    /* ============================================================ */
-
     td:last-child .actions{ display:flex; gap:.5rem; flex-wrap:wrap }
 
     .badge{ padding:.25rem .5rem; border-radius:999px; font-size:.85rem }
@@ -100,7 +96,7 @@
     #overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.28); z-index:110; transition:opacity .2s }
     #overlay.hide{ opacity:0; pointer-events:none }
 
-    /* Loader base (คงเดิม)… */
+    /* Loader base */
     .loader { --dur: 2s; display:block; margin:auto; width:14em; height:auto; }
     .loader__glare-top,
     .loader__glare-bottom,
@@ -139,6 +135,7 @@
     @media (prefers-color-scheme: dark){
       :root{ --bg:#1e1e1e; --fg:hsl(var(--hue),90%,90%) }
     }
+    /* Animations */
     @keyframes loader-flip{ from{ transform:translate(13.75px,9.25px) rotate(-180deg) } 24%,to{ transform:translate(13.75px,9.25px) rotate(0) } }
     @keyframes glare-top{ from{ stroke:rgba(255,255,255,0) } 24%,to{ stroke:white } }
     @keyframes glare-bottom{ from{ stroke:white } 24%,to{ stroke:rgba(255,255,255,0) } }
@@ -461,7 +458,7 @@
 
   <!-- Overlay: ใช้ Loader รุ่น hourglass -->
   <div id="overlay" class="hide" aria-live="polite" aria-busy="true">
-    <!-- Loader (คงเดิม)… -->
+    <!-- From Uiverse.io by nima-mollazadeh -->
     <svg aria-label="loader being flipped clockwise and circled by three white curves fading in and out"
          role="img" height="56" width="56" viewBox="0 0 56 56" class="loader">
       <clipPath id="sand-mound-top">
@@ -524,7 +521,8 @@ let listDirty = false;
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const fmt = n => THB.format(Number(n||0));
-const esc = s => String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+// ⬇️ ใช้ nullish เพื่อไม่ทิ้งค่า 0
+const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const toast = (msg, ok=true)=>{ const el=$('#toast'); el.textContent=msg; el.style.background= ok?'#00c896':'#ff4d4f'; el.style.opacity='1'; setTimeout(()=> el.style.opacity='0', 2400); };
 const toYMD = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const todayISO = ()=> toYMD(new Date());
@@ -532,17 +530,6 @@ const monthBounds = d => ({ start: toYMD(new Date(d.getFullYear(), d.getMonth(),
 const debounce = (fn,ms=300)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
 function addDays(ymd, delta){ const [y,m,d]=ymd.split('-').map(Number); const nd=new Date(y, m-1, d+delta); return toYMD(nd); }
 const log = (...a)=>{ try{ console.debug('[FIN-JOD]', ...a); }catch{} };
-
-/* ===== [เพิ่ม] รีเซ็ต scroll แนวนอนของกรอบตาราง ===== */
-function resetHScroll(el){ try{ if(el) el.scrollLeft = 0; }catch{} }
-/* ===== [เพิ่ม] สั่งให้ทุกตาราง re-render เมื่อหมวดพร้อม ===== */
-function rerenderAllTables(){
-  try{
-    if (recentItems && recentItems.length) renderRecent();
-    if (loaded.list && lastItems && lastItems.length) renderTable(lastItems);
-  }catch(_){}
-}
-/* =========================================================== */
 
 function setBusy(btn, on, tempText){
   if (!btn) return;
@@ -574,6 +561,24 @@ function cacheGet(k){
   try{ const {exp,data} = JSON.parse(raw); if (Date.now()>exp){ localStorage.removeItem(k); return null; } return data; }catch{ return null; }
 }
 function cacheSet(k,data,ttl){ localStorage.setItem(k, JSON.stringify({exp:Date.now()+ttl, data})); }
+
+// ⬇️ คีย์แคชแบบ per-user+token และตัวตรวจความสมบูรณ์
+const catsKey = () => {
+  const uid = (displayName || '').toLowerCase().replace(/\s+/g,'') || 'anon';
+  const tk  = (token || '').slice(0,8) || 'noTk';
+  return `fin_cats_v2_${uid}_${tk}`;
+};
+function catsValid(c){
+  if (!c) return false;
+  const total = (c.income?.length||0)+(c.expense?.length||0)+(c.saving?.length||0);
+  return total > 0;
+}
+// ⬇️ ปุ่มรีเฟรชให้ล้างแคชได้จริง
+function clearFinCache(){
+  localStorage.removeItem(catsKey());
+  localStorage.removeItem('fin_debts_v1');
+  toast('เคลียร์แคชเรียบร้อย ✅', true);
+}
 
 /** ====== LIFF ====== */
 function waitForLiffReady(timeoutMs=5000){
@@ -620,22 +625,30 @@ $('#btnLink')?.addEventListener('click', async (e)=>{
 });
 
 /** ====== Categories / Debts ====== */
-async function loadCategoriesAll(){
-  const cache = cacheGet('fin_cats_v1');
-  if (cache){
-    cats = cache;
-    $('#txCat').disabled = false;
-    populateCatSelect();
-    rerenderAllTables(); /* <- เพิ่ม */
-    return;
+// ⬇️ แก้ loadCategoriesAll: ไม่ใช้แคชที่ว่าง, รองรับ force, ไม่แคชตอนล้มเหลว
+async function loadCategoriesAll(opts={force:false}){
+  const key = catsKey();
+  if (!opts.force){
+    const cache = cacheGet(key);
+    if (catsValid(cache)){
+      cats = cache;
+      $('#txCat').disabled = false;
+      populateCatSelect();
+      return;
+    }
   }
   $('#txCat').disabled = true; $('#txCat').innerHTML = '<option>กำลังโหลด…</option>';
   const types=['income','expense','saving'];
   const [ri,re,rs]=await Promise.all(types.map(t=> api('categories/list',{type:t},true)));
-  cats={ income:ri.ok?(ri.items||[]):[], expense:re.ok?(re.items||[]):[], saving:rs.ok?(rs.items||[]):[] };
-  cacheSet('fin_cats_v1', cats, cacheTTL.cats);
+  const allOk = ri.ok && re.ok && rs.ok;
+  const next = {
+    income:  allOk ? (ri.items||[]) : (cats.income||[]),
+    expense: allOk ? (re.items||[]) : (cats.expense||[]),
+    saving:  allOk ? (rs.items||[]) : (cats.saving||[]),
+  };
+  cats = next;
+  if (allOk && catsValid(next)){ cacheSet(key, cats, cacheTTL.cats); } // ✅ แคชเฉพาะเมื่อดีจริง
   $('#txCat').disabled = false; populateCatSelect();
-  rerenderAllTables(); /* <- เพิ่ม */
 }
 async function loadDebtsList(){
   const cache = cacheGet('fin_debts_v1');
@@ -673,19 +686,28 @@ function setType(type){
 }
 
 /** ====== Display helper ====== */
+// ⬇️ รองรับหลายชื่อฟิลด์ + ใช้ catMap เสมอ + กรณีหนี้
 function getDisplayMeta(x){
-  const isDebtTx = (x.debt_tx_id || x.type==='debt' || (x.category_name||'').includes('หนี้'));
-  const isRepay  = isDebtTx && (String(x.sub_type || 'repay').includes('repay') || (x.note||'').includes('จ่ายหนี้'));
+  const isDebtTx = !!x.debt_tx_id || x.type==='debt_repay' || x.type==='debt_borrow' ||
+                   (x.type==='debt') || String(x.debt_type||x.sub_type||'').includes('repay') ||
+                   (x.category_name||'').includes('หนี้');
   let badge='badge-exp', text='รายจ่าย';
-  if (isDebtTx){ badge='badge-debt'; text= isRepay?'จ่ายหนี้':'กู้หนี้'; }
+  if (isDebtTx){ badge='badge-debt'; text = String(x.debt_type||x.sub_type||'').includes('repay') ? 'จ่ายหนี้' : 'กู้หนี้'; }
   else if (x.type==='income'){ badge='badge-inc'; text='รายรับ'; }
   else if (x.type==='saving'){ badge='badge-sav'; text='ออมเงิน'; }
 
   const catMap = {};
-  [...(cats.expense||[]), ...(cats.income||[]), ...(cats.saving||[])]
-    .forEach(c=> catMap[c.category_id]=c.name_th);
-  const catName = isDebtTx ? (x.lender_name || x.category_name || 'เจ้าหนี้')
-                            : (catMap[x.category_id] || x.category_name || x.cat_name || x.category_id || '');
+  ['expense','income','saving'].forEach(t => (cats[t]||[]).forEach(c=>{
+    catMap[String(c.category_id)] = c.name_th || c.name || c.title || c.label || String(c.category_id);
+  }));
+
+  const id = String(x.category_id ?? x.cat_id ?? x.categoryId ?? '');
+  const possibleNames = [x.category_name, x.cat_name, x.categoryName, x.category_name_th, x.categoryTh].filter(Boolean);
+
+  const catName = isDebtTx
+    ? (x.lender_name || x.lenderName || 'เจ้าหนี้')
+    : (catMap[id] || possibleNames[0] || id || '-');
+
   return { badge, text, catName };
 }
 
@@ -726,7 +748,7 @@ async function updateMiniDashboard(){
 /** ====== ล่าสุด 5 รายการ ====== */
 function renderRecent(){
   const tb = $('#recentBody'); tb.innerHTML='';
-  if (!recentItems.length){ tb.innerHTML='<tr><td colspan="6" class="muted">ยังไม่มีรายการ</td></tr>'; resetHScroll($('#recentBox')); return; }
+  if (!recentItems.length){ tb.innerHTML='<tr><td colspan="6" class="muted">ยังไม่มีรายการ</td></tr>'; return; }
   const frag=document.createDocumentFragment();
   for (const x of recentItems.slice(0,5)){
     const { badge, text, catName } = getDisplayMeta(x);
@@ -746,7 +768,6 @@ function renderRecent(){
     frag.appendChild(tr);
   }
   tb.appendChild(frag);
-  resetHScroll($('#recentBox')); /* <- เพิ่ม */
 }
 async function loadRecentFromAPI(){
   const to=todayISO();
@@ -780,14 +801,13 @@ async function saveAddCat(ev){
     if (!r.ok){ toast(r.message||'เพิ่มหมวดไม่สำเร็จ', false); return; }
     const newObj = { category_id: r.category_id, name_th: name, type };
     cats[type] = [ ...(cats[type]||[]), newObj ];
-    cacheSet('fin_cats_v1', cats, cacheTTL.cats);
+    cacheSet(catsKey(), cats, cacheTTL.cats); // ⬅️ เซฟลงคีย์ใหม่ต่อผู้ใช้
     setType(type);
     populateCatSelect();
     $('#txCat').value = newObj.category_id;
     closeAddCat();
     toast('เพิ่มหมวดสำเร็จ');
     updateMiniDashboard();
-    rerenderAllTables(); /* <- เพิ่ม */
   }, 'กำลังบันทึก…');
 }
 $('#btnAddCatOpen').addEventListener('click', openAddCat);
@@ -889,7 +909,15 @@ function renderTable(items){
     frag.appendChild(tr);
   }
   tb.appendChild(frag);
-  resetHScroll(document.querySelector('#pane-list .table-viewport')); /* <- เพิ่ม */
+}
+// ⬇️ self-heal: ถ้าช่องหมวดยังว่าง ให้ force โหลดหมวดแล้วเรนเดอร์ซ้ำ
+async function safeRenderList(items){
+  renderTable(items);
+  const hasBlank = items.some(it => !String(getDisplayMeta(it).catName||'').trim());
+  if (hasBlank){
+    await loadCategoriesAll({ force:true });
+    renderTable(items);
+  }
 }
 async function refreshList(btn){
   if (!token) return;
@@ -899,7 +927,7 @@ async function refreshList(btn){
   if (btn) setBusy(btn, false);
   if (!r.ok){ toast('โหลดรายการไม่สำเร็จ', false); return; }
   lastItems = (r.items||[]).map(x=> ({...x, amount:+x.amount}));
-  renderTable(lastItems);
+  await safeRenderList(lastItems);
 }
 
 // ปุ่มแก้ไขของ 2 ตาราง
@@ -1070,11 +1098,12 @@ document.querySelectorAll('.chip[data-range]').forEach(ch=>{
     if (k==='year'){ const y=new Date().getFullYear(); setRange(`${y}-01-01`, `${y}-12-31`); }
   });
 });
-$('#fFrom').addEventListener('change', ()=>{ updateRangeUI(); debouncedRefresh(); resetHScroll(document.querySelector('#pane-list .table-viewport')); }); /* <- เพิ่ม */
-$('#fTo').addEventListener('change',   ()=>{ updateRangeUI(); debouncedRefresh(); resetHScroll(document.querySelector('#pane-list .table-viewport')); });   /* <- เพิ่ม */
+$('#fFrom').addEventListener('change', ()=>{ updateRangeUI(); debouncedRefresh(); });
+$('#fTo').addEventListener('change',   ()=>{ updateRangeUI(); debouncedRefresh(); });
 
 /** ====== Tabs & Prefetch ====== */
-function activateTab(tab){
+// ⬇️ ทำให้รอโหลดหมวดก่อน refreshList (กัน race)
+async function activateTab(tab){
   const isCreate = (tab==='create');
   $('#tab-create').classList.toggle('active', isCreate);
   $('#tab-list').classList.toggle('active', !isCreate);
@@ -1096,24 +1125,23 @@ function activateTab(tab){
     if (!loaded.list){
       const mb = monthBounds(new Date());
       $('#fFrom').value = mb.start; $('#fTo').value = mb.end; updateRangeUI();
-      refreshList().then(()=> { loaded.list = true; resetHScroll(document.querySelector('#pane-list .table-viewport')); }); /* <- เพิ่ม */
+      await loadCategoriesAll({force:false});   // ✅ ให้ cats พร้อมก่อน
+      refreshList().then(()=> loaded.list = true);
     } else if (listDirty){
-      refreshList().finally(()=> { listDirty = false; resetHScroll(document.querySelector('#pane-list .table-viewport')); }); /* <- เพิ่ม */
-    } else {
-      resetHScroll(document.querySelector('#pane-list .table-viewport')); /* <- เพิ่ม */
+      await loadCategoriesAll({force:false});
+      refreshList().finally(()=> { listDirty = false; });
     }
-  } else {
-    resetHScroll($('#recentBox')); /* <- เพิ่ม */
   }
 }
 $('#tab-create').addEventListener('click', ()=> activateTab('create'));
 $('#tab-list').addEventListener('click',   ()=> activateTab('list'));
+// ⬇️ รีเฟรชแบบล้างแคช + force ดึงใหม่
 $('#btnPrefetchCreate').addEventListener('click', async (e)=>{
   await withBusy(e.currentTarget, async ()=>{
-    await Promise.all([loadCategoriesAll(), loadDebtsList()]);
+    clearFinCache();
+    await Promise.all([loadCategoriesAll({force:true}), loadDebtsList()]);
     populateCatSelect();
     updateMiniDashboard();
-    rerenderAllTables(); /* <- เพิ่ม */
   }, 'กำลังรีเฟรช…');
 });
 $('#btnRefresh').addEventListener('click', (e)=> refreshList(e.currentTarget));
@@ -1132,28 +1160,7 @@ $('#btnRefresh').addEventListener('click', (e)=> refreshList(e.currentTarget));
     $('#linkBox').classList.remove('hide');
     toast('เริ่มต้นผ่าน LIFF ไม่สำเร็จ — เข้าสู่ระบบด้วย User/PIN ได้', false);
   }
-
-  /* <- เพิ่ม: บังคับเริ่มซ้ายสุดตั้งแต่เปิดหน้า */
-  resetHScroll($('#recentBox'));
-  resetHScroll(document.querySelector('#pane-list .table-viewport'));
 })();
-
-/* ===== [เพิ่ม] ป้องกัน webview จำตำแหน่ง scroll: bfcache / หมุนจอ / resize ===== */
-window.addEventListener('pageshow', (e)=>{
-  resetHScroll($('#recentBox'));
-  resetHScroll(document.querySelector('#pane-list .table-viewport'));
-});
-window.addEventListener('orientationchange', ()=> {
-  setTimeout(()=>{
-    resetHScroll($('#recentBox'));
-    resetHScroll(document.querySelector('#pane-list .table-viewport'));
-  }, 0);
-});
-window.addEventListener('resize', debounce(()=>{
-  resetHScroll($('#recentBox'));
-  resetHScroll(document.querySelector('#pane-list .table-viewport'));
-}, 150));
-/* ============================================================================ */
 
 /** ====== UI listeners ====== */
 $$('.segbtn').forEach(b=> b.addEventListener('click', ()=> setType(b.dataset.type)));
