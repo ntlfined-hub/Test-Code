@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>FIN-JOD · Hybrid Tabs + Mini Dashboard</title>
+  <title>FIN-JOD · บันทึกรายการ </title>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
@@ -20,7 +20,6 @@
     :root{
       --bg:#1e1e1e; --panel:#242424; --line:#3a3a3a; --muted:#bfbfbf; --text:#f1f1f1;
       --primary:#00c896; --danger:#ff4d4f; --blue:#6c8cff; --warn:#ffb020; --cyan:#2dd4bf;
-      --hue: 170; /* โทนเขียวมิ้นต์ของแบรนด์ (ใช้กับ loader ตัวใหม่) */
     }
     *{ box-sizing:border-box } html,body{ height:100% }
     body{
@@ -37,14 +36,14 @@
 
     .tabs{ display:flex; gap:.5rem; background:#1b1b1b; border:1px solid var(--line); border-radius:12px; padding:.25rem; margin-bottom:1rem }
     .tab-btn{ flex:1; padding:.7rem 1rem; border-radius:10px; border:1px solid transparent; background:transparent; color:#ddd; font-weight:700; cursor:pointer }
-    .tab-btn.active{ background:#2a2a2a; border-color:#3a3a3a; color:#fff }
+    .tab-btn.active{ background:#2a2a2a; border-color:#3a2a3a; color:#fff }
     .tab-pane{ display:none }
     .tab-pane.active{ display:block }
 
     .card{ background:#1f1f1f; border:1px solid var(--line); border-radius:16px; padding:1rem; margin-bottom:1rem }
     .row{ display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1rem }
     .col{ flex:1 1 46%; min-width:230px; display:flex; flex-direction:column; gap:.35rem }
-    label{ color:var(--muted); display:flex; align-items:center; gap:.5rem }
+    label{ color:var(--muted) }
 
     input,select,button{
       border-radius:12px; border:1px solid var(--line);
@@ -56,18 +55,15 @@
     button{ background:var(--primary); border:none; font-weight:700; cursor:pointer; position:relative }
     button:disabled{ opacity:.65; cursor:not-allowed }
 
-    /* Busy spinner on buttons */
     button[aria-busy="true"]{ pointer-events:none }
     button[aria-busy="true"]::after{
       content:""; position:absolute; right:10px; top:50%; transform:translateY(-50%);
       width:18px; height:18px; border-radius:50%;
       border:3px solid #3a3a3a; border-top-color:#fff; animation:spin 1s linear infinite;
     }
-    @keyframes spin{ to{ transform:rotate(360deg) } }
 
     .btn-ghost{ background:#333 } .btn-blue{ background:var(--blue) } .btn-warn{ background:var(--warn); color:#222 }
     .btn-danger{ background:var(--danger) } .btn-cyan{ background:var(--cyan); color:#052a27 } .btn-green{ background:var(--primary) }
-    .btn-mini{ min-height:auto; padding:.25rem .5rem; font-size:.85rem; border-radius:8px }
 
     .seg{ display:flex; gap:.5rem; flex-wrap:wrap }
     .seg button{ background:#333 }
@@ -92,83 +88,10 @@
     #toast{ position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%);
       background:#333; color:#fff; padding:.6rem .9rem; border-radius:10px; opacity:0; transition:opacity .25s; pointer-events:none; z-index:120 }
 
-    /* === Overlay + Loader (Uiverse: nima-mollazadeh) === */
-    #overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.28); z-index:110; transition:opacity .2s }
+    #overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.25); z-index:110; transition:opacity .2s }
     #overlay.hide{ opacity:0; pointer-events:none }
-
-    /* Loader base */
-    .loader { --dur: 2s; display:block; margin:auto; width:14em; height:auto; }
-    .loader__glare-top,
-    .loader__glare-bottom,
-    .loader__model,
-    .loader__motion-thick,
-    .loader__motion-medium,
-    .loader__motion-thin,
-    .loader__sand-drop,
-    .loader__sand-fill,
-    .loader__sand-grain-left,
-    .loader__sand-grain-right,
-    .loader__sand-line-left,
-    .loader__sand-line-right,
-    .loader__sand-mound-top,
-    .loader__sand-mound-bottom{
-      animation-duration:var(--dur);
-      animation-timing-function:cubic-bezier(0.83,0,0.17,1);
-      animation-iteration-count:infinite;
-    }
-    .loader__glare-top{ animation-name:glare-top }
-    .loader__glare-bottom{ animation-name:glare-bottom }
-    .loader__model{ animation-name:loader-flip; transform-origin:12.25px 16.75px }
-    .loader__motion-thick,.loader__motion-medium,.loader__motion-thin{ transform-origin:26px 26px }
-    .loader__motion-thick{ animation-name:motion-thick }
-    .loader__motion-medium{ animation-name:motion-medium }
-    .loader__motion-thin{ animation-name:motion-thin }
-    .loader__sand-drop{ animation-name:sand-drop }
-    .loader__sand-fill{ animation-name:sand-fill }
-    .loader__sand-grain-left{ animation-name:sand-grain-left }
-    .loader__sand-grain-right{ animation-name:sand-grain-right }
-    .loader__sand-line-left{ animation-name:sand-line-left }
-    .loader__sand-line-right{ animation-name:sand-line-right }
-    .loader__sand-mound-top{ animation-name:sand-mound-top }
-    .loader__sand-mound-bottom{ animation-name:sand-mound-bottom; transform-origin:12.25px 31.5px }
-
-    @media (prefers-color-scheme: dark){
-      :root{ --bg:#1e1e1e; --fg:hsl(var(--hue),90%,90%) }
-    }
-    /* Animations */
-    @keyframes loader-flip{ from{ transform:translate(13.75px,9.25px) rotate(-180deg) } 24%,to{ transform:translate(13.75px,9.25px) rotate(0) } }
-    @keyframes glare-top{ from{ stroke:rgba(255,255,255,0) } 24%,to{ stroke:white } }
-    @keyframes glare-bottom{ from{ stroke:white } 24%,to{ stroke:rgba(255,255,255,0) } }
-    @keyframes motion-thick{
-      from{ animation-timing-function:cubic-bezier(0.33,0,0.67,0); stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(0.67turn) }
-      20%{ animation-timing-function:cubic-bezier(0.33,1,0.67,1); stroke:rgb(32,32,32); stroke-dashoffset:141.11; transform:rotate(1turn) }
-      40%,to{ stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(1.33turn) }
-    }
-    @keyframes motion-medium{
-      from,8%{ animation-timing-function:cubic-bezier(0.33,0,0.67,0); stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(0.5turn) }
-      20%{ animation-timing-function:cubic-bezier(0.33,1,0.67,1); stroke:white; stroke-dashoffset:147.53; transform:rotate(0.83turn) }
-      32%,to{ stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(1.17turn) }
-    }
-    @keyframes motion-thin{
-      from,4%{ animation-timing-function:cubic-bezier(0.33,0,0.67,0); stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(0.33turn) }
-      24%{ animation-timing-function:cubic-bezier(0.33,1,0.67,1); stroke:rgb(53,53,53); stroke-dashoffset:134.7; transform:rotate(0.67turn) }
-      44%,to{ stroke:rgba(255,255,255,0); stroke-dashoffset:153.94; transform:rotate(1turn) }
-    }
-    @keyframes sand-drop{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:1 } 70%,to{ stroke-dashoffset:-107 } }
-    @keyframes sand-fill{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:55 } 70%,to{ stroke-dashoffset:-54 } }
-    @keyframes sand-grain-left{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:29 } 70%,to{ stroke-dashoffset:-22 } }
-    @keyframes sand-grain-right{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:27 } 70%,to{ stroke-dashoffset:-24 } }
-    @keyframes sand-line-left{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:53 } 70%,to{ stroke-dashoffset:-55 } }
-    @keyframes sand-line-right{ from,10%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); stroke-dashoffset:14 } 70%,to{ stroke-dashoffset:-24.5 } }
-    @keyframes sand-mound-top{
-      from,10%{ animation-timing-function:linear; transform:translate(0,0) }
-      15%{ animation-timing-function:cubic-bezier(0.12,0,0.39,0); transform:translate(0,1.5px) }
-      51%,to{ transform:translate(0,13px) }
-    }
-    @keyframes sand-mound-bottom{
-      from,31%{ animation-timing-function:cubic-bezier(0.61,1,0.88,1); transform:scale(1,0) }
-      56%,to{ transform:scale(1,1) }
-    }
+    .spinner{ width:42px; height:42px; border-radius:50%; border:5px solid #3a3a3a; border-top-color:#fff; animation:spin 1s linear infinite }
+    @keyframes spin{ to{ transform:rotate(360deg) } }
 
     .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:150 }
     .modal-backdrop.show{ display:flex }
@@ -178,20 +101,6 @@
 
     .help{ font-size:.9rem; color:var(--muted) }
     .hide{ display:none }
-
-    /* == Mini Dashboard == */
-    .stats-head{ color:#e7eceb; font-weight:600; margin-bottom:.6rem }
-    .stats-grid{ display:grid; grid-template-columns:repeat(4,minmax(150px,1fr)); gap:.75rem }
-    @media (max-width:780px){ .stats-grid{ grid-template-columns:repeat(2,minmax(140px,1fr)); } }
-    .stat{ background:#1b1b1b; border:1px solid var(--line); border-radius:14px; padding:.75rem .9rem }
-    .stat .lbl{ font-size:.95rem; color:#cfd9d6; display:flex; align-items:center; gap:.5rem }
-    .stat .val{ font-weight:700; font-size:1.35rem; margin-top:.35rem }
-    .stat .bar{ height:3px; border-radius:3px; margin-top:.5rem; opacity:.8 }
-    .inc { color:#9ff3df } .inc .bar{ background:#2dd4bf }
-    .exp { color:#ffb6cc } .exp .bar{ background:#ff5c8a }
-    .sav { color:#a7fff0 } .sav .bar{ background:#58e6d6 }
-    .bal { color:#ffe19a } .bal .bar{ background:#ffc74d }
-    .neg { color:#ff9da5 !important }
   </style>
 
   <!-- LIFF SDK -->
@@ -218,33 +127,6 @@
 
     <!-- แอป + แท็บ -->
     <div id="app" class="hide">
-      <!-- ===== Mini Dashboard ===== -->
-      <div class="card" role="region" aria-label="ภาพรวมเดือนนี้">
-        <div class="stats-head">ภาพรวมเดือนนี้</div>
-        <div class="stats-grid">
-          <div class="stat inc">
-            <div class="lbl">รายรับ</div>
-            <div class="val" id="statIncome">—</div>
-            <div class="bar"></div>
-          </div>
-          <div class="stat exp">
-            <div class="lbl">รายจ่าย</div>
-            <div class="val" id="statExpense">—</div>
-            <div class="bar"></div>
-          </div>
-          <div class="stat sav">
-            <div class="lbl">ออม (สุทธิ)</div>
-            <div class="val" id="statSaving">—</div>
-            <div class="bar"></div>
-          </div>
-          <div class="stat bal">
-            <div class="lbl">คงเหลือ</div>
-            <div class="val" id="statBalance">—</div>
-            <div class="bar"></div>
-          </div>
-        </div>
-      </div>
-
       <div class="tabs" role="tablist" aria-label="เมนูหลัก">
         <button id="tab-create" class="tab-btn active" role="tab" aria-selected="true" aria-controls="pane-create">บันทึก</button>
         <button id="tab-list"   class="tab-btn"        role="tab" aria-selected="false" aria-controls="pane-list">รายการ</button>
@@ -278,11 +160,9 @@
             </div>
 
             <div class="col" id="colCat">
-              <label for="txCat">
-                หมวดหมู่
-                <button id="btnAddCatOpen" class="btn-mini btn-cyan" title="เพิ่มหมวดใหม่">เพิ่มหมวด</button>
-              </label>
+              <label for="txCat">หมวดหมู่</label>
               <select id="txCat" disabled><option>กำลังโหลด…</option></select>
+              <div class="help">* เพิ่มหมวดในหน้าหลักของคุณได้ตามเดิม</div>
             </div>
             <div class="col" id="colAmount">
               <label for="txAmount">จำนวนเงิน (บาท)</label>
@@ -318,7 +198,7 @@
           </div>
         </div>
 
-        <!-- ล่าสุด 5 รายการ -->
+        <!-- ล่าสุด 5 รายการ (เพิ่มปุ่มแก้ไข/ลบ) -->
         <div class="card" role="region" aria-label="ล่าสุด 5 รายการ">
           <div class="muted" style="margin-bottom:.5rem">ล่าสุด 5 รายการ</div>
           <div class="table-viewport" id="recentBox">
@@ -429,76 +309,8 @@
     </div>
   </div>
 
-  <!-- โมดัลเพิ่มหมวด -->
-  <div id="addCatBackdrop" class="modal-backdrop" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addCatTitle">
-      <div id="addCatTitle" class="title">เพิ่มหมวดใหม่</div>
-      <div class="row">
-        <div class="col">
-          <label for="addCatType">ประเภท</label>
-          <select id="addCatType">
-            <option value="expense">รายจ่าย</option>
-            <option value="income">รายรับ</option>
-            <option value="saving">ออมเงิน</option>
-          </select>
-        </div>
-        <div class="col" style="flex:1 1 100%">
-          <label for="addCatName">ชื่อหมวด</label>
-          <input id="addCatName" maxlength="100" placeholder="เช่น อาหาร, โบนัส, ฝากบัญชี"/>
-        </div>
-      </div>
-      <div class="actions">
-        <button id="btnAddCatCancel" class="btn-ghost">ยกเลิก</button>
-        <button id="btnAddCatSave" class="btn-warn">บันทึกหมวด</button>
-      </div>
-    </div>
-  </div>
-
   <div id="toast">แจ้งเตือน</div>
-
-  <!-- Overlay: ใช้ Loader รุ่น hourglass -->
-  <div id="overlay" class="hide" aria-live="polite" aria-busy="true">
-    <!-- From Uiverse.io by nima-mollazadeh -->
-    <svg aria-label="loader being flipped clockwise and circled by three white curves fading in and out"
-         role="img" height="56" width="56" viewBox="0 0 56 56" class="loader">
-      <clipPath id="sand-mound-top">
-        <path d="M 14.613 13.087 C 15.814 12.059 19.3 8.039 20.3 6.539 C 21.5 4.789 21.5 2.039 21.5 2.039 L 3 2.039 C 3 2.039 3 4.789 4.2 6.539 C 5.2 8.039 8.686 12.059 9.887 13.087 C 11 14.039 12.25 14.039 12.25 14.039 C 12.25 14.039 13.5 14.039 14.613 13.087 Z" class="loader__sand-mound-top"></path>
-      </clipPath>
-      <clipPath id="sand-mound-bottom">
-        <path d="M 14.613 20.452 C 15.814 21.48 19.3 25.5 20.3 27 C 21.5 28.75 21.5 31.5 21.5 31.5 L 3 31.5 C 3 31.5 3 28.75 4.2 27 C 5.2 25.5 8.686 21.48 9.887 20.452 C 11 19.5 12.25 19.5 12.25 19.5 C 12.25 19.5 13.5 19.5 14.613 20.452 Z" class="loader__sand-mound-bottom"></path>
-      </clipPath>
-      <g transform="translate(2,2)">
-        <g transform="rotate(-90,26,26)" stroke-linecap="round" stroke-dashoffset="153.94" stroke-dasharray="153.94 153.94" stroke="hsl(0,0%,100%)" fill="none">
-          <circle transform="rotate(0,26,26)" r="24.5" cy="26" cx="26" stroke-width="2.5" class="loader__motion-thick"></circle>
-          <circle transform="rotate(90,26,26)" r="24.5" cy="26" cx="26" stroke-width="1.75" class="loader__motion-medium"></circle>
-          <circle transform="rotate(180,26,26)" r="24.5" cy="26" cx="26" stroke-width="1" class="loader__motion-thin"></circle>
-        </g>
-        <g transform="translate(13.75,9.25)" class="loader__model">
-          <path d="M 1.5 2 L 23 2 C 23 2 22.5 8.5 19 12 C 16 15.5 13.5 13.5 13.5 16.75 C 13.5 20 16 18 19 21.5 C 22.5 25 23 31.5 23 31.5 L 1.5 31.5 C 1.5 31.5 2 25 5.5 21.5 C 8.5 18 11 20 11 16.75 C 11 13.5 8.5 15.5 5.5 12 C 2 8.5 1.5 2 1.5 2 Z" fill="hsl(var(--hue),90%,85%)"></path>
-          <g stroke-linecap="round" stroke="hsl(35,90%,90%)">
-            <line y2="20.75" x2="12" y1="15.75" x1="12" stroke-dasharray="0.25 33.75" stroke-width="1" class="loader__sand-grain-left"></line>
-            <line y2="21.75" x2="12.5" y1="16.75" x1="12.5" stroke-dasharray="0.25 33.75" stroke-width="1" class="loader__sand-grain-right"></line>
-            <line y2="31.5" x2="12.25" y1="18" x1="12.25" stroke-dasharray="0.5 107.5" stroke-width="1" class="loader__sand-drop"></line>
-            <line y2="31.5" x2="12.25" y1="14.75" x1="12.25" stroke-dasharray="54 54" stroke-width="1.5" class="loader__sand-fill"></line>
-            <line y2="31.5" x2="12" y1="16" x1="12" stroke-dasharray="1 107" stroke-width="1" stroke="hsl(35,90%,83%)" class="loader__sand-line-left"></line>
-            <line y2="31.5" x2="12.5" y1="16" x1="12.5" stroke-dasharray="12 96" stroke-width="1" stroke="hsl(35,90%,83%)" class="loader__sand-line-right"></line>
-            <g stroke-width="0" fill="hsl(35,90%,90%)">
-              <path d="M 12.25 15 L 15.392 13.486 C 21.737 11.168 22.5 2 22.5 2 L 2 2.013 C 2 2.013 2.753 11.046 9.009 13.438 L 12.25 15 Z" clip-path="url(#sand-mound-top)"></path>
-              <path d="M 12.25 18.5 L 15.392 20.014 C 21.737 22.332 22.5 31.5 22.5 31.5 L 2 31.487 C 2 31.487 2.753 22.454 9.009 20.062 Z" clip-path="url(#sand-mound-bottom)"></path>
-            </g>
-          </g>
-          <g stroke-width="2" stroke-linecap="round" opacity="0.7" fill="none">
-            <path d="M 19.437 3.421 C 19.437 3.421 19.671 6.454 17.914 8.846 C 16.157 11.238 14.5 11.5 14.5 11.5" stroke="hsl(0,0%,100%)" class="loader__glare-top"></path>
-            <path transform="rotate(180,12.25,16.75)" d="M 19.437 3.421 C 19.437 3.421 19.671 6.454 17.914 8.846 C 16.157 11.238 14.5 11.5 14.5 11.5" stroke="hsla(0,0%,100%,0)" class="loader__glare-bottom"></path>
-          </g>
-          <rect height="2" width="24.5" fill="hsl(var(--hue),90%,50%)"></rect>
-          <rect height="1" width="19.5" y="0.5" x="2.5" ry="0.5" rx="0.5" fill="hsl(var(--hue),90%,57.5%)"></rect>
-          <rect height="2" width="24.5" y="31.5" fill="hsl(var(--hue),90%,50%)"></rect>
-          <rect height="1" width="19.5" y="32" x="2.5" ry="0.5" rx="0.5" fill="hsl(var(--hue),90%,57.5%)"></rect>
-        </g>
-      </g>
-    </svg>
-  </div>
+  <div id="overlay" class="hide" aria-live="polite" aria-busy="true"><div class="spinner"></div></div>
 
 <script>
 /** ====== CONFIG ====== */
@@ -521,15 +333,13 @@ let listDirty = false;
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const fmt = n => THB.format(Number(n||0));
-// ⬇️ ใช้ nullish เพื่อไม่ทิ้งค่า 0
-const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const toast = (msg, ok=true)=>{ const el=$('#toast'); el.textContent=msg; el.style.background= ok?'#00c896':'#ff4d4f'; el.style.opacity='1'; setTimeout(()=> el.style.opacity='0', 2400); };
+const esc = s => String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]));
+const toast = (msg, ok=true)=>{ const el=$('#toast'); el.textContent=msg; el.style.background= ok?'#00c896':'#ff4d4f'; el.style.opacity='1'; setTimeout(()=> el.style.opacity='0', 2200); };
 const toYMD = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const todayISO = ()=> toYMD(new Date());
 const monthBounds = d => ({ start: toYMD(new Date(d.getFullYear(), d.getMonth(), 1)), end: toYMD(new Date(d.getFullYear(), d.getMonth()+1, 0)) });
 const debounce = (fn,ms=300)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
 function addDays(ymd, delta){ const [y,m,d]=ymd.split('-').map(Number); const nd=new Date(y, m-1, d+delta); return toYMD(nd); }
-const log = (...a)=>{ try{ console.debug('[FIN-JOD]', ...a); }catch{} };
 
 function setBusy(btn, on, tempText){
   if (!btn) return;
@@ -562,24 +372,6 @@ function cacheGet(k){
 }
 function cacheSet(k,data,ttl){ localStorage.setItem(k, JSON.stringify({exp:Date.now()+ttl, data})); }
 
-// ⬇️ คีย์แคชแบบ per-user+token และตัวตรวจความสมบูรณ์
-const catsKey = () => {
-  const uid = (displayName || '').toLowerCase().replace(/\s+/g,'') || 'anon';
-  const tk  = (token || '').slice(0,8) || 'noTk';
-  return `fin_cats_v2_${uid}_${tk}`;
-};
-function catsValid(c){
-  if (!c) return false;
-  const total = (c.income?.length||0)+(c.expense?.length||0)+(c.saving?.length||0);
-  return total > 0;
-}
-// ⬇️ ปุ่มรีเฟรชให้ล้างแคชได้จริง
-function clearFinCache(){
-  localStorage.removeItem(catsKey());
-  localStorage.removeItem('fin_debts_v1');
-  toast('เคลียร์แคชเรียบร้อย ✅', true);
-}
-
 /** ====== LIFF ====== */
 function waitForLiffReady(timeoutMs=5000){
   return new Promise(res=>{
@@ -589,15 +381,14 @@ function waitForLiffReady(timeoutMs=5000){
 }
 async function ensureTokenViaLIFF(){
   const okReady = await waitForLiffReady();
-  if (!okReady){ return !!token; }
-  try{ await liff.init({ liffId: LIFF_ID }); }catch(e){ return !!token; }
-  if (!liff.isLoggedIn()){
-    try{ liff.login({ redirectUri: location.href }); }catch(_){}
-    return !!token;
-  }
-  let prof; try{ prof = await liff.getProfile(); }catch(_){ return !!token; }
+  if (!okReady){ toast('LIFF ยังไม่พร้อม โปรดรีเฟรช', false); return false; }
+  try{ await liff.init({ liffId: LIFF_ID }); }catch{ toast('เริ่ม LIFF ไม่สำเร็จ', false); return false; }
+  if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return false; }
+
+  let prof; try{ prof = await liff.getProfile(); }catch{ toast('อ่านโปรไฟล์ LINE ไม่ได้', false); return; }
   const r = await api('liff/link_or_login', { line_user_id: prof.userId, display_name: prof.displayName||'' }, false);
-  if (!r.ok){ return !!token; }
+  if (!r.ok){ toast(r.message || 'เกิดข้อผิดพลาด', false); return false; }
+
   if (r.need_verification){
     $('#who').textContent = prof.displayName || '';
     $('#linkBox').classList.remove('hide'); $('#app').classList.add('hide');
@@ -613,41 +404,28 @@ $('#btnLink')?.addEventListener('click', async (e)=>{
   const btn=e.currentTarget;
   const user_id=$('#inpUser').value.trim(); const pin=$('#inpPin').value.trim();
   if (!user_id || !pin){ toast('กรอก User และ PIN ให้ครบ', false); return; }
-  let prof=null; try{ if (window.liff) prof = await liff.getProfile(); }catch(_){}
-  const r = await withBusy(btn, async ()=>{
-    if (prof){ return api('liff/link_or_login',{ line_user_id:prof.userId, display_name:prof.displayName||'', user_id, pin }, false); }
-    return api('auth/login', { user_id, pin }, false);
-  }, 'กำลังผูกบัญชี…');
+  let prof; try{ prof=await liff.getProfile(); }catch{ toast('อ่านโปรไฟล์ LINE ไม่ได้', false); return; }
+  const r = await withBusy(btn, ()=> api('liff/link_or_login',{ line_user_id:prof.userId, display_name:prof.displayName||'', user_id, pin }, false), 'กำลังผูกบัญชี…');
   if (!r.ok){ toast(r.message||'ผูกบัญชีไม่สำเร็จ', false); return; }
   token=r.token; displayName=r.display_name||user_id;
   localStorage.setItem('fin_token', token); localStorage.setItem('fin_name', displayName);
   $('#who').textContent = displayName; $('#linkBox').classList.add('hide'); $('#app').classList.remove('hide');
 });
 
-/** ====== Categories / Debts ====== */
-// ⬇️ แก้ loadCategoriesAll: ไม่ใช้แคชที่ว่าง, รองรับ force, ไม่แคชตอนล้มเหลว
-async function loadCategoriesAll(opts={force:false}){
-  const key = catsKey();
-  if (!opts.force){
-    const cache = cacheGet(key);
-    if (catsValid(cache)){
-      cats = cache;
-      $('#txCat').disabled = false;
-      populateCatSelect();
-      return;
-    }
+/** ====== Categories / Debts (แคช + เร็วขึ้น) ====== */
+async function loadCategoriesAll(){
+  const cache = cacheGet('fin_cats_v1');
+  if (cache){
+    cats = cache;
+    $('#txCat').disabled = false;
+    populateCatSelect();
+    return;
   }
   $('#txCat').disabled = true; $('#txCat').innerHTML = '<option>กำลังโหลด…</option>';
   const types=['income','expense','saving'];
   const [ri,re,rs]=await Promise.all(types.map(t=> api('categories/list',{type:t},true)));
-  const allOk = ri.ok && re.ok && rs.ok;
-  const next = {
-    income:  allOk ? (ri.items||[]) : (cats.income||[]),
-    expense: allOk ? (re.items||[]) : (cats.expense||[]),
-    saving:  allOk ? (rs.items||[]) : (cats.saving||[]),
-  };
-  cats = next;
-  if (allOk && catsValid(next)){ cacheSet(key, cats, cacheTTL.cats); } // ✅ แคชเฉพาะเมื่อดีจริง
+  cats={ income:ri.ok?(ri.items||[]):[], expense:re.ok?(re.items||[]):[], saving:rs.ok?(rs.items||[]):[] };
+  cacheSet('fin_cats_v1', cats, cacheTTL.cats);
   $('#txCat').disabled = false; populateCatSelect();
 }
 async function loadDebtsList(){
@@ -681,68 +459,24 @@ function setType(type){
   $('#colAmount').classList.toggle('hide', isRepay && debtMode);
   $('#colDebt').classList.toggle('hide', !debtMode);
   $('#colDebtRepayFields').classList.toggle('hide', !isRepay);
-  $('#btnAddCatOpen').classList.toggle('hide', debtMode);
   if (!debtMode) populateCatSelect();
 }
 
-/** ====== Display helper ====== */
-// ⬇️ รองรับหลายชื่อฟิลด์ + ใช้ catMap เสมอ + กรณีหนี้
+/** ====== Unified display helper (ใช้ทั้ง 2 ตาราง) ====== */
 function getDisplayMeta(x){
-  const isDebtTx = !!x.debt_tx_id || x.type==='debt_repay' || x.type==='debt_borrow' ||
-                   (x.type==='debt') || String(x.debt_type||x.sub_type||'').includes('repay') ||
-                   (x.category_name||'').includes('หนี้');
+  const isDebtTx = (x.debt_tx_id || x.type==='debt' || (x.category_name||'').includes('หนี้'));
+  const isRepay  = isDebtTx && (String(x.sub_type || 'repay').includes('repay') || (x.note||'').includes('จ่ายหนี้'));
   let badge='badge-exp', text='รายจ่าย';
-  if (isDebtTx){ badge='badge-debt'; text = String(x.debt_type||x.sub_type||'').includes('repay') ? 'จ่ายหนี้' : 'กู้หนี้'; }
+  if (isDebtTx){ badge='badge-debt'; text= isRepay?'จ่ายหนี้':'กู้หนี้'; }
   else if (x.type==='income'){ badge='badge-inc'; text='รายรับ'; }
   else if (x.type==='saving'){ badge='badge-sav'; text='ออมเงิน'; }
 
   const catMap = {};
-  ['expense','income','saving'].forEach(t => (cats[t]||[]).forEach(c=>{
-    catMap[String(c.category_id)] = c.name_th || c.name || c.title || c.label || String(c.category_id);
-  }));
-
-  const id = String(x.category_id ?? x.cat_id ?? x.categoryId ?? '');
-  const possibleNames = [x.category_name, x.cat_name, x.categoryName, x.category_name_th, x.categoryTh].filter(Boolean);
-
-  const catName = isDebtTx
-    ? (x.lender_name || x.lenderName || 'เจ้าหนี้')
-    : (catMap[id] || possibleNames[0] || id || '-');
-
+  [...(cats.expense||[]), ...(cats.income||[]), ...(cats.saving||[])]
+    .forEach(c=> catMap[c.category_id]=c.name_th);
+  const catName = isDebtTx ? (x.lender_name || x.category_name || 'เจ้าหนี้')
+                            : (catMap[x.category_id] || x.category_name || x.cat_name || x.category_id || '');
   return { badge, text, catName };
-}
-
-/** ====== Mini Dashboard ====== */
-function truthy(v){ return String(v||'').toLowerCase()==='true'; }
-function catIsWithdraw(catId){
-  const c = (cats.income||[]).find(x=> String(x.category_id)===String(catId));
-  return c ? truthy(c.is_saving_withdraw) : false;
-}
-async function updateMiniDashboard(){
-  if (!token) return;
-  if (!(cats.income.length || cats.expense.length || cats.saving.length)){
-    await loadCategoriesAll();
-  }
-  const {start,end} = monthBounds(new Date());
-  const r = await api('transactions/list', { from:start, to:end, type:'all' }, true);
-  let inc=0, exp=0, sav=0, wd=0;
-  if (r.ok){
-    for (const it of (r.items||[])){
-      const amt = +it.amount || 0;
-      if (it.type==='income'){
-        if (catIsWithdraw(it.category_id)) wd += amt;
-        else inc += amt;
-      } else if (it.type==='expense'){ exp += amt; }
-      else if (it.type==='saving'){ sav += amt; }
-    }
-  }
-  const savNet = Math.max(0, sav - wd);
-  const bal = inc - exp - savNet;
-
-  $('#statIncome').textContent  = fmt(inc);
-  $('#statExpense').textContent = fmt(exp);
-  $('#statSaving').textContent  = fmt(savNet);
-  $('#statBalance').textContent = fmt(bal);
-  const balEl = $('#statBalance'); balEl.classList.toggle('neg', bal < 0);
 }
 
 /** ====== ล่าสุด 5 รายการ ====== */
@@ -781,40 +515,6 @@ async function loadRecentFromAPI(){
   renderRecent();
 }
 
-/** ====== เพิ่มหมวด ====== */
-function openAddCat(){
-  const t = $('#txType').value;
-  $('#addCatType').value = (t==='debt_repay' || t==='debt_borrow') ? 'expense' : t;
-  $('#addCatName').value = '';
-  $('#addCatBackdrop').classList.add('show');
-  $('#addCatBackdrop').setAttribute('aria-hidden','false');
-  setTimeout(()=> $('#addCatName').focus(), 10);
-}
-function closeAddCat(){ $('#addCatBackdrop').classList.remove('show'); $('#addCatBackdrop').setAttribute('aria-hidden','true'); }
-async function saveAddCat(ev){
-  const btn = ev.currentTarget;
-  const type = $('#addCatType').value;
-  const name = $('#addCatName').value.trim();
-  if (!name){ toast('กรุณากรอกชื่อหมวด', false); return; }
-  await withBusy(btn, async ()=>{
-    const r = await api('categories/create', { type, name_th:name }, true);
-    if (!r.ok){ toast(r.message||'เพิ่มหมวดไม่สำเร็จ', false); return; }
-    const newObj = { category_id: r.category_id, name_th: name, type };
-    cats[type] = [ ...(cats[type]||[]), newObj ];
-    cacheSet(catsKey(), cats, cacheTTL.cats); // ⬅️ เซฟลงคีย์ใหม่ต่อผู้ใช้
-    setType(type);
-    populateCatSelect();
-    $('#txCat').value = newObj.category_id;
-    closeAddCat();
-    toast('เพิ่มหมวดสำเร็จ');
-    updateMiniDashboard();
-  }, 'กำลังบันทึก…');
-}
-$('#btnAddCatOpen').addEventListener('click', openAddCat);
-$('#btnAddCatCancel').addEventListener('click', closeAddCat);
-$('#btnAddCatSave').addEventListener('click', saveAddCat);
-$('#addCatName').addEventListener('keydown', (e)=>{ if (e.key==='Enter') $('#btnAddCatSave').click(); });
-
 /** ====== Save Transaction ====== */
 function normalizeAmount(v){ const n=Number(v); return (isFinite(n) && n>0) ? Math.round(n*100)/100 : NaN; }
 function clearFormKeepDate(){
@@ -829,7 +529,7 @@ async function saveTx(ev){
   const date = $('#txDate').value;
   const note = $('#txNote').value.trim();
   if (!date){ toast('กรุณาเลือกวันที่', false); return; }
-  if (!token){ toast('ยังไม่ได้รับสิทธิ์เข้าใช้งาน (LIFF/เว็บ)', false); return; }
+  if (!token){ toast('ยังไม่ได้รับสิทธิ์เข้าใช้งาน (LIFF)', false); return; }
 
   await withBusy(btn, async ()=>{
     if (type==='debt_repay' || type==='debt_borrow'){
@@ -844,10 +544,9 @@ async function saveTx(ev){
         const r = await api('debts/repay', { debt_id, date, amount, interest_paid:interest, principal_paid:principal, note }, true);
         if (r.ok){
           toast('บันทึกจ่ายหนี้สำเร็จ');
-          await loadRecentFromAPI();
+          await loadRecentFromAPI();  // ดึงจากเซิร์ฟเวอร์เพื่อให้มี tx_id ใช้งานปุ่มได้
           listDirty = true;
           clearFormKeepDate(); $('#txAmount').focus();
-          updateMiniDashboard();
         } else toast(r.message||'บันทึกไม่สำเร็จ', false);
         return;
       }else{
@@ -859,7 +558,6 @@ async function saveTx(ev){
           await loadRecentFromAPI();
           listDirty = true;
           clearFormKeepDate(); $('#txAmount').focus();
-          updateMiniDashboard();
         } else toast(r.message||'บันทึกไม่สำเร็จ', false);
         return;
       }
@@ -878,12 +576,11 @@ async function saveTx(ev){
       await loadRecentFromAPI();
       listDirty = true;
       clearFormKeepDate(); $('#txAmount').focus();
-      updateMiniDashboard();
     } else toast('บันทึกไม่สำเร็จ', false);
   }, 'กำลังบันทึก…');
 }
 
-/** ====== รายการย้อนหลัง ====== */
+/** ====== รายการย้อนหลัง (แท็บรายการ) ====== */
 function safeKey(x){ return `${(x.date||'').slice(0,10)}T${(x.time||'00:00:00').slice(0,8)}`; }
 function renderTable(items){
   const tb = $('#tblBody'); tb.innerHTML='';
@@ -910,15 +607,6 @@ function renderTable(items){
   }
   tb.appendChild(frag);
 }
-// ⬇️ self-heal: ถ้าช่องหมวดยังว่าง ให้ force โหลดหมวดแล้วเรนเดอร์ซ้ำ
-async function safeRenderList(items){
-  renderTable(items);
-  const hasBlank = items.some(it => !String(getDisplayMeta(it).catName||'').trim());
-  if (hasBlank){
-    await loadCategoriesAll({ force:true });
-    renderTable(items);
-  }
-}
 async function refreshList(btn){
   if (!token) return;
   const from=$('#fFrom').value, to=$('#fTo').value;
@@ -927,10 +615,10 @@ async function refreshList(btn){
   if (btn) setBusy(btn, false);
   if (!r.ok){ toast('โหลดรายการไม่สำเร็จ', false); return; }
   lastItems = (r.items||[]).map(x=> ({...x, amount:+x.amount}));
-  await safeRenderList(lastItems);
+  renderTable(lastItems);
 }
 
-// ปุ่มแก้ไขของ 2 ตาราง
+// ปุ่มแก้ไขของแท็บรายการ: แสดง busy ระหว่างโหลด modal
 document.addEventListener('click', (e)=>{
   const btn1 = e.target.closest('#tblBody button[data-act]');
   const btn2 = e.target.closest('#recentBody button[data-recent-act]');
@@ -954,6 +642,7 @@ async function openEditById(txId, dateHint){
   if (!txId){ toast('ไม่พบรหัสรายการ', false); return; }
   let it = lastItems.find(x=> String(x.tx_id)===String(txId));
   if (!it){
+    // ถ้ายังไม่เคยเปิดแท็บรายการ ให้ใช้ช่วงอิง dateHint เพื่อดึงจากเซิร์ฟเวอร์
     if (!loaded.list && dateHint){
       const from = addDays(dateHint, -20);
       const to   = addDays(dateHint, 1);
@@ -1051,7 +740,7 @@ $('#btnUpdate').addEventListener('click', async (e)=>{
       }
       r = await api('transactions/update', payload, true);
     }
-    if (r.ok){ toast('บันทึกแก้ไขสำเร็จ'); closeEdit(); await loadRecentFromAPI(); refreshList(); updateMiniDashboard(); }
+    if (r.ok){ toast('บันทึกแก้ไขสำเร็จ'); closeEdit(); await loadRecentFromAPI(); refreshList(); }
     else toast(r.message||'อัปเดตไม่สำเร็จ', false);
   }, 'กำลังบันทึก…');
 });
@@ -1059,11 +748,11 @@ async function confirmDelete(tx_id, btn){
   if (!tx_id) return;
   if (!confirm('ยืนยันการลบรายการนี้?')) return;
   const r = await withBusy(btn, ()=> api('transactions/delete', { tx_id }, true), 'กำลังลบ…');
-  if (r.ok){ toast('ลบสำเร็จ'); await loadRecentFromAPI(); refreshList(); updateMiniDashboard(); }
+  if (r.ok){ toast('ลบสำเร็จ'); await loadRecentFromAPI(); refreshList(); }
   else toast(r.message||'ลบไม่สำเร็จ', false);
 }
 
-/** ====== Range shortcuts ====== */
+/** ====== Range shortcuts (แท็บรายการ) ====== */
 const debouncedRefresh = debounce(()=> refreshList(), 350);
 function setRange(from, to){ $('#fFrom').value = from; $('#fTo').value = to; updateRangeUI(); debouncedRefresh(); }
 function setRangeDaysBack(days){
@@ -1102,8 +791,7 @@ $('#fFrom').addEventListener('change', ()=>{ updateRangeUI(); debouncedRefresh()
 $('#fTo').addEventListener('change',   ()=>{ updateRangeUI(); debouncedRefresh(); });
 
 /** ====== Tabs & Prefetch ====== */
-// ⬇️ ทำให้รอโหลดหมวดก่อน refreshList (กัน race)
-async function activateTab(tab){
+function activateTab(tab){
   const isCreate = (tab==='create');
   $('#tab-create').classList.toggle('active', isCreate);
   $('#tab-list').classList.toggle('active', !isCreate);
@@ -1118,30 +806,24 @@ async function activateTab(tab){
     Promise.all([loadCategoriesAll(), loadDebtsList()]).then(()=> {
       populateCatSelect();
       loadRecentFromAPI();
-      updateMiniDashboard();
     }).finally(()=> loaded.create = true);
   }
   if (!isCreate){
     if (!loaded.list){
       const mb = monthBounds(new Date());
       $('#fFrom').value = mb.start; $('#fTo').value = mb.end; updateRangeUI();
-      await loadCategoriesAll({force:false});   // ✅ ให้ cats พร้อมก่อน
       refreshList().then(()=> loaded.list = true);
     } else if (listDirty){
-      await loadCategoriesAll({force:false});
       refreshList().finally(()=> { listDirty = false; });
     }
   }
 }
 $('#tab-create').addEventListener('click', ()=> activateTab('create'));
 $('#tab-list').addEventListener('click',   ()=> activateTab('list'));
-// ⬇️ รีเฟรชแบบล้างแคช + force ดึงใหม่
 $('#btnPrefetchCreate').addEventListener('click', async (e)=>{
   await withBusy(e.currentTarget, async ()=>{
-    clearFinCache();
-    await Promise.all([loadCategoriesAll({force:true}), loadDebtsList()]);
+    await Promise.all([loadCategoriesAll(), loadDebtsList()]);
     populateCatSelect();
-    updateMiniDashboard();
   }, 'กำลังรีเฟรช…');
 });
 $('#btnRefresh').addEventListener('click', (e)=> refreshList(e.currentTarget));
@@ -1150,16 +832,9 @@ $('#btnRefresh').addEventListener('click', (e)=> refreshList(e.currentTarget));
 (async function init(){
   if (displayName) $('#who').textContent = displayName;
   const overlay = $('#overlay'); overlay.classList.remove('hide');
-  let ok=false; try{ ok = await ensureTokenViaLIFF(); }catch(e){ log('init error', e); }
+  let ok=false; try{ ok = await ensureTokenViaLIFF(); }catch{ toast('เริ่มต้นผ่าน LIFF ไม่สำเร็จ', false); }
   overlay.classList.add('hide');
-
-  if (ok || token){
-    $('#app').classList.remove('hide');
-    activateTab('create');
-  } else {
-    $('#linkBox').classList.remove('hide');
-    toast('เริ่มต้นผ่าน LIFF ไม่สำเร็จ — เข้าสู่ระบบด้วย User/PIN ได้', false);
-  }
+  if (ok){ $('#app').classList.remove('hide'); activateTab('create'); } else { $('#linkBox').classList.remove('hide'); }
 })();
 
 /** ====== UI listeners ====== */
