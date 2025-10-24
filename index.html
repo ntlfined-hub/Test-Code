@@ -531,6 +531,39 @@ const debounce = (fn,ms=300)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTi
 function addDays(ymd, delta){ const [y,m,d]=ymd.split('-').map(Number); const nd=new Date(y, m-1, d+delta); return toYMD(nd); }
 const log = (...a)=>{ try{ console.debug('[FIN-JOD]', ...a); }catch{} };
 
+// วางไว้แถว helpers
+function rerenderAllTables(){
+  try{
+    if (recentItems && recentItems.length) renderRecent();
+    if (loaded.list && lastItems && lastItems.length) renderTable(lastItems);
+  }catch(_){}
+}
+async function loadCategoriesAll(){
+  const cache = cacheGet('fin_cats_v1');
+  if (cache){
+    cats = cache;
+    $('#txCat').disabled = false;
+    populateCatSelect();
+    rerenderAllTables();               // <- เพิ่ม
+    return;
+  }
+  $('#txCat').disabled = true; $('#txCat').innerHTML = '<option>กำลังโหลด…</option>';
+  const types=['income','expense','saving'];
+  const [ri,re,rs]=await Promise.all(types.map(t=> api('categories/list',{type:t},true)));
+  cats={ income:ri.ok?(ri.items||[]):[], expense:re.ok?(re.items||[]):[], saving:rs.ok?(rs.items||[]):[] };
+  cacheSet('fin_cats_v1', cats, cacheTTL.cats);
+  $('#txCat').disabled = false; populateCatSelect();
+  rerenderAllTables();                 // <- เพิ่ม
+}
+$('#btnPrefetchCreate').addEventListener('click', async (e)=>{
+  await withBusy(e.currentTarget, async ()=>{
+    await Promise.all([loadCategoriesAll(), loadDebtsList()]);
+    populateCatSelect();
+    updateMiniDashboard();
+    rerenderAllTables();               // <- เพิ่ม
+  }, 'กำลังรีเฟรช…');
+});  
+
 function setBusy(btn, on, tempText){
   if (!btn) return;
   if (on){
